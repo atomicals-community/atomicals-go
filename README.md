@@ -1,6 +1,5 @@
-# atomicals-core
+# atomicals-core ⚛️
 
-## 喵🐱～
 atomicals协议是一个构建于BTC上的染色币协议，但目前atomicals的具体内容并未以文档或protocal代码形式提供。目前atomicals作者只提供了一个python版本的索引器[atomicals-electrumx](https://github.com/atomicals/atomicals-electrumx)和一个[atomicals-js](https://github.com/atomicals/atomicals-js)命令工具
 
 我想了解atomicals协议的具体格式，大约两周前我开始用golang重构该索引器atomicals-core，目前的构想是做到以下几点:
@@ -22,7 +21,6 @@ atomicals协议是一个构建于BTC上的染色币协议，但目前atomicals�
 - atomicals-core架构
 - 存储层接入条件
     - 我会分别提供sql和redis的防宕机方案
-    - 有其他db需求就按文档说明接入吧
 
 ## TODO:
 - atomicals协议文档编写
