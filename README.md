@@ -25,6 +25,15 @@ atomicals协议是一个构建于BTC上的染色币协议，但目前atomicals�
 - 存储层接入条件
     - 我会分别提供sql和redis的防宕机方案
 
+## How to run atomicals-core
+- you need a btc node and make sure golang has been installed on ur os.
+- download atomicals-core
+- edit atomicals-core/main.go : replace btcsync.NewBtcSync("rpcURL", "user", "password") with your btc node url, user and password 
+- cd to atomicals-core path
+- run: go mod tidy
+- run: go run ./
+there are many unnencessary log, i will delete them when we have a stable version.
+
 ## TODO:
 - atomicals协议文档编写
 
