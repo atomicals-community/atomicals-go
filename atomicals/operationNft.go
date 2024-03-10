@@ -1,7 +1,7 @@
 package atomicals
 
 import (
-	"log"
+	"github.com/atomicals-core/pkg/log"
 
 	"github.com/atomicals-core/atomicals/common"
 	"github.com/atomicals-core/atomicals/witness"
@@ -50,11 +50,12 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, vin bt
 		}
 		m.UTXOs[atomicalsID].Nft = append(m.UTXOs[atomicalsID].Nft, entity)
 	} else if operation.Payload.Args.RequestSubRealm != "" {
-		log.Printf("operation.Payload.Args:%+v", operation.Payload.Args)
+		log.Log.Warnf("operation.Payload.Args:%+v", operation.Payload.Args)
 	} else if operation.Payload.Args.RequestDmitem != "" {
-		log.Printf("operation.Payload.Args:%+v", operation.Payload.Args)
+		log.Log.Warnf("operation.Payload.Args:%+v", operation.Payload.Args)
 	} else {
-		log.Printf("operation.Payload.Args:%+v", operation.Payload.Args)
+		log.Log.Warnf("operation.Script:%+v", operation.Script)
+		log.Log.Warnf("operation.Payload.Args:%+v", operation.Payload.Args)
 	}
 	return nil
 }

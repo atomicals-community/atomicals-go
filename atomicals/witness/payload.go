@@ -75,7 +75,7 @@ type Args struct {
 	Time     int64  `cbor:"time"`
 	Bitworkc string `cbor:"bitworkc"`
 
-	// ft
+	// dft
 	MintAmount    float64 `cbor:"mint_amount"`
 	MintHeight    int64   `cbor:"mint_height"`
 	MaxMints      int64   `cbor:"max_mints"`

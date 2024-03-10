@@ -2,7 +2,9 @@ package witness
 
 import (
 	"encoding/hex"
-	"log"
+	"encoding/json"
+
+	"github.com/atomicals-core/pkg/log"
 
 	"github.com/atomicals-core/atomicals/common"
 	"github.com/atomicals-core/pkg/errors"
@@ -13,6 +15,7 @@ import (
 type WitnessAtomicalsOperation struct {
 	Op       string
 	Payload  *PayLoad
+	Script   string
 	TxID     string
 	VinIndex int64
 	Height   int64
@@ -30,20 +33,21 @@ func (m *WitnessAtomicalsOperation) IsSplitOperation() bool {
 
 // # Parses and detects valid Atomicals protocol operations in a witness script
 // # Stops when it finds the first operation in the first input
-func ParseOperationAndPayLoad(tx btcjson.TxRawResult, height int64) *WitnessAtomicalsOperation {
+func ParseWitness(tx btcjson.TxRawResult, height int64) *WitnessAtomicalsOperation {
 	for vinIndex, vin := range tx.Vin {
 		if !vin.HasWitness() {
 			continue
 		}
 		for _, script := range vin.Witness {
-			op, payload, err := parseOperationAndPayLoad(script)
+			op, payload, err := ParseOperationAndPayLoad(script)
 			if err != nil {
-				log.Printf("parseOperationAndPayLoad err:%+v", err)
+				log.Log.Warnf("parseOperationAndPayLoad err:%+v", err)
 				continue
 			}
 			return &WitnessAtomicalsOperation{
 				Op:       op,
 				Payload:  payload,
+				Script:   script,
 				TxID:     tx.Txid,
 				VinIndex: int64(vinIndex),
 				Height:   height,
@@ -56,7 +60,7 @@ func ParseOperationAndPayLoad(tx btcjson.TxRawResult, height int64) *WitnessAtom
 	}
 }
 
-func parseOperationAndPayLoad(script string) (string, *PayLoad, error) {
+func ParseOperationAndPayLoad(script string) (string, *PayLoad, error) {
 	scriptBytes, err := hex.DecodeString(script)
 	if err != nil {
 		return "", nil, err
@@ -96,6 +100,27 @@ func parseOperationAndPayLoad(script string) (string, *PayLoad, error) {
 		if !payload.check() {
 			return "", nil, errors.ErrInvalidPayLoad
 		}
+		payloadstr, _ := json.Marshal(payload)
+		if operation == "dft" {
+			log.Log.Warnf("script:%+v", script)
+		}
+		if payload.Args.RequestContainer != "" {
+			log.Log.Warnf("script:%+v", script)
+			log.Log.Warnf("payload:%+v", string(payloadstr))
+		}
+		if payload.Args.RequestDmitem != "" {
+			log.Log.Warnf("script:%+v", script)
+			log.Log.Warnf("payload:%+v", string(payloadstr))
+		}
+		if payload.Args.RequestSubRealm != "" {
+			log.Log.Warnf("script:%+v", script)
+			log.Log.Warnf("payload:%+v", string(payloadstr))
+		}
+		if payload.Args.RequestRealm != "" {
+			log.Log.Warnf("script:%+v", script)
+			log.Log.Warnf("payload:%+v", string(payloadstr))
+		}
+
 		return operation, payload, nil
 	}
 	return "", nil, errors.ErrOptionNotFound

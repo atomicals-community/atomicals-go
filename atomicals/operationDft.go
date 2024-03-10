@@ -22,6 +22,9 @@ func (m *Atomicals) deployFt(operation *witness.WitnessAtomicalsOperation, vin b
 	if !common.IsValidTicker(atomicalsDftInfo.Ticker) {
 		return errors.ErrInvalidTicker
 	}
+	if _, ok := m.AtomicalsFtEntity[atomicalsDftInfo.Ticker]; ok {
+		return errors.ErrTickerHasExist
+	}
 	if operation.Height < common.ATOMICALS_ACTIVATION_HEIGHT_DENSITY {
 		if atomicalsDftInfo.MaxMints > common.DFT_MINT_MAX_MAX_COUNT_LEGACY {
 			return errors.ErrInvalidMaxMints
