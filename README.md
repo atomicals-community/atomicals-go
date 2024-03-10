@@ -12,12 +12,15 @@ atomicals协议是一个构建于BTC上的染色币协议，但目前atomicals�
 ## [atomicals-core文档目录](https://github.com/yimingWOW/atomicals-core/tree/main/doc)
 
 - [UXTO染色币原理](https://github.com/yimingWOW/atomicals-core/tree/main/doc/1.utxoColor.md)
-- atomicals operationType
-    - ft部署和铸造
-    - nft铸造
-- 转账，拆分和合并
-    - ft 转账，拆分和合并
-    - nft 转账
+- atomicals protocal 链上命令解析器+indexer检查条件
+    部署和铸造
+    - dft 部署distributed ft
+    - dmt 铸造distributed ft
+    - nft 铸造nft
+    - ft  铸造Direct ft
+    转账
+    - x 拆分
+    - y 移动
 - atomicals-core架构
 - 存储层接入条件
     - 我会分别提供sql和redis的防宕机方案
