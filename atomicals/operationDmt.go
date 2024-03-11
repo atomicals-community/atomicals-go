@@ -9,32 +9,52 @@ import (
 
 // mintFt: Mint tokens of distributed mint type (dft)
 func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperation, vin btcjson.Vin, vout []btcjson.Vout, userPk string) error {
-	atomicalsID := atomicalsID(operation.TxID, common.VOUT_EXPECT_OUTPUT_BYTES)
+	if operation.RevealLocationHeight < common.ATOMICALS_ACTIVATION_HEIGHT_DMINT {
+		return errors.ErrInvalidRevealLocationHeight
+	}
+	if !operation.IsWithinAcceptableBlocksForGeneralReveal() {
+		return errors.ErrInvalidCommitHeight
+	}
+	if !operation.IsWithinAcceptableBlocksForNameReveal() {
+		return errors.ErrInvalidCommitHeight
+	}
+	if operation.CommitHeight < common.ATOMICALS_ACTIVATION_HEIGHT {
+		return errors.ErrInvalidCommitHeight
+	}
+	if !operation.IsValidCommitVoutIndexForNameRevel() {
+		return errors.ErrInvalidCommitVoutIndex
+	}
+	bitworkc, bitworkr, err := operation.IsValidBitwork()
+	if err != nil {
+		return err
+	}
+	atomicalsID := atomicalsID(operation.RevealLocationTxID, operation.RevealLocationVoutIndex)
 	ticker := operation.Payload.Args.MintTicker
-	if _, ok := m.AtomicalsFtEntity[ticker]; !ok {
+	if !m.DistributedFtHasExist(ticker) {
 		return errors.ErrNotDeployFt
 	}
-	entity := &UserDmtEntity{
+	entity := &UserDistributedInfo{
 		Name:        ticker,
 		Nonce:       operation.Payload.Args.Nonce,
 		Time:        operation.Payload.Args.Time,
-		Bitworkc:    operation.Payload.Args.Bitworkc,
-		Amount:      vout[common.VOUT_EXPECT_OUTPUT_BYTES].Value * common.Satoshi,
+		Bitworkc:    bitworkc,
+		Bitworkr:    bitworkr,
+		Amount:      vout[common.VOUT_EXPECT_OUTPUT_INDEX].Value * common.Satoshi,
 		AtomicalsID: atomicalsID,
 		Location:    atomicalsID,
 	}
-	ftEntity := m.AtomicalsFtEntity[ticker]
+	ftEntity := m.GlobalDistributedFtMap[ticker]
 	if entity.Amount > ftEntity.MintAmount {
 		return errors.ErrInvalidMintAmount
 	}
-	if operation.Height > ftEntity.MintHeight {
+	if ftEntity.MaxMints < ftEntity.MintedAmount+entity.Amount {
 		return errors.ErrInvalidMintHeight
 	}
-	m.UTXOs[atomicalsID] = &AtomicalsUTXO{
-		AtomicalID:    atomicalsID,
-		DistributedFt: make([]*UserDmtEntity, 0),
+	if operation.RevealLocationHeight > ftEntity.MintHeight {
+		return errors.ErrInvalidMintHeight
 	}
+	m.ensureUTXONotNil(atomicalsID)
 	m.UTXOs[atomicalsID].DistributedFt = append(m.UTXOs[atomicalsID].DistributedFt, entity)
-	m.AtomicalsFtEntity[ticker].MintedAmount += entity.Amount
+	m.GlobalDistributedFtMap[ticker].MintedAmount += entity.Amount
 	return nil
 }

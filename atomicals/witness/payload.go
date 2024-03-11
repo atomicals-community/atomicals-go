@@ -71,26 +71,58 @@ func (m *PayLoad) check() bool {
 
 type Args struct {
 	// common
-	Nonce    int64  `cbor:"nonce"`
-	Time     int64  `cbor:"time"`
+	Nonce int64 `cbor:"nonce"`
+	Time  int64 `cbor:"time"`
+
+	// optional
 	Bitworkc string `cbor:"bitworkc"`
+	Bitworkr string `cbor:"bitworkr"`
+
+	I       bool             `cbor:"i"`
+	Main    string           `cbor:"main"`
+	Proof   []Proof          `cbor:"proof"`
+	Parents map[string]int64 `cbor:"parents"` // key: parent_atomical_id, value:
 
 	// dft
+	RequestTicker string  `cbor:"request_ticker"`
 	MintAmount    float64 `cbor:"mint_amount"`
 	MintHeight    int64   `cbor:"mint_height"`
-	MaxMints      int64   `cbor:"max_mints"`
+	MaxMints      float64 `cbor:"max_mints"`
 	MintBitworkc  string  `cbor:"mint_bitworkc"`
-	RequestTicker string  `cbor:"request_ticker"`
-
-	// nft
-	RequestRealm     string `cbor:"request_realm"`
-	RequestSubRealm  string `cbor:"request_subrealm"`
-	RequestContainer string `cbor:"request_container"`
-	RequestDmitem    string `cbor:"request_dmitem"`
+	MintBitworkr  string  `cbor:"mint_bitworkr"`
+	Md            string  `cbor:"md"` // emu:"", "0", "1"
+	Bv            string  `cbor:"bv"`
+	Bci           string  `cbor:"bci"`
+	Bri           string  `cbor:"bri"`
+	Bcs           int64   `cbor:"bcs"`
+	Brs           int64   `cbor:"brs"`
+	Maxg          float64 `cbor:"maxg"`
 
 	// dmt
 	MintTicker string `cbor:"mint_ticker"` // mint ft name
+
+	// nft: realm
+	RequestRealm string `cbor:"request_realm"`
+
+	// nft: subrealm
+	RequestSubRealm string               `cbor:"request_subrealm"`
+	ClaimType       NftSubrealmClaimType `cbor:"claim_type"`   // enum: "direct" "rule"
+	ParentRealm     string               `cbor:"parent_realm"` // ParentRealm atomicalsID
+
+	// nft: container
+	RequestContainer string `cbor:"request_container"`
+
+	// nft: dmitem
+	RequestDmitem   string `cbor:"request_dmitem"`   // item num in ParentContainer
+	ParentContainer string `cbor:"parent_container"` // ParentContainer atomicalsID
 }
+
+type NftSubrealmClaimType string
+
+const (
+	Direct NftSubrealmClaimType = "direct"
+	Rule   NftSubrealmClaimType = "rule"
+)
 
 type Meta struct {
 	Name        string `cbor:"name"`
@@ -105,4 +137,9 @@ type Legal struct {
 type ImagePng struct {
 	CT string `cbor:"$ct"`
 	B  string `cbor:"$b"`
+}
+
+type Proof struct {
+	D string `cbor:"d"`
+	P bool   `cbor:"p"`
 }

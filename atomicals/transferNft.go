@@ -38,7 +38,7 @@ func (m *Atomicals) transferNft(operation *witness.WitnessAtomicalsOperation, tx
 					output_index = int64(0)
 				}
 				entity.UserPk = tx.Vout[output_index].ScriptPubKey.Address
-				atomicalsID := atomicalsID(operation.TxID, output_index)
+				atomicalsID := atomicalsID(operation.RevealLocationTxID, output_index)
 				m.UTXOs[atomicalsID].AtomicalID = atomicalsID
 				m.UTXOs[atomicalsID].Nft = append(m.UTXOs[atomicalsID].Nft, entity)
 				expected_output_index_incrementing += 1
@@ -46,7 +46,7 @@ func (m *Atomicals) transferNft(operation *witness.WitnessAtomicalsOperation, tx
 			m.UTXOs[preAtomicalsID].Nft = nil
 		}
 	} else { // calculate_nft_atomicals_regular
-		if common.IsDmintActivated(operation.Height) {
+		if common.IsDmintActivated(operation.RevealLocationHeight) {
 			expected_output_index_incrementing := int64(0)
 			for _, vin := range tx.Vin {
 				preAtomicalsID := atomicalsID(vin.Txid, int64(vin.Vout))
@@ -71,7 +71,7 @@ func (m *Atomicals) transferNft(operation *witness.WitnessAtomicalsOperation, tx
 				for _, entity := range preAtomicals {
 					entity.UserPk = tx.Vout[output_index].ScriptPubKey.Address
 				}
-				atomicalsID := atomicalsID(operation.TxID, output_index)
+				atomicalsID := atomicalsID(operation.RevealLocationTxID, output_index)
 				m.UTXOs[atomicalsID].AtomicalID = atomicalsID
 				m.UTXOs[atomicalsID].Nft = append(m.UTXOs[atomicalsID].Nft, preAtomicals...)
 				expected_output_index_incrementing += 1
@@ -106,7 +106,7 @@ func (m *Atomicals) transferNft(operation *witness.WitnessAtomicalsOperation, tx
 				for _, entity := range preAtomicals {
 					entity.UserPk = tx.Vout[output_index].ScriptPubKey.Address
 				}
-				atomicalsID := atomicalsID(operation.TxID, output_index)
+				atomicalsID := atomicalsID(operation.RevealLocationTxID, output_index)
 				m.UTXOs[atomicalsID].AtomicalID = atomicalsID
 				m.UTXOs[atomicalsID].Nft = append(m.UTXOs[atomicalsID].Nft, preAtomicals...)
 				m.UTXOs[preAtomicalsID].Nft = nil

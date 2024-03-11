@@ -13,28 +13,101 @@ import (
 )
 
 type WitnessAtomicalsOperation struct {
-	Op       string
-	Payload  *PayLoad
-	Script   string
-	TxID     string
-	VinIndex int64
-	Height   int64
+	Op      string
+	Payload *PayLoad
+	Script  string
+
+	CommitTxID      string // vin's txID
+	CommitVoutIndex int64  // vin's index as vout in last tx
+	CommitHeight    int64
+
+	RevealLocationTxID      string
+	RevealLocationVoutIndex int64 // always is expect VOUT_EXPECT_OUTPUT_INDEX
+	RevealLocationHeight    int64
+}
+
+func (m *WitnessAtomicalsOperation) IsValidCommitVoutIndexForNameRevel() bool {
+	return !(m.RevealLocationHeight >= common.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && m.CommitVoutIndex != common.VOUT_EXPECT_OUTPUT_INDEX)
+}
+
+// is_within_acceptable_blocks_for_name_reveal
+func (m *WitnessAtomicalsOperation) IsWithinAcceptableBlocksForNameReveal() bool {
+	return m.CommitHeight >= m.RevealLocationHeight-common.MINT_REALM_CONTAINER_TICKER_COMMIT_REVEAL_DELAY_BLOCKS
+}
+
+// is_within_acceptable_blocks_for_general_reveal
+func (m *WitnessAtomicalsOperation) IsWithinAcceptableBlocksForGeneralReveal() bool {
+	return m.CommitHeight >= m.RevealLocationHeight-common.MINT_GENERAL_COMMIT_REVEAL_DELAY_BLOCKS
+}
+
+// is_immutable
+func (m *WitnessAtomicalsOperation) IsImmutable() bool {
+	if m.Payload == nil {
+		return false
+	}
+	if m.Payload.Args == nil {
+		return false
+	}
+	return m.Payload.Args.I
+}
+
+func (m *WitnessAtomicalsOperation) IsValidBitwork() (*common.Bitwork, *common.Bitwork, error) {
+	if m.Payload == nil {
+		return nil, nil, nil
+	}
+	if m.Payload.Args == nil {
+		return nil, nil, nil
+	}
+	bitworkc := common.ParseBitwork(m.Payload.Args.Bitworkc)
+	if bitworkc != nil {
+		if !common.IsProofOfWorkPrefixMatch(m.CommitTxID, bitworkc.Prefix, bitworkc.Ext) {
+			return nil, nil, errors.ErrInvalidBitWork
+		}
+	}
+	bitworkr := common.ParseBitwork(m.Payload.Args.Bitworkr)
+	if bitworkr != nil {
+		if !common.IsProofOfWorkPrefixMatch(m.CommitTxID, bitworkr.Prefix, bitworkr.Ext) {
+			return nil, nil, errors.ErrInvalidBitWork
+		}
+	}
+	return bitworkc, bitworkr, nil
+}
+func (m *WitnessAtomicalsOperation) IsValidMintBitwork() (*common.Bitwork, *common.Bitwork, error) {
+	if m.Payload == nil {
+		return nil, nil, nil
+	}
+	if m.Payload.Args == nil {
+		return nil, nil, nil
+	}
+	bitworkc := common.ParseBitwork(m.Payload.Args.MintBitworkc)
+	if bitworkc != nil {
+		if !common.IsProofOfWorkPrefixMatch(m.CommitTxID, bitworkc.Prefix, bitworkc.Ext) {
+			return nil, nil, errors.ErrInvalidBitWork
+		}
+	}
+	bitworkr := common.ParseBitwork(m.Payload.Args.MintBitworkr)
+	if bitworkr != nil {
+		if !common.IsProofOfWorkPrefixMatch(m.CommitTxID, bitworkr.Prefix, bitworkr.Ext) {
+			return nil, nil, errors.ErrInvalidBitWork
+		}
+	}
+	return bitworkc, bitworkr, nil
 }
 
 // is_splat_operation
 func (m *WitnessAtomicalsOperation) IsSplatOperation() bool {
-	return m != nil && m.Op == "x" && m.VinIndex == 0
+	return m != nil && m.Op == "x" && m.CommitVoutIndex == 0
 }
 
 // is_split_operation
 func (m *WitnessAtomicalsOperation) IsSplitOperation() bool {
-	return m != nil && m.Op == "y" && m.VinIndex == 0
+	return m != nil && m.Op == "y" && m.CommitVoutIndex == 0
 }
 
 // # Parses and detects valid Atomicals protocol operations in a witness script
 // # Stops when it finds the first operation in the first input
 func ParseWitness(tx btcjson.TxRawResult, height int64) *WitnessAtomicalsOperation {
-	for vinIndex, vin := range tx.Vin {
+	for _, vin := range tx.Vin {
 		if !vin.HasWitness() {
 			continue
 		}
@@ -45,18 +118,21 @@ func ParseWitness(tx btcjson.TxRawResult, height int64) *WitnessAtomicalsOperati
 				continue
 			}
 			return &WitnessAtomicalsOperation{
-				Op:       op,
-				Payload:  payload,
-				Script:   script,
-				TxID:     tx.Txid,
-				VinIndex: int64(vinIndex),
-				Height:   height,
+				Op:                      op,
+				Payload:                 payload,
+				Script:                  script,
+				CommitTxID:              vin.Txid,
+				CommitVoutIndex:         int64(vin.Vout),
+				RevealLocationTxID:      tx.Txid,
+				RevealLocationVoutIndex: common.VOUT_EXPECT_OUTPUT_INDEX,
+				RevealLocationHeight:    height,
 			}
 		}
 	}
 	return &WitnessAtomicalsOperation{
-		TxID:   tx.Txid,
-		Height: height,
+		RevealLocationTxID:      tx.Txid,
+		RevealLocationVoutIndex: common.VOUT_EXPECT_OUTPUT_INDEX,
+		RevealLocationHeight:    height,
 	}
 }
 

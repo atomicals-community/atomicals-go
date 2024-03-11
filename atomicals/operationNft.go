@@ -10,49 +10,153 @@ import (
 )
 
 func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, vin btcjson.Vin, vout []btcjson.Vout, userPk string) error {
-	atomicalsID := atomicalsID(operation.TxID, common.VOUT_EXPECT_OUTPUT_BYTES)
-	entity := &UserNftEntity{}
+	if !operation.IsWithinAcceptableBlocksForGeneralReveal() {
+		return errors.ErrInvalidCommitHeight
+	}
+	if operation.CommitHeight < common.ATOMICALS_ACTIVATION_HEIGHT {
+		return errors.ErrInvalidCommitHeight
+	}
+	if operation.CommitVoutIndex != common.VOUT_EXPECT_OUTPUT_INDEX {
+		return errors.ErrInvalidVinIndex
+	}
+	bitworkc, bitworkr, err := operation.IsValidBitwork()
+	if err != nil {
+		return err
+	}
+	atomicalsID := atomicalsID(operation.RevealLocationTxID, operation.RevealLocationVoutIndex)
 	if operation.Payload.Args.RequestRealm != "" {
-		entity = &UserNftEntity{
-			EntityType: EntityTypeNftRealm,
-			Name:       operation.Payload.Args.RequestRealm,
-			Nonce:      operation.Payload.Args.Nonce,
-			Time:       operation.Payload.Args.Time,
-			Bitworkc:   operation.Payload.Args.Bitworkc,
-
-			AtomicalsID: atomicalsID,
-			Location:    atomicalsID,
+		// seems not necessary
+		if !operation.IsValidCommitVoutIndexForNameRevel() {
+			return errors.ErrInvalidCommitVoutIndex
 		}
-		if !common.IsValidRealm(entity.Name) {
-			return errors.ErrInvalidRealm
+		if !operation.IsWithinAcceptableBlocksForNameReveal() {
+			return errors.ErrInvalidCommitHeight
 		}
-		m.UTXOs[atomicalsID] = &AtomicalsUTXO{
-			AtomicalID: atomicalsID,
-			Nft:        make([]*UserNftEntity, 0),
+		if operation.IsImmutable() {
+			return errors.ErrCannotBeImmutable
 		}
-		m.UTXOs[atomicalsID].Nft = append(m.UTXOs[atomicalsID].Nft, entity)
-	} else if operation.Payload.Args.RequestContainer != "" {
-		entity = &UserNftEntity{
-			EntityType:  EntityTypeNftContainer,
-			Name:        operation.Payload.Args.RequestRealm,
+		entity := &UserNftInfo{
+			RealmName:   operation.Payload.Args.RequestRealm,
 			Nonce:       operation.Payload.Args.Nonce,
 			Time:        operation.Payload.Args.Time,
-			Bitworkc:    operation.Payload.Args.Bitworkc,
+			Bitworkc:    bitworkc,
+			Bitworkr:    bitworkr,
 			AtomicalsID: atomicalsID,
 			Location:    atomicalsID,
 		}
-		if !common.IsValidContainer(entity.Name) {
+		if !common.IsValidRealm(entity.RealmName) {
+			return errors.ErrInvalidRealm
+		}
+		if m.RealmHasExist(entity.RealmName) {
+			return errors.ErrRealmHasExist
+		}
+		if entity.Bitworkc == nil {
+			return errors.ErrNameTypeMintMastHaveBitworkc
+		}
+		m.ensureUTXONotNil(atomicalsID)
+		m.UTXOs[atomicalsID].Nft = append(m.UTXOs[atomicalsID].Nft, entity)
+		m.GlobalNftRealmMap[entity.RealmName] = make(map[string]bool)
+	} else if operation.Payload.Args.RequestSubRealm != "" {
+		// seems not necessary
+		if !operation.IsValidCommitVoutIndexForNameRevel() {
+			return errors.ErrInvalidCommitVoutIndex
+		}
+		if !operation.IsWithinAcceptableBlocksForNameReveal() {
+			return errors.ErrInvalidCommitHeight
+		}
+		if operation.IsImmutable() {
+			return errors.ErrCannotBeImmutable
+		}
+		entity := &UserNftInfo{
+			SubRealmName:           operation.Payload.Args.RequestSubRealm,
+			ClaimType:              operation.Payload.Args.ClaimType,
+			ParentRealmAtomicalsID: operation.Payload.Args.ParentRealm,
+			Nonce:                  operation.Payload.Args.Nonce,
+			Time:                   operation.Payload.Args.Time,
+			Bitworkc:               bitworkc,
+			Bitworkr:               bitworkr,
+			AtomicalsID:            atomicalsID,
+			Location:               atomicalsID,
+		}
+		if entity.ClaimType != witness.Direct && entity.ClaimType != witness.Rule {
+			return errors.ErrInvalidClaimType
+		}
+		if !common.IsValidSubRealm(entity.SubRealmName) {
 			return errors.ErrInvalidContainer
 		}
-		m.UTXOs[atomicalsID] = &AtomicalsUTXO{
-			AtomicalID: atomicalsID,
-			Nft:        make([]*UserNftEntity, 0),
+		parentRealmName, ok := m.ParentRealmHasExist(entity.ParentRealmAtomicalsID)
+		if !ok {
+			return errors.ErrParentRealmNotExist
 		}
+		if m.SubRealmHasExist(parentRealmName, entity.SubRealmName) {
+			return errors.ErrSubRealmHasExist
+		}
+		if entity.Bitworkc == nil {
+			return errors.ErrNameTypeMintMastHaveBitworkc
+		}
+		m.ensureUTXONotNil(atomicalsID)
 		m.UTXOs[atomicalsID].Nft = append(m.UTXOs[atomicalsID].Nft, entity)
-	} else if operation.Payload.Args.RequestSubRealm != "" {
-		log.Log.Warnf("operation.Payload.Args:%+v", operation.Payload.Args)
+		m.GlobalNftRealmMap[parentRealmName][entity.SubRealmName] = true
+	} else if operation.Payload.Args.RequestContainer != "" {
+		// seems not necessary
+		if !operation.IsValidCommitVoutIndexForNameRevel() {
+			return errors.ErrInvalidCommitVoutIndex
+		}
+		if !operation.IsWithinAcceptableBlocksForNameReveal() {
+			return errors.ErrInvalidCommitHeight
+		}
+		if operation.IsImmutable() {
+			return errors.ErrCannotBeImmutable
+		}
+		entity := &UserNftInfo{
+			ContainerName: operation.Payload.Args.RequestContainer,
+			Nonce:         operation.Payload.Args.Nonce,
+			Time:          operation.Payload.Args.Time,
+			Bitworkc:      bitworkc,
+			Bitworkr:      bitworkr,
+			AtomicalsID:   atomicalsID,
+			Location:      atomicalsID,
+		}
+		if !common.IsValidContainer(entity.ContainerName) {
+			return errors.ErrInvalidContainer
+		}
+		if m.ContainerHasExist(entity.ContainerName) {
+			return errors.ErrContainerHasExist
+		}
+		if entity.Bitworkc == nil {
+			return errors.ErrNameTypeMintMastHaveBitworkc
+		}
+		m.ensureUTXONotNil(atomicalsID)
+		m.UTXOs[atomicalsID].Nft = append(m.UTXOs[atomicalsID].Nft, entity)
+		m.GlobalNftContainerMap[entity.ContainerName] = make(map[string]bool, 0)
 	} else if operation.Payload.Args.RequestDmitem != "" {
-		log.Log.Warnf("operation.Payload.Args:%+v", operation.Payload.Args)
+		// seems not necessary
+		if !operation.IsValidCommitVoutIndexForNameRevel() {
+			return errors.ErrInvalidCommitVoutIndex
+		}
+		if !operation.IsWithinAcceptableBlocksForNameReveal() {
+			return errors.ErrInvalidCommitHeight
+		}
+		entity := &UserNftInfo{
+			Dmitem:                     operation.Payload.Args.RequestDmitem,
+			ParentContainerAtomicalsID: operation.Payload.Args.ParentContainer,
+			Nonce:                      operation.Payload.Args.Nonce,
+			Time:                       operation.Payload.Args.Time,
+			Bitworkc:                   bitworkc,
+			Bitworkr:                   bitworkr,
+			AtomicalsID:                atomicalsID,
+			Location:                   atomicalsID,
+		}
+		if !common.IsValidDmitem(entity.Dmitem) {
+			return errors.ErrInvalidContainerDmitem
+		}
+		parentContainerName, ok := m.ParentContainerHasExist(entity.ParentContainerAtomicalsID)
+		if !ok {
+			return errors.ErrParentRealmNotExist
+		}
+		m.ensureUTXONotNil(atomicalsID)
+		m.UTXOs[atomicalsID].Nft = append(m.UTXOs[atomicalsID].Nft, entity)
+		m.GlobalNftContainerMap[parentContainerName][entity.Dmitem] = true
 	} else {
 		log.Log.Warnf("operation.Script:%+v", operation.Script)
 		log.Log.Warnf("operation.Payload.Args:%+v", operation.Payload.Args)

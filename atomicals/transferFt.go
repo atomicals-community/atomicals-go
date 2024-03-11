@@ -35,9 +35,9 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 						break
 					}
 					remaining_value -= vout.Value * common.Satoshi
-					atomicalsID := atomicalsID(operation.TxID, int64(output_index))
+					atomicalsID := atomicalsID(operation.RevealLocationTxID, int64(output_index))
 					m.UTXOs[atomicalsID].AtomicalID = atomicalsID
-					m.UTXOs[atomicalsID].DistributedFt = append(m.UTXOs[atomicalsID].DistributedFt, &UserDmtEntity{
+					m.UTXOs[atomicalsID].DistributedFt = append(m.UTXOs[atomicalsID].DistributedFt, &UserDistributedInfo{
 						UserPk:   tx.Vout[output_index].ScriptPubKey.Address,
 						Name:     entity.Name,
 						Nonce:    entity.Nonce,
@@ -65,9 +65,9 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 						break
 					}
 					remaining_value -= vout.Value * common.Satoshi
-					atomicalsID := atomicalsID(operation.TxID, int64(output_index))
+					atomicalsID := atomicalsID(operation.RevealLocationTxID, int64(output_index))
 					m.UTXOs[atomicalsID].AtomicalID = atomicalsID
-					m.UTXOs[atomicalsID].DistributedFt = append(m.UTXOs[atomicalsID].DistributedFt, &UserDmtEntity{
+					m.UTXOs[atomicalsID].DistributedFt = append(m.UTXOs[atomicalsID].DistributedFt, &UserDistributedInfo{
 						UserPk:   tx.Vout[output_index].ScriptPubKey.Address,
 						Name:     entity.Name,
 						Nonce:    entity.Nonce,

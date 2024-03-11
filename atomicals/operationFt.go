@@ -9,44 +9,39 @@ import (
 
 // mintDirectFt: Mint fungible token with direct fixed supply
 func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, vin btcjson.Vin, vout []btcjson.Vout, userPk string) error {
-	atomicalsID := atomicalsID(operation.TxID, common.VOUT_EXPECT_OUTPUT_BYTES)
-	atomicalsFtInfo := &UserFtEntity{
-		UserPk:      userPk,
-		CommitTxID:  vin.Txid,
-		CommitIndex: int64(vin.Vout),
-		// CommitHeight:    ,
-		CurrentTxID:   operation.TxID,
-		CurrentHeight: operation.Height,
+	if operation.CommitHeight >= operation.RevealLocationHeight-common.MINT_GENERAL_COMMIT_REVEAL_DELAY_BLOCKS {
+		return errors.ErrInvalidCommitHeight
+	}
+	if operation.CommitHeight < common.ATOMICALS_ACTIVATION_HEIGHT {
+		return errors.ErrInvalidCommitHeight
+	}
+	if operation.CommitVoutIndex != common.VOUT_EXPECT_OUTPUT_INDEX {
+		return errors.ErrInvalidVinIndex
+	}
+	if operation.IsImmutable() {
+		return errors.ErrCannotBeImmutable
+	}
+	bitworkc, bitworkr, err := operation.IsValidBitwork()
+	if err != nil {
+		return err
+	}
+	atomicalsID := atomicalsID(operation.RevealLocationTxID, operation.RevealLocationVoutIndex)
+	atomicalsFtInfo := &UserDirectFtInfo{
+		UserPk:        userPk,
+		AtomicalsID:   atomicalsID,
+		Location:      atomicalsID,
 		Type:          "FT",
 		Subtype:       "direct",
 		RequestTicker: operation.Payload.Args.RequestTicker,
 		Meta:          operation.Payload.Meta,
-		Bitworkc:      operation.Payload.Args.Bitworkc,
-		MaxSupply:     int64(vout[common.VOUT_EXPECT_OUTPUT_BYTES].Value * common.Satoshi),
-	}
-	if atomicalsFtInfo.CommitHeight >= atomicalsFtInfo.CurrentHeight-common.MINT_GENERAL_COMMIT_REVEAL_DELAY_BLOCKS {
-		return errors.ErrInvalidFtCommitHeight
-	}
-	if atomicalsFtInfo.CommitHeight < common.ATOMICALS_ACTIVATION_HEIGHT {
-		return errors.ErrInvalidFtCurrentHeight
-	}
-	if atomicalsFtInfo.CurrentHeight < common.ATOMICALS_ACTIVATION_HEIGHT {
-		return errors.ErrInvalidFtCurrentHeight
+		Bitworkc:      bitworkc,
+		Bitworkr:      bitworkr,
+		MaxSupply:     int64(vout[common.VOUT_EXPECT_OUTPUT_INDEX].Value * common.Satoshi),
 	}
 	if !common.IsValidTicker(atomicalsFtInfo.RequestTicker) {
 		return errors.ErrInvalidTicker
 	}
-	// # Check if there was requested proof of work, && if there was then only allow the mint to happen if it was successfully executed the proof of work
-	bitwork := common.ParseBitwork(atomicalsFtInfo.Bitworkc)
-	if bitwork != nil {
-		if !common.IsProofOfWorkPrefixMatch(atomicalsFtInfo.CommitTxID, bitwork.Prefix, bitwork.Ext) {
-			return errors.ErrInvalidBitWork
-		}
-	}
-	m.UTXOs[atomicalsID] = &AtomicalsUTXO{
-		AtomicalID: atomicalsID,
-		DirectFt:   make([]*UserFtEntity, 0),
-	}
+	m.ensureUTXONotNil(atomicalsID)
 	m.UTXOs[atomicalsID].DirectFt = append(m.UTXOs[atomicalsID].DirectFt, atomicalsFtInfo)
 	return nil
 }
