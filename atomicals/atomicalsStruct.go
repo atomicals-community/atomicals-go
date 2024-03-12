@@ -17,20 +17,25 @@ type DistributedFtInfo struct {
 	Ticker         string
 	Type           string
 	Subtype        string
-	Md             string
-	MintMode       string
-	MaxSupply      float64
-	MaxMintsGlobal float64
-	MintAmount     float64 // mint amount once
-	MintHeight     int64   // start mint height
+	MintMode       string // emu: perpetual, fixed
+	MaxMintsGlobal int64  // total mint times allowed
+	MintAmount     int64  // mint amount once
+	MaxMints       int64  // # In the fixed mode there is a max number of mints allowed and then no more, only used when mintMode="fixed"
+	MaxSupply      int64  // total supply = MaxMintsGlobal*MintAmount
+	MintHeight     int64  // start mint height
+	MintedTimes    int64  // record minted times
 	MintBitworkc   *common.Bitwork
 	MintBitworkr   *common.Bitwork
-	MaxMints       float64 // total supply
 	Bitworkc       *common.Bitwork
 	Bitworkr       *common.Bitwork
 	Meta           *witness.Meta
-
-	MintedAmount float64 // record minted amount
+	Md             string // emu:"", "0", "1"
+	Bv             string // mint_info['$mint_bitwork_vec'] = bv
+	Bci            string // mint_info['$mint_bitworkc_inc'] = bci
+	Bri            string // mint_info['$mint_bitworkr_inc'] = bri
+	Bcs            int64  // mint_info['$mint_bitworkc_start'] = bcs
+	Brs            int64  // mint_info['$mint_bitworkr_start'] = brs
+	Maxg           int64
 }
 
 const (
@@ -75,11 +80,14 @@ type UserDistributedInfo struct {
 
 	Name string
 
-	Nonce    int64
-	Time     int64
-	Bitworkc *common.Bitwork
-	Bitworkr *common.Bitwork
-	Amount   float64
+	Nonce           int64
+	Time            int64
+	Bitworkc        *common.Bitwork
+	Bitworkr        *common.Bitwork
+	MintBitworkVec  *common.Bitwork
+	MintBitworkcInc *common.Bitwork
+	MintBitworkrInc *common.Bitwork
+	Amount          int64
 }
 
 type UserDirectFtInfo struct {

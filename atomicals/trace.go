@@ -23,36 +23,6 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) error {
 	// TODO:
 	// get_if_parent_spent_in_same_tx
 	//
-	if err := m.getCommitHeight(operation); err != nil {
-		log.Log.Warnf("getCommitHeight err:%+v", err)
-		// todo: retry,ensure success
-	}
-	for _, vin := range tx.Vin {
-		userPk := tx.Vout[common.VOUT_EXPECT_OUTPUT_INDEX].ScriptPubKey.Address
-		switch operation.Op {
-		case "dft":
-			if err := m.deployDistributedFt(operation, vin, tx.Vout, userPk); err != nil {
-				log.Log.Warnf("deployDistributedFt err:%+v", err)
-			}
-		case "dmt":
-			if err := m.mintDistributedFt(operation, vin, tx.Vout, userPk); err != nil {
-				log.Log.Warnf("mintDistributedFt err:%+v", err)
-			}
-		case "ft":
-			if err := m.mintDirectFt(operation, vin, tx.Vout, userPk); err != nil {
-				log.Log.Warnf("mintFt err:%+v", err)
-			}
-		case "nft":
-			if err := m.mintNft(operation, vin, tx.Vout, userPk); err != nil {
-				log.Log.Warnf("mintNft err:%+v", err)
-			}
-		case "mod":
-		case "evt":
-		case "dat":
-		case "sl":
-		default:
-		}
-	}
 	// step 2: transfer nft
 	if err := m.transferNft(operation, tx); err != nil {
 		log.Log.Warnf("transferNft err:%+v", err)
@@ -61,6 +31,41 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) error {
 	if err := m.transferFt(operation, tx); err != nil {
 		log.Log.Warnf("transferFt err:%+v", err)
 	}
+
+	// step 4: process operation
+	if err := m.getCommitHeight(operation); err != nil {
+		log.Log.Warnf("getCommitHeight err:%+v", err)
+		// todo: retry,ensure success
+	}
+	for _, vin := range tx.Vin {
+		userPk := tx.Vout[common.VOUT_EXPECT_OUTPUT_INDEX].ScriptPubKey.Address
+		if operation.Op == "dmt" {
+			if err := m.mintDistributedFt(operation, vin, tx.Vout, userPk); err != nil {
+				log.Log.Warnf("mintDistributedFt err:%+v", err)
+			}
+		} else {
+			switch operation.Op {
+			case "dft":
+				if err := m.deployDistributedFt(operation, vin, tx.Vout, userPk); err != nil {
+					log.Log.Warnf("deployDistributedFt err:%+v", err)
+				}
+			case "ft":
+				if err := m.mintDirectFt(operation, vin, tx.Vout, userPk); err != nil {
+					log.Log.Warnf("mintFt err:%+v", err)
+				}
+			case "nft":
+				if err := m.mintNft(operation, vin, tx.Vout, userPk); err != nil {
+					log.Log.Warnf("mintNft err:%+v", err)
+				}
+			case "mod":
+			case "evt":
+			case "dat":
+			case "sl":
+			default:
+			}
+		}
+	}
+	// step 5 check payment
 	return nil
 }
 

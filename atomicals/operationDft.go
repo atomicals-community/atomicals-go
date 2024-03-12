@@ -23,7 +23,7 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 	if err != nil {
 		return err
 	}
-	mintBitworkc, mingBitworkr, err := operation.IsValidMintBitwork()
+	mintBitworkc, mintBitworkr, err := witness.IsValidMintBitwork(operation.CommitTxID, operation.Payload.Args.MintBitworkc, operation.Payload.Args.MintBitworkr)
 	if err != nil {
 		return err
 	}
@@ -33,16 +33,22 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 		Ticker:       operation.Payload.Args.RequestTicker,
 		Type:         "FT",
 		Subtype:      "decentralized",
-		Md:           operation.Payload.Args.Md,
 		MintAmount:   operation.Payload.Args.MintAmount,
 		MaxMints:     operation.Payload.Args.MaxMints,
 		MintHeight:   operation.Payload.Args.MintHeight,
 		MintBitworkc: mintBitworkc,
-		MintBitworkr: mingBitworkr,
+		MintBitworkr: mintBitworkr,
 		Bitworkc:     bitworkc,
 		Bitworkr:     bitworkr,
 		Meta:         operation.Payload.Meta,
-		MintedAmount: 0,
+		MintedTimes:  0,
+		Md:           operation.Payload.Args.Md,
+		Bv:           operation.Payload.Args.Bv,
+		Bci:          operation.Payload.Args.Bci,
+		Bri:          operation.Payload.Args.Bri,
+		Bcs:          operation.Payload.Args.Bcs,
+		Brs:          operation.Payload.Args.Brs,
+		Maxg:         operation.Payload.Args.Maxg,
 	}
 	if !common.IsValidTicker(entity.Ticker) {
 		return errors.ErrInvalidTicker
@@ -99,17 +105,16 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 					return errors.ErrInvalidDftBrs
 				}
 			}
-			if 100000 < operation.Payload.Args.MaxMints {
-				return errors.ErrInvalidMaxMints
-			}
-			if operation.Payload.Args.Maxg < common.DFT_MINT_MAX_MIN_COUNT || common.DFT_MINT_MAX_MAX_COUNT_DENSITY < operation.Payload.Args.Maxg {
-				return errors.ErrInvalidDftMaxg
-			}
-			entity.MaxMintsGlobal = operation.Payload.Args.Maxg
-			entity.MintMode = "perpetual"
-			entity.MaxSupply = entity.MintAmount * entity.MaxMintsGlobal
 		}
-		entity.MintMode = "mint_mode"
+		if 100000 < operation.Payload.Args.MaxMints {
+			return errors.ErrInvalidMaxMints
+		}
+		if operation.Payload.Args.Maxg < common.DFT_MINT_MAX_MIN_COUNT || common.DFT_MINT_MAX_MAX_COUNT_DENSITY < operation.Payload.Args.Maxg {
+			return errors.ErrInvalidDftMaxg
+		}
+		entity.MaxMintsGlobal = operation.Payload.Args.Maxg
+		entity.MintMode = "perpetual"
+		entity.MaxSupply = entity.MintAmount * entity.MaxMintsGlobal
 	} else {
 		entity.MintMode = "fixed"
 		entity.MaxSupply = -1

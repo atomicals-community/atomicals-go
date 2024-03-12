@@ -84,19 +84,19 @@ type Args struct {
 	Parents map[string]int64 `cbor:"parents"` // key: parent_atomical_id, value:
 
 	// dft
-	RequestTicker string  `cbor:"request_ticker"`
-	MintAmount    float64 `cbor:"mint_amount"`
-	MintHeight    int64   `cbor:"mint_height"`
-	MaxMints      float64 `cbor:"max_mints"`
-	MintBitworkc  string  `cbor:"mint_bitworkc"`
-	MintBitworkr  string  `cbor:"mint_bitworkr"`
-	Md            string  `cbor:"md"` // emu:"", "0", "1"
-	Bv            string  `cbor:"bv"`
-	Bci           string  `cbor:"bci"`
-	Bri           string  `cbor:"bri"`
-	Bcs           int64   `cbor:"bcs"`
-	Brs           int64   `cbor:"brs"`
-	Maxg          float64 `cbor:"maxg"`
+	RequestTicker string `cbor:"request_ticker"`
+	MintAmount    int64  `cbor:"mint_amount"`
+	MintHeight    int64  `cbor:"mint_height"`
+	MaxMints      int64  `cbor:"max_mints"`
+	MintBitworkc  string `cbor:"mint_bitworkc"`
+	MintBitworkr  string `cbor:"mint_bitworkr"`
+	Md            string `cbor:"md"` // emu:"", "0", "1"
+	Bv            string `cbor:"bv"`
+	Bci           string `cbor:"bci"`
+	Bri           string `cbor:"bri"`
+	Bcs           int64  `cbor:"bcs"`
+	Brs           int64  `cbor:"brs"`
+	Maxg          int64  `cbor:"maxg"`
 
 	// dmt
 	MintTicker string `cbor:"mint_ticker"` // mint ft name

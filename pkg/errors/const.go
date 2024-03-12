@@ -40,4 +40,6 @@ var (
 	ErrInvalidDftBrs                = New(20010, "ErrInvalidDftBrs")
 	ErrInvalidDftMaxg               = New(20010, "ErrInvalidDftMaxg")
 	ErrNameTypeMintMastHaveBitworkc = New(20010, "ErrNameTypeMintMastHaveBitworkc")
+	ErrInvalidPerpetualBitwork      = New(20010, "ErrInvalidPerpetualBitwork")
+	ErrInvalidMintedTimes           = New(20010, "ErrInvalidMintedTimes")
 )

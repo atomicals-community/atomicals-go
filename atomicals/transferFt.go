@@ -18,7 +18,7 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 				continue
 			}
 			// total_amount_to_skip_potential := float64(operation.Payload.total_amount_to_skip_potential(preAtomicalsID))
-			total_amount_to_skip_potential := float64(0) // Todo: haven't catched this param
+			total_amount_to_skip_potential := int64(0) // Todo: haven't catched this param
 			for index, entity := range m.UTXOs[preAtomicalsID].DistributedFt {
 				remaining_value := entity.Amount
 				if 0 < total_amount_to_skip_potential {
@@ -28,13 +28,13 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 				}
 				for output_index, vout := range tx.Vout {
 					if 0 < total_amount_to_skip_potential {
-						total_amount_to_skip_potential -= vout.Value * common.Satoshi
+						total_amount_to_skip_potential -= int64(vout.Value * common.Satoshi)
 						continue
 					}
-					if remaining_value < vout.Value*common.Satoshi { // if so, this Dmt will be burned
+					if remaining_value < int64(vout.Value*common.Satoshi) { // if so, this Dmt will be burned
 						break
 					}
-					remaining_value -= vout.Value * common.Satoshi
+					remaining_value -= int64(vout.Value * common.Satoshi)
 					atomicalsID := atomicalsID(operation.RevealLocationTxID, int64(output_index))
 					m.UTXOs[atomicalsID].AtomicalID = atomicalsID
 					m.UTXOs[atomicalsID].DistributedFt = append(m.UTXOs[atomicalsID].DistributedFt, &UserDistributedInfo{
@@ -43,7 +43,7 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 						Nonce:    entity.Nonce,
 						Time:     entity.Time,
 						Bitworkc: entity.Bitworkc,
-						Amount:   vout.Value * common.Satoshi,
+						Amount:   int64(vout.Value * common.Satoshi),
 					})
 				}
 			}
@@ -61,10 +61,10 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 				remaining_value := entity.Amount
 				m.UTXOs[preAtomicalsID].DistributedFt = append(m.UTXOs[preAtomicalsID].DistributedFt[:index], m.UTXOs[preAtomicalsID].DistributedFt[index+1:]...)
 				for output_index, vout := range tx.Vout {
-					if remaining_value < vout.Value*common.Satoshi { // if so, this Dmt will be burned
+					if remaining_value < int64(vout.Value*common.Satoshi) { // if so, this Dmt will be burned
 						break
 					}
-					remaining_value -= vout.Value * common.Satoshi
+					remaining_value -= int64(vout.Value * common.Satoshi)
 					atomicalsID := atomicalsID(operation.RevealLocationTxID, int64(output_index))
 					m.UTXOs[atomicalsID].AtomicalID = atomicalsID
 					m.UTXOs[atomicalsID].DistributedFt = append(m.UTXOs[atomicalsID].DistributedFt, &UserDistributedInfo{
@@ -73,7 +73,7 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 						Nonce:    entity.Nonce,
 						Time:     entity.Time,
 						Bitworkc: entity.Bitworkc,
-						Amount:   vout.Value * common.Satoshi,
+						Amount:   int64(vout.Value * common.Satoshi),
 					})
 				}
 			}

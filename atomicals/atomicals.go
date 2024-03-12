@@ -39,7 +39,6 @@ func (m *Atomicals) ensureUTXONotNil(atomicalsID string) {
 	if m.UTXOs[atomicalsID].Nft == nil {
 		m.UTXOs[atomicalsID].Nft = make([]*UserNftInfo, 0)
 	}
-
 	if m.UTXOs[atomicalsID].DistributedFt == nil {
 		m.UTXOs[atomicalsID].DistributedFt = make([]*UserDistributedInfo, 0)
 	}

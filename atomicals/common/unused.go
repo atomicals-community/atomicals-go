@@ -11,24 +11,7 @@ import (
 	"math"
 )
 
-func is_txid_valid_for_perpetual_bitwork(txid, bitwork_vec string, actual_mints, max_mints, target_increment, starting_target int64, allow_higher bool) (bool, string) {
-	expected_minimum_bitwork := calculate_expected_bitwork(bitwork_vec, actual_mints, max_mints, target_increment, starting_target)
-	if is_mint_pow_valid(txid, expected_minimum_bitwork) {
-		return true, expected_minimum_bitwork
-	}
-	// # If we allow the next bitwork also to be accepted
-	if allow_higher {
-		parts := ParseBitwork(expected_minimum_bitwork)
-		prefix := parts.Prefix
-		next_full_bitwork_prefix := get_next_bitwork_full_str(bitwork_vec, len(prefix))
-		if is_mint_pow_valid(txid, next_full_bitwork_prefix) {
-			return true, next_full_bitwork_prefix
-		}
-	}
-	return false, ""
-}
-
-func get_next_bitwork_full_str(bitworkVec string, currentPrefixLen int) string {
+func Get_next_bitwork_full_str(bitworkVec string, currentPrefixLen int) string {
 	baseBitworkPadded := fmt.Sprintf("%-32s", bitworkVec)
 	if currentPrefixLen >= 31 {
 		return baseBitworkPadded
@@ -36,7 +19,7 @@ func get_next_bitwork_full_str(bitworkVec string, currentPrefixLen int) string {
 	return baseBitworkPadded[:currentPrefixLen+1]
 }
 
-func is_mint_pow_valid(txid, mintPowCommit string) bool {
+func Is_mint_pow_valid(txid, mintPowCommit string) bool {
 	bitworkCommitParts := ParseBitwork(mintPowCommit)
 	if bitworkCommitParts == nil {
 		return false
@@ -53,7 +36,7 @@ func isIntInRange(value, min, max int) bool {
 	return value >= min && value <= max
 }
 
-func calculate_expected_bitwork(bitwork_vec string, actual_mints, max_mints, target_increment, starting_target int64) string {
+func Calculate_expected_bitwork(bitwork_vec string, actual_mints, max_mints, target_increment, starting_target int64) string {
 	if starting_target < 64 || starting_target > 256 {
 		panic("err")
 	}
@@ -63,7 +46,7 @@ func calculate_expected_bitwork(bitwork_vec string, actual_mints, max_mints, tar
 	if target_increment < 1 || target_increment > 64 {
 		panic("err")
 	}
-	target_steps := int64((float64(actual_mints) / float64(max_mints)))
+	target_steps := (actual_mints) / (max_mints)
 	current_target := starting_target + (target_steps * target_increment)
 	return derive_bitwork_prefix_from_target(bitwork_vec, current_target)
 }

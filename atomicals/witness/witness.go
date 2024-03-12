@@ -26,8 +26,16 @@ type WitnessAtomicalsOperation struct {
 	RevealLocationHeight    int64
 }
 
+// is_dft_bitwork_rollover_activated
+func (m *WitnessAtomicalsOperation) IsDftBitworkRolloverActivated() bool {
+	return m.RevealLocationHeight >= common.ATOMICALS_ACTIVATION_HEIGHT_DFT_BITWORK_ROLLOVER
+}
+
 func (m *WitnessAtomicalsOperation) IsValidCommitVoutIndexForNameRevel() bool {
 	return !(m.RevealLocationHeight >= common.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && m.CommitVoutIndex != common.VOUT_EXPECT_OUTPUT_INDEX)
+}
+func (m *WitnessAtomicalsOperation) IsValidCommitVoutIndexForDmt() bool {
+	return m.CommitVoutIndex == common.VOUT_EXPECT_OUTPUT_INDEX
 }
 
 // is_within_acceptable_blocks_for_name_reveal
@@ -72,22 +80,17 @@ func (m *WitnessAtomicalsOperation) IsValidBitwork() (*common.Bitwork, *common.B
 	}
 	return bitworkc, bitworkr, nil
 }
-func (m *WitnessAtomicalsOperation) IsValidMintBitwork() (*common.Bitwork, *common.Bitwork, error) {
-	if m.Payload == nil {
-		return nil, nil, nil
-	}
-	if m.Payload.Args == nil {
-		return nil, nil, nil
-	}
-	bitworkc := common.ParseBitwork(m.Payload.Args.MintBitworkc)
+
+func IsValidMintBitwork(commitTxID, mintBitworkc, mintBitworkr string) (*common.Bitwork, *common.Bitwork, error) {
+	bitworkc := common.ParseBitwork(mintBitworkc)
 	if bitworkc != nil {
-		if !common.IsProofOfWorkPrefixMatch(m.CommitTxID, bitworkc.Prefix, bitworkc.Ext) {
+		if !common.IsProofOfWorkPrefixMatch(commitTxID, bitworkc.Prefix, bitworkc.Ext) {
 			return nil, nil, errors.ErrInvalidBitWork
 		}
 	}
-	bitworkr := common.ParseBitwork(m.Payload.Args.MintBitworkr)
+	bitworkr := common.ParseBitwork(mintBitworkr)
 	if bitworkr != nil {
-		if !common.IsProofOfWorkPrefixMatch(m.CommitTxID, bitworkr.Prefix, bitworkr.Ext) {
+		if !common.IsProofOfWorkPrefixMatch(commitTxID, bitworkr.Prefix, bitworkr.Ext) {
 			return nil, nil, errors.ErrInvalidBitWork
 		}
 	}
