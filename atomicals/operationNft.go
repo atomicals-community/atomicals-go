@@ -44,14 +44,17 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, vin bt
 			AtomicalsID: atomicalsID,
 			Location:    atomicalsID,
 		}
+		if entity.Bitworkc != nil && len(entity.Bitworkc.Prefix) < 4 {
+			return errors.ErrInvalidBitworkcPrefix
+		}
+		if entity.Bitworkc == nil {
+			return errors.ErrNameTypeMintMastHaveBitworkc
+		}
 		if !common.IsValidRealm(entity.RealmName) {
 			return errors.ErrInvalidRealm
 		}
 		if m.RealmHasExist(entity.RealmName) {
 			return errors.ErrRealmHasExist
-		}
-		if entity.Bitworkc == nil {
-			return errors.ErrNameTypeMintMastHaveBitworkc
 		}
 		m.ensureUTXONotNil(atomicalsID)
 		m.UTXOs[atomicalsID].Nft = append(m.UTXOs[atomicalsID].Nft, entity)
@@ -91,9 +94,6 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, vin bt
 		if m.SubRealmHasExist(parentRealmName, entity.SubRealmName) {
 			return errors.ErrSubRealmHasExist
 		}
-		if entity.Bitworkc == nil {
-			return errors.ErrNameTypeMintMastHaveBitworkc
-		}
 		m.ensureUTXONotNil(atomicalsID)
 		m.UTXOs[atomicalsID].Nft = append(m.UTXOs[atomicalsID].Nft, entity)
 		m.GlobalNftRealmMap[parentRealmName][entity.SubRealmName] = true
@@ -117,14 +117,17 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, vin bt
 			AtomicalsID:   atomicalsID,
 			Location:      atomicalsID,
 		}
+		if entity.Bitworkc != nil && len(entity.Bitworkc.Prefix) < 4 {
+			return errors.ErrInvalidBitworkcPrefix
+		}
+		if entity.Bitworkc == nil {
+			return errors.ErrNameTypeMintMastHaveBitworkc
+		}
 		if !common.IsValidContainer(entity.ContainerName) {
 			return errors.ErrInvalidContainer
 		}
 		if m.ContainerHasExist(entity.ContainerName) {
 			return errors.ErrContainerHasExist
-		}
-		if entity.Bitworkc == nil {
-			return errors.ErrNameTypeMintMastHaveBitworkc
 		}
 		m.ensureUTXONotNil(atomicalsID)
 		m.UTXOs[atomicalsID].Nft = append(m.UTXOs[atomicalsID].Nft, entity)

@@ -1,6 +1,8 @@
 package btcsync
 
 import (
+	"encoding/hex"
+
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
@@ -50,4 +52,33 @@ func (m *BtcSync) GetBlockByHeight(blockHeight int64) (*btcjson.GetBlockVerboseT
 		return nil, err
 	}
 	return block, nil
+}
+
+func (m *BtcSync) GetCommitHeight(txID string) (int64, error) {
+	txHash, err := TxID2txHash(txID)
+	if err != nil {
+		return -1, err
+	}
+	t, err := m.GetTransaction(txHash)
+	if err != nil {
+		return -1, err
+	}
+	blockHash, err := chainhash.NewHashFromStr(t.BlockHash)
+	if err != nil {
+		return -1, err
+	}
+	blockInfo, err := m.GetBlockVerboseTx(blockHash)
+	if err != nil {
+		return -1, err
+	}
+	return blockInfo.Height, nil
+}
+
+func TxID2txHash(txID string) (string, error) {
+	txidBytes, err := hex.DecodeString(txID)
+	if err != nil {
+		return "", err
+	}
+	txhash := hex.EncodeToString(txidBytes)
+	return txhash, nil
 }

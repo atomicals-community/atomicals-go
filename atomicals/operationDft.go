@@ -50,6 +50,12 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 		Brs:          operation.Payload.Args.Brs,
 		Maxg:         operation.Payload.Args.Maxg,
 	}
+	if entity.Bitworkc != nil && len(entity.Bitworkc.Prefix) < 4 {
+		return errors.ErrInvalidBitworkcPrefix
+	}
+	if entity.Bitworkc == nil {
+		return errors.ErrNameTypeMintMastHaveBitworkc
+	}
 	if !common.IsValidTicker(entity.Ticker) {
 		return errors.ErrInvalidTicker
 	}

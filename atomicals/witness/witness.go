@@ -117,7 +117,6 @@ func ParseWitness(tx btcjson.TxRawResult, height int64) *WitnessAtomicalsOperati
 		for _, script := range vin.Witness {
 			op, payload, err := ParseOperationAndPayLoad(script)
 			if err != nil {
-				log.Log.Warnf("parseOperationAndPayLoad err:%+v", err)
 				continue
 			}
 			return &WitnessAtomicalsOperation{

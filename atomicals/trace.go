@@ -6,7 +6,6 @@ import (
 	"github.com/atomicals-core/atomicals/common"
 	"github.com/atomicals-core/atomicals/witness"
 	"github.com/btcsuite/btcd/btcjson"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
 )
 
 func (m *Atomicals) TraceBlock(blockInfo *btcjson.GetBlockVerboseTxResult) {
@@ -33,11 +32,15 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) error {
 	}
 
 	// step 4: process operation
-	if err := m.getCommitHeight(operation); err != nil {
-		log.Log.Warnf("getCommitHeight err:%+v", err)
-		// todo: retry,ensure success
-	}
 	for _, vin := range tx.Vin {
+		if operation.Op != "" {
+			var err error
+			operation.CommitHeight, err = m.btcClient.GetCommitHeight(operation.CommitTxID)
+			if err != nil {
+				log.Log.Warnf("GetCommitHeight err:%+v", err)
+				// todo: retry,ensure success
+			}
+		}
 		userPk := tx.Vout[common.VOUT_EXPECT_OUTPUT_INDEX].ScriptPubKey.Address
 		if operation.Op == "dmt" {
 			if err := m.mintDistributedFt(operation, vin, tx.Vout, userPk); err != nil {
@@ -66,22 +69,5 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) error {
 		}
 	}
 	// step 5 check payment
-	return nil
-}
-
-func (m *Atomicals) getCommitHeight(operation *witness.WitnessAtomicalsOperation) error {
-	t, err := m.btcClient.GetTransaction(operation.CommitTxID)
-	if err != nil {
-		log.Log.Warnf("GetTransaction err:%v", err)
-	}
-	blockHash, err := chainhash.NewHashFromStr(t.BlockHash)
-	if err != nil {
-		return err
-	}
-	blockInfo, err := m.btcClient.GetBlockVerboseTx(blockHash)
-	if err != nil {
-		return err
-	}
-	operation.CommitHeight = blockInfo.Height
 	return nil
 }

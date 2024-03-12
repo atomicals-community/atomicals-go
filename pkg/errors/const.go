@@ -42,4 +42,5 @@ var (
 	ErrNameTypeMintMastHaveBitworkc = New(20010, "ErrNameTypeMintMastHaveBitworkc")
 	ErrInvalidPerpetualBitwork      = New(20010, "ErrInvalidPerpetualBitwork")
 	ErrInvalidMintedTimes           = New(20010, "ErrInvalidMintedTimes")
+	ErrInvalidBitworkcPrefix        = New(20010, "ErrInvalidBitworkcPrefix")
 )
