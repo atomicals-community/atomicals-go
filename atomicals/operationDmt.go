@@ -33,20 +33,20 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 	if err != nil {
 		return err
 	}
-	atomicalsID := atomicalsID(operation.RevealLocationTxID, operation.RevealLocationVoutIndex)
+	locationID := atomicalsID(operation.RevealLocationTxID, operation.RevealLocationVoutIndex)
 	ticker := operation.Payload.Args.MintTicker
 	if !m.DistributedFtHasExist(ticker) {
 		return errors.ErrNotDeployFt
 	}
-	entity := &UserDistributedInfo{
-		Name:        ticker,
+	entity := &UserFtInfo{
+		MintTicker:  ticker,
 		Nonce:       operation.Payload.Args.Nonce,
 		Time:        operation.Payload.Args.Time,
 		Bitworkc:    bitworkc,
 		Bitworkr:    bitworkr,
 		Amount:      int64(vout[common.VOUT_EXPECT_OUTPUT_INDEX].Value * common.Satoshi),
-		AtomicalsID: atomicalsID,
-		Location:    atomicalsID,
+		AtomicalsID: locationID,
+		LocaiontID:  locationID,
 	}
 	ftEntity := m.GlobalDistributedFtMap[ticker]
 	if operation.RevealLocationHeight < ftEntity.MintHeight {
@@ -58,7 +58,6 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 	if entity.Amount != ftEntity.MintAmount {
 		return errors.ErrInvalidMintAmount
 	}
-
 	if ftEntity.MintMode == "perpetual" {
 		if ftEntity.MaxMintsGlobal == ftEntity.MintedTimes {
 			return nil
@@ -100,8 +99,8 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 			}
 		}
 	}
-	m.ensureUTXONotNil(atomicalsID)
-	m.UTXOs[atomicalsID].DistributedFt = append(m.UTXOs[atomicalsID].DistributedFt, entity)
+	m.ensureFtUTXONotNil(locationID)
+	m.FtUTXOs[locationID] = append(m.FtUTXOs[locationID], entity)
 	m.GlobalDistributedFtMap[ticker].MintedTimes += 1
 	return nil
 }
@@ -125,6 +124,5 @@ func isTxidValidForPerpetualBitwork(txid string, bitwork_vec string, actual_mint
 			return true, next_full_bitwork_prefix
 		}
 	}
-
 	return false, ""
 }

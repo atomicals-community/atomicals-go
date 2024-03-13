@@ -5,13 +5,6 @@ import (
 	"github.com/atomicals-core/atomicals/witness"
 )
 
-type AtomicalsUTXO struct {
-	AtomicalID    string
-	Nft           []*UserNftInfo         // operationType: nft
-	DistributedFt []*UserDistributedInfo // operationType: dmt
-	DirectFt      []*UserDirectFtInfo    // operationType: ft
-}
-
 type DistributedFtInfo struct {
 	AtomicalsID    string
 	Ticker         string
@@ -48,7 +41,7 @@ const (
 type UserNftInfo struct {
 	UserPk      string
 	AtomicalsID string // txID _ VOUT_EXPECT_OUTPUT_INDEX when be minted
-	Location    string // txID_voutIndex updated after being transfered
+	LocationID  string // txID_voutIndex updated after being transfered
 
 	NftType int64
 
@@ -73,33 +66,24 @@ type UserNftInfo struct {
 	Bitworkr *common.Bitwork
 }
 
-type UserDistributedInfo struct {
+type UserFtInfo struct {
+	// conmmon params
 	UserPk      string
-	AtomicalsID string // txID _ VOUT_EXPECT_OUTPUT_INDEX when be minted
-	Location    string // txID_voutIndex updated after being transfered
+	AtomicalsID string // (txID,VOUT_EXPECT_OUTPUT_INDEX) init when be minted
+	LocaiontID  string // (txID,voutIndex)updated after being transfered
+	Bitworkc    *common.Bitwork
+	Bitworkr    *common.Bitwork
 
-	Name string
-
+	// DistributedFt
+	MintTicker      string
 	Nonce           int64
 	Time            int64
-	Bitworkc        *common.Bitwork
-	Bitworkr        *common.Bitwork
 	MintBitworkVec  *common.Bitwork
 	MintBitworkcInc *common.Bitwork
 	MintBitworkrInc *common.Bitwork
 	Amount          int64
-}
 
-type UserDirectFtInfo struct {
-	UserPk      string
-	AtomicalsID string // txID _ VOUT_EXPECT_OUTPUT_INDEX when be minted
-	Location    string // txID_voutIndex updated after being transfered
-
-	Meta     *witness.Meta
-	Bitworkc *common.Bitwork
-	Bitworkr *common.Bitwork
-
-	// record
+	// DirectFt
 	Type          string
 	Subtype       string
 	RequestTicker string
@@ -107,4 +91,8 @@ type UserDirectFtInfo struct {
 	MintAmount    int64
 	MintHeight    int64
 	MaxMints      int64
+	Meta          *witness.Meta
+}
+
+type UserDirectFtInfo struct {
 }

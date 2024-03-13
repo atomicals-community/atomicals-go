@@ -10,7 +10,6 @@ import (
 )
 
 func (m *Atomicals) transferNft(operation *witness.WitnessAtomicalsOperation, tx btcjson.TxRawResult) error {
-
 	if operation.IsSplatOperation() { // calculate_nft_atomicals_splat
 		// # Splat takes all of the NFT atomicals across all inputs (including multiple atomicals at the same utxo)
 		// # and then separates them into their own distinctive output such that the result of the operation is no two atomicals
@@ -18,23 +17,24 @@ func (m *Atomicals) transferNft(operation *witness.WitnessAtomicalsOperation, tx
 		// # If there are not enough, then this is considered a noop and those extra NFTs are assigned to output 0
 		// # If there are enough outputs, then the earliest atomical (sorted lexicographically in ascending order) goes to the 0'th output,
 		// # then the second atomical goes to the 1'st output, etc until all atomicals are assigned to their own output.
-		nftAtomicals := make([]*UserNftInfo, 0)
+		atomicalsNfts := make([]*UserNftInfo, 0)
 		for _, vin := range tx.Vin {
-			preAtomicalsID := atomicalsID(vin.Txid, int64(vin.Vout))
-			if _, ok := m.UTXOs[preAtomicalsID]; !ok {
+			preNftLocationID := atomicalsID(vin.Txid, int64(vin.Vout))
+			if _, ok := m.NftUTXOsByLocationID[preNftLocationID]; !ok {
 				continue
 			}
-			preAtomicals := m.UTXOs[preAtomicalsID].Nft
-			if preAtomicals != nil || len(preAtomicals) == 0 {
+			preNfts := m.NftUTXOsByLocationID[preNftLocationID]
+			if preNfts != nil || len(preNfts) == 0 {
 				continue
 			}
-			nftAtomicals = append(nftAtomicals, preAtomicals...)
+			atomicalsNfts = append(atomicalsNfts, preNfts...)
+			m.NftUTXOsByLocationID[preNftLocationID] = nil
 		}
-		sort.Slice(nftAtomicals, func(i, j int) bool {
-			return nftAtomicals[i].AtomicalsID < nftAtomicals[j].AtomicalsID
+		sort.Slice(atomicalsNfts, func(i, j int) bool {
+			return atomicalsNfts[i].AtomicalsID < atomicalsNfts[j].AtomicalsID
 		})
 		expected_output_index_incrementing := int64(0) // # Begin assigning splatted atomicals at the 0'th index
-		for _, nft := range nftAtomicals {
+		for _, nft := range atomicalsNfts {
 			output_index := expected_output_index_incrementing
 			scriptPubKeyBytes, err := hex.DecodeString(tx.Vout[output_index].ScriptPubKey.Hex)
 			if err != nil {
@@ -45,22 +45,25 @@ func (m *Atomicals) transferNft(operation *witness.WitnessAtomicalsOperation, tx
 				common.IsUnspendableLegacy(scriptPubKeyBytes) {
 				output_index = int64(0)
 			}
-			nft.Location = atomicalsID(operation.RevealLocationTxID, output_index)
 			nft.UserPk = tx.Vout[output_index].ScriptPubKey.Address
+			locationID := atomicalsID(operation.RevealLocationTxID, output_index)
+			nft.LocationID = locationID
+			m.NftUTXOsByLocationID[locationID] = append(m.NftUTXOsByLocationID[locationID], nft)
 			expected_output_index_incrementing += 1
 		}
 	} else { // build_nft_input_idx_to_atomical_map && calculate_nft_atomicals_regular
 		input_idx_to_atomical_ids_map := make(map[int64][]*UserNftInfo, 0) // key txInIndex
 		for vinIndex, vin := range tx.Vin {
-			preAtomicalsID := atomicalsID(vin.Txid, int64(vin.Vout))
-			if _, ok := m.UTXOs[preAtomicalsID]; !ok {
+			preNftLocationID := atomicalsID(vin.Txid, int64(vin.Vout))
+			if _, ok := m.NftUTXOsByLocationID[preNftLocationID]; !ok {
 				continue
 			}
-			preAtomicals := m.UTXOs[preAtomicalsID].Nft
-			if preAtomicals != nil || len(preAtomicals) == 0 {
+			preNfts := m.NftUTXOsByLocationID[preNftLocationID]
+			if preNfts != nil || len(preNfts) == 0 {
 				continue
 			}
-			input_idx_to_atomical_ids_map[int64(vinIndex)] = preAtomicals
+			input_idx_to_atomical_ids_map[int64(vinIndex)] = preNfts
+			m.NftUTXOsByLocationID[preNftLocationID] = nil
 		}
 		if common.IsDmintActivated(operation.RevealLocationHeight) {
 			next_output_idx := int64(0)
@@ -79,8 +82,10 @@ func (m *Atomicals) transferNft(operation *witness.WitnessAtomicalsOperation, tx
 					expected_output_index = int64(0)
 				}
 				for _, nft := range nfts {
-					nft.Location = atomicalsID(operation.RevealLocationTxID, expected_output_index)
 					nft.UserPk = tx.Vout[expected_output_index].ScriptPubKey.Address
+					locationID := atomicalsID(operation.RevealLocationTxID, expected_output_index)
+					nft.LocationID = locationID
+					m.NftUTXOsByLocationID[locationID] = append(m.NftUTXOsByLocationID[locationID], nft)
 				}
 			}
 			if found_atomical_at_input {
@@ -89,10 +94,10 @@ func (m *Atomicals) transferNft(operation *witness.WitnessAtomicalsOperation, tx
 		} else { // calculate_nft_output_index_legacy
 			for vinIndex, vin := range tx.Vin {
 				preAtomicalsID := atomicalsID(vin.Txid, int64(vin.Vout))
-				if _, ok := m.UTXOs[preAtomicalsID]; !ok {
+				if _, ok := m.NftUTXOsByLocationID[preAtomicalsID]; !ok {
 					continue
 				}
-				preAtomicalsNft := m.UTXOs[preAtomicalsID].Nft
+				preAtomicalsNft := m.NftUTXOsByLocationID[preAtomicalsID]
 				if preAtomicalsNft != nil || len(preAtomicalsNft) == 0 {
 					continue
 				}
@@ -114,8 +119,11 @@ func (m *Atomicals) transferNft(operation *witness.WitnessAtomicalsOperation, tx
 				}
 				for _, nft := range preAtomicalsNft {
 					nft.UserPk = tx.Vout[expected_output_index].ScriptPubKey.Address
-					nft.Location = atomicalsID(operation.RevealLocationTxID, expected_output_index)
+					locationID := atomicalsID(operation.RevealLocationTxID, expected_output_index)
+					nft.LocationID = locationID
+					m.NftUTXOsByLocationID[locationID] = append(m.NftUTXOsByLocationID[locationID], nft)
 				}
+				m.NftUTXOsByLocationID[preAtomicalsID] = nil
 			}
 		}
 	}

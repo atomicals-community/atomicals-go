@@ -42,7 +42,7 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, vin bt
 			Bitworkc:    bitworkc,
 			Bitworkr:    bitworkr,
 			AtomicalsID: atomicalsID,
-			Location:    atomicalsID,
+			LocationID:  atomicalsID,
 		}
 		if entity.Bitworkc != nil && len(entity.Bitworkc.Prefix) < 4 {
 			return errors.ErrInvalidBitworkcPrefix
@@ -56,8 +56,9 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, vin bt
 		if m.RealmHasExist(entity.RealmName) {
 			return errors.ErrRealmHasExist
 		}
-		m.ensureUTXONotNil(atomicalsID)
-		m.UTXOs[atomicalsID].Nft = append(m.UTXOs[atomicalsID].Nft, entity)
+		m.ensureNftUTXONotNil(atomicalsID)
+		m.NftUTXOsByAtomicalsID[atomicalsID] = append(m.NftUTXOsByAtomicalsID[atomicalsID], entity)
+		m.NftUTXOsByLocationID[atomicalsID] = append(m.NftUTXOsByLocationID[atomicalsID], entity)
 		m.GlobalNftRealmMap[entity.RealmName] = make(map[string]bool)
 	} else if operation.Payload.Args.RequestSubRealm != "" {
 		// seems not necessary
@@ -79,7 +80,7 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, vin bt
 			Bitworkc:               bitworkc,
 			Bitworkr:               bitworkr,
 			AtomicalsID:            atomicalsID,
-			Location:               atomicalsID,
+			LocationID:             atomicalsID,
 		}
 		if entity.ClaimType != witness.Direct && entity.ClaimType != witness.Rule {
 			return errors.ErrInvalidClaimType
@@ -94,8 +95,9 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, vin bt
 		if m.SubRealmHasExist(parentRealmName, entity.SubRealmName) {
 			return errors.ErrSubRealmHasExist
 		}
-		m.ensureUTXONotNil(atomicalsID)
-		m.UTXOs[atomicalsID].Nft = append(m.UTXOs[atomicalsID].Nft, entity)
+		m.ensureNftUTXONotNil(atomicalsID)
+		m.NftUTXOsByAtomicalsID[atomicalsID] = append(m.NftUTXOsByAtomicalsID[atomicalsID], entity)
+		m.NftUTXOsByLocationID[atomicalsID] = append(m.NftUTXOsByLocationID[atomicalsID], entity)
 		m.GlobalNftRealmMap[parentRealmName][entity.SubRealmName] = true
 	} else if operation.Payload.Args.RequestContainer != "" {
 		// seems not necessary
@@ -115,7 +117,7 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, vin bt
 			Bitworkc:      bitworkc,
 			Bitworkr:      bitworkr,
 			AtomicalsID:   atomicalsID,
-			Location:      atomicalsID,
+			LocationID:    atomicalsID,
 		}
 		if entity.Bitworkc != nil && len(entity.Bitworkc.Prefix) < 4 {
 			return errors.ErrInvalidBitworkcPrefix
@@ -129,8 +131,9 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, vin bt
 		if m.ContainerHasExist(entity.ContainerName) {
 			return errors.ErrContainerHasExist
 		}
-		m.ensureUTXONotNil(atomicalsID)
-		m.UTXOs[atomicalsID].Nft = append(m.UTXOs[atomicalsID].Nft, entity)
+		m.ensureNftUTXONotNil(atomicalsID)
+		m.NftUTXOsByAtomicalsID[atomicalsID] = append(m.NftUTXOsByAtomicalsID[atomicalsID], entity)
+		m.NftUTXOsByLocationID[atomicalsID] = append(m.NftUTXOsByLocationID[atomicalsID], entity)
 		m.GlobalNftContainerMap[entity.ContainerName] = make(map[string]bool, 0)
 	} else if operation.Payload.Args.RequestDmitem != "" {
 		// seems not necessary
@@ -148,7 +151,7 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, vin bt
 			Bitworkc:                   bitworkc,
 			Bitworkr:                   bitworkr,
 			AtomicalsID:                atomicalsID,
-			Location:                   atomicalsID,
+			LocationID:                 atomicalsID,
 		}
 		if !common.IsValidDmitem(entity.Dmitem) {
 			return errors.ErrInvalidContainerDmitem
@@ -157,8 +160,9 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, vin bt
 		if !ok {
 			return errors.ErrParentRealmNotExist
 		}
-		m.ensureUTXONotNil(atomicalsID)
-		m.UTXOs[atomicalsID].Nft = append(m.UTXOs[atomicalsID].Nft, entity)
+		m.ensureNftUTXONotNil(atomicalsID)
+		m.NftUTXOsByAtomicalsID[atomicalsID] = append(m.NftUTXOsByAtomicalsID[atomicalsID], entity)
+		m.NftUTXOsByLocationID[atomicalsID] = append(m.NftUTXOsByLocationID[atomicalsID], entity)
 		m.GlobalNftContainerMap[parentContainerName][entity.Dmitem] = true
 	} else {
 		log.Log.Warnf("operation.Script:%+v", operation.Script)

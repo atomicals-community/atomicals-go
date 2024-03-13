@@ -25,11 +25,11 @@ func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, v
 	if err != nil {
 		return err
 	}
-	atomicalsID := atomicalsID(operation.RevealLocationTxID, operation.RevealLocationVoutIndex)
-	atomicalsFtInfo := &UserDirectFtInfo{
+	locationID := atomicalsID(operation.RevealLocationTxID, operation.RevealLocationVoutIndex)
+	atomicalsFtInfo := &UserFtInfo{
 		UserPk:        userPk,
-		AtomicalsID:   atomicalsID,
-		Location:      atomicalsID,
+		AtomicalsID:   locationID,
+		LocaiontID:    locationID,
 		Type:          "FT",
 		Subtype:       "direct",
 		RequestTicker: operation.Payload.Args.RequestTicker,
@@ -41,7 +41,7 @@ func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, v
 	if !common.IsValidTicker(atomicalsFtInfo.RequestTicker) {
 		return errors.ErrInvalidTicker
 	}
-	m.ensureUTXONotNil(atomicalsID)
-	m.UTXOs[atomicalsID].DirectFt = append(m.UTXOs[atomicalsID].DirectFt, atomicalsFtInfo)
+	m.ensureFtUTXONotNil(locationID)
+	m.FtUTXOs[locationID] = append(m.FtUTXOs[locationID], atomicalsFtInfo)
 	return nil
 }
