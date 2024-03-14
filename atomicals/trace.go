@@ -1,6 +1,8 @@
 package atomicals
 
 import (
+	"time"
+
 	"github.com/atomicals-core/pkg/log"
 
 	"github.com/atomicals-core/atomicals/common"
@@ -8,30 +10,49 @@ import (
 	"github.com/btcsuite/btcd/btcjson"
 )
 
-func (m *Atomicals) TraceBlock(blockInfo *btcjson.GetBlockVerboseTxResult) {
-	for index, tx := range blockInfo.Tx {
-		log.Log.Warnf("height:%v,txIndex:%v,txHash:%v", blockInfo.Height, index, tx.Hash)
+func (m *Atomicals) TraceBlock() {
+	startTime := time.Now()
+	height, err := m.CurrentHeitht()
+	if err != nil {
+		log.Log.Panicf("CurrentHeitht err:%v", err)
+		panic(err)
+	}
+	blockInfo, err := m.btcClient.GetBlockByHeight(height + 1)
+	if err != nil {
+		log.Log.Panicf("GetBlockByHeight err:%v height:%v", err, height)
+		panic(err)
+	}
+	log.Log.Warnf("time.Since(startTime):%v, height:%v", time.Since(startTime), blockInfo.Height)
+
+	startTime = time.Now()
+	for _, tx := range blockInfo.Tx {
+		// skip this tx, it's from miner
+		if tx.Vin[0].Txid == "" {
+			continue
+		}
+		// log.Log.Warnf("height:%v,txIndex:%v,txHash:%v", blockInfo.Height, index, tx.Hash)
+		if err := m.UpdateLocation(blockInfo.Height, tx.Txid); err != nil {
+			log.Log.Warnf("UpdateLocation err:%v", err)
+		}
 		m.TraceTx(tx, blockInfo.Height)
 	}
-	m.Height++
+	log.Log.Warnf("time.Since(startTime):%v, height:%v", time.Since(startTime), blockInfo.Height)
 }
 
 func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) error {
 	operation := witness.ParseWitness(tx, height)
-	// step 1: mint or deploy
 	// TODO:
 	// get_if_parent_spent_in_same_tx
 	//
-	// step 2: transfer nft
+	// step 1: transfer nft, transfer ft
 	if err := m.transferNft(operation, tx); err != nil {
 		log.Log.Warnf("transferNft err:%+v", err)
 	}
-	// step 3: transfer ft
 	if err := m.transferFt(operation, tx); err != nil {
 		log.Log.Warnf("transferFt err:%+v", err)
 	}
 
-	// step 4: process operation
+	// step 2: process operation
 	for _, vin := range tx.Vin {
 		if operation.Op != "" {
 			var err error
@@ -68,6 +89,6 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) error {
 			}
 		}
 	}
-	// step 5 check payment
+	// step 3 check payment
 	return nil
 }

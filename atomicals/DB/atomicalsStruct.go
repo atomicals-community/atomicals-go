@@ -1,4 +1,4 @@
-package atomicals
+package db
 
 import (
 	"github.com/atomicals-core/atomicals/common"
@@ -29,6 +29,7 @@ type DistributedFtInfo struct {
 	Bcs            int64  // mint_info['$mint_bitworkc_start'] = bcs
 	Brs            int64  // mint_info['$mint_bitworkr_start'] = brs
 	Maxg           int64
+	CommitHeight   int64
 }
 
 const (
@@ -70,7 +71,7 @@ type UserFtInfo struct {
 	// conmmon params
 	UserPk      string
 	AtomicalsID string // (txID,VOUT_EXPECT_OUTPUT_INDEX) init when be minted
-	LocaiontID  string // (txID,voutIndex)updated after being transfered
+	LocationID  string // (txID,voutIndex)updated after being transfered
 	Bitworkc    *common.Bitwork
 	Bitworkr    *common.Bitwork
 

@@ -3,14 +3,20 @@ package atomicals
 import (
 	"strconv"
 
+	db "github.com/atomicals-core/atomicals/DB"
 	"github.com/atomicals-core/atomicals/common"
 	"github.com/atomicals-core/atomicals/witness"
 	"github.com/atomicals-core/pkg/errors"
+	"github.com/atomicals-core/pkg/log"
 	"github.com/btcsuite/btcd/btcjson"
 )
 
+// deployDistributedFt: operation dft
 func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOperation, vin btcjson.Vin, vout []btcjson.Vout, userPk string) error {
-	if operation.CommitHeight >= operation.RevealLocationHeight-common.MINT_REALM_CONTAINER_TICKER_COMMIT_REVEAL_DELAY_BLOCKS {
+	if !operation.IsWithinAcceptableBlocksForGeneralReveal() {
+		return errors.ErrInvalidCommitHeight
+	}
+	if operation.CommitHeight < common.ATOMICALS_ACTIVATION_HEIGHT {
 		return errors.ErrInvalidCommitHeight
 	}
 	if operation.CommitVoutIndex != common.VOUT_EXPECT_OUTPUT_INDEX {
@@ -27,8 +33,8 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 	if err != nil {
 		return err
 	}
-	atomicalsID := atomicalsID(operation.RevealLocationTxID, operation.RevealLocationVoutIndex)
-	entity := &DistributedFtInfo{
+	atomicalsID := operation.AtomicalsID
+	entity := &db.DistributedFtInfo{
 		AtomicalsID:  atomicalsID,
 		Ticker:       operation.Payload.Args.RequestTicker,
 		Type:         "FT",
@@ -49,20 +55,22 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 		Bcs:          operation.Payload.Args.Bcs,
 		Brs:          operation.Payload.Args.Brs,
 		Maxg:         operation.Payload.Args.Maxg,
+		CommitHeight: operation.CommitHeight,
 	}
 	if entity.Bitworkc != nil && len(entity.Bitworkc.Prefix) < 4 {
 		return errors.ErrInvalidBitworkcPrefix
 	}
-	if entity.Bitworkc == nil {
-		return errors.ErrNameTypeMintMastHaveBitworkc
-	}
 	if !common.IsValidTicker(entity.Ticker) {
 		return errors.ErrInvalidTicker
 	}
-	if m.DistributedFtHasExist(entity.Ticker) {
+	ft, err := m.DistributedFtByName(entity.Ticker)
+	if err != nil {
+		log.Log.Panicf("DistributedFtByName err:%v", err)
+	}
+	if ft != nil {
 		return errors.ErrTickerHasExist
 	}
-	if common.DFT_MINT_HEIGHT_MAX < entity.MintHeight {
+	if entity.MintHeight < common.DFT_MINT_HEIGHT_MIN || common.DFT_MINT_HEIGHT_MAX < entity.MintHeight {
 		return errors.ErrInvalidMintHeight
 	}
 	if entity.MintAmount < common.DFT_MINT_AMOUNT_MIN || common.DFT_MINT_AMOUNT_MAX < entity.MintAmount {
@@ -125,7 +133,8 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 		entity.MintMode = "fixed"
 		entity.MaxSupply = -1
 	}
-	m.GlobalDistributedFtMap[entity.Ticker] = entity
+	if err := m.InsertDistributedFt(entity); err != nil {
+		log.Log.Panicf("InsertDistributedFt err:%v", err)
+	}
 	return nil
-
 }

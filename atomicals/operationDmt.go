@@ -3,59 +3,42 @@ package atomicals
 import (
 	"strconv"
 
+	db "github.com/atomicals-core/atomicals/DB"
 	"github.com/atomicals-core/atomicals/common"
 	"github.com/atomicals-core/atomicals/witness"
 	"github.com/atomicals-core/pkg/errors"
+	"github.com/atomicals-core/pkg/log"
 	"github.com/btcsuite/btcd/btcjson"
 )
 
-// mintFt: Mint tokens of distributed mint type (dft)
+// mintDistributedFt:operation dmt, Mint tokens of distributed mint type
 func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperation, vin btcjson.Vin, vout []btcjson.Vout, userPk string) error {
-	if !operation.IsValidCommitVoutIndexForDmt() {
-		return errors.ErrInvalidVinIndex
-	}
-	if operation.RevealLocationHeight < common.ATOMICALS_ACTIVATION_HEIGHT_DMINT {
-		return errors.ErrInvalidRevealLocationHeight
-	}
-	if !operation.IsWithinAcceptableBlocksForGeneralReveal() {
-		return errors.ErrInvalidCommitHeight
-	}
-	if !operation.IsWithinAcceptableBlocksForNameReveal() {
-		return errors.ErrInvalidCommitHeight
-	}
-	if operation.CommitHeight < common.ATOMICALS_ACTIVATION_HEIGHT {
-		return errors.ErrInvalidCommitHeight
-	}
-	if !operation.IsValidCommitVoutIndexForNameRevel() {
-		return errors.ErrInvalidCommitVoutIndex
-	}
-	bitworkc, bitworkr, err := operation.IsValidBitwork()
-	if err != nil {
-		return err
-	}
-	locationID := atomicalsID(operation.RevealLocationTxID, operation.RevealLocationVoutIndex)
 	ticker := operation.Payload.Args.MintTicker
-	if !m.DistributedFtHasExist(ticker) {
+	ft, err := m.DistributedFtByName(ticker)
+	if err != nil {
+		log.Log.Panicf("DistributedFtByName err:%v", err)
+	}
+	if ft == nil {
 		return errors.ErrNotDeployFt
 	}
-	entity := &UserFtInfo{
-		MintTicker:  ticker,
-		Nonce:       operation.Payload.Args.Nonce,
-		Time:        operation.Payload.Args.Time,
-		Bitworkc:    bitworkc,
-		Bitworkr:    bitworkr,
-		Amount:      int64(vout[common.VOUT_EXPECT_OUTPUT_INDEX].Value * common.Satoshi),
-		AtomicalsID: locationID,
-		LocaiontID:  locationID,
+	ftEntity, err := m.DistributedFtByName(ticker)
+	if err != nil {
+		log.Log.Panicf("DistributedFtByName err:%v", err)
 	}
-	ftEntity := m.GlobalDistributedFtMap[ticker]
+	if ftEntity.CommitHeight <= operation.RevealLocationHeight-common.MINT_REALM_CONTAINER_TICKER_COMMIT_REVEAL_DELAY_BLOCKS {
+		return errors.ErrInvalidCommitHeight
+	}
 	if operation.RevealLocationHeight < ftEntity.MintHeight {
 		return errors.ErrInvalidMintHeight
 	}
 	if operation.CommitHeight < ftEntity.MintHeight {
 		return errors.ErrInvalidCommitHeight
 	}
-	if entity.Amount != ftEntity.MintAmount {
+	if !operation.IsValidRevealLocationAndCommitVoutIndex() {
+		return errors.ErrInvalidVinIndex
+	}
+	// if mint_amount == txout.value:
+	if int64(vout[common.VOUT_EXPECT_OUTPUT_INDEX].Value*common.Satoshi) != ftEntity.MintAmount {
 		return errors.ErrInvalidMintAmount
 	}
 	if ftEntity.MintMode == "perpetual" {
@@ -99,9 +82,45 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 			}
 		}
 	}
-	m.ensureFtUTXONotNil(locationID)
-	m.FtUTXOs[locationID] = append(m.FtUTXOs[locationID], entity)
-	m.GlobalDistributedFtMap[ticker].MintedTimes += 1
+	// if !operation.IsValidCommitVoutIndexForDmt() {
+	// 	return errors.ErrInvalidVinIndex
+	// }
+	// if operation.RevealLocationHeight < common.ATOMICALS_ACTIVATION_HEIGHT_DMINT {
+	// 	return errors.ErrInvalidRevealLocationHeight
+	// }
+	// if !operation.IsWithinAcceptableBlocksForGeneralReveal() {
+	// 	return errors.ErrInvalidCommitHeight
+	// }
+	// if !operation.IsWithinAcceptableBlocksForNameReveal() {
+	// 	return errors.ErrInvalidCommitHeight
+	// }
+	// if operation.CommitHeight < common.ATOMICALS_ACTIVATION_HEIGHT {
+	// 	return errors.ErrInvalidCommitHeight
+	// }
+	// if !operation.IsValidCommitVoutIndexForNameRevel() {
+	// 	return errors.ErrInvalidCommitVoutIndex
+	// }
+	bitworkc, bitworkr, err := operation.IsValidBitwork()
+	if err != nil {
+		return err
+	}
+	locationID := operation.AtomicalsID
+	entity := &db.UserFtInfo{
+		MintTicker:  ticker,
+		Nonce:       operation.Payload.Args.Nonce,
+		Time:        operation.Payload.Args.Time,
+		Bitworkc:    bitworkc,
+		Bitworkr:    bitworkr,
+		Amount:      int64(vout[common.VOUT_EXPECT_OUTPUT_INDEX].Value * common.Satoshi),
+		AtomicalsID: locationID,
+		LocationID:  locationID,
+	}
+	if err := m.InsertFtUTXO(entity); err != nil {
+		log.Log.Panicf("InsertFtUTXO err:%v", err)
+	}
+	if err := m.UpdateDistributedFtAmount(ticker, ftEntity.MintedTimes+1); err != nil {
+		log.Log.Panicf("UpdateDistributedFtAmount err:%v", err)
+	}
 	return nil
 }
 

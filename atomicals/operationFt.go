@@ -1,9 +1,11 @@
 package atomicals
 
 import (
+	db "github.com/atomicals-core/atomicals/DB"
 	"github.com/atomicals-core/atomicals/common"
 	"github.com/atomicals-core/atomicals/witness"
 	"github.com/atomicals-core/pkg/errors"
+	"github.com/atomicals-core/pkg/log"
 	"github.com/btcsuite/btcd/btcjson"
 )
 
@@ -25,11 +27,11 @@ func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, v
 	if err != nil {
 		return err
 	}
-	locationID := atomicalsID(operation.RevealLocationTxID, operation.RevealLocationVoutIndex)
-	atomicalsFtInfo := &UserFtInfo{
+	locationID := operation.AtomicalsID
+	atomicalsFtInfo := &db.UserFtInfo{
 		UserPk:        userPk,
 		AtomicalsID:   locationID,
-		LocaiontID:    locationID,
+		LocationID:    locationID,
 		Type:          "FT",
 		Subtype:       "direct",
 		RequestTicker: operation.Payload.Args.RequestTicker,
@@ -41,7 +43,8 @@ func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, v
 	if !common.IsValidTicker(atomicalsFtInfo.RequestTicker) {
 		return errors.ErrInvalidTicker
 	}
-	m.ensureFtUTXONotNil(locationID)
-	m.FtUTXOs[locationID] = append(m.FtUTXOs[locationID], atomicalsFtInfo)
+	if err := m.InsertFtUTXO(atomicalsFtInfo); err != nil {
+		log.Log.Panicf("InsertFtUTXO err:%v", err)
+	}
 	return nil
 }

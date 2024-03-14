@@ -1,6 +1,8 @@
 package common
 
 import (
+	"fmt"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -76,4 +78,62 @@ func ParseBitwork(bitwork string) *Bitwork {
 		Prefix: prefix,
 		Ext:    ext,
 	}
+}
+
+func Get_next_bitwork_full_str(bitworkVec string, currentPrefixLen int) string {
+	baseBitworkPadded := fmt.Sprintf("%-32s", bitworkVec)
+	if currentPrefixLen >= 31 {
+		return baseBitworkPadded
+	}
+	return baseBitworkPadded[:currentPrefixLen+1]
+}
+
+func Is_mint_pow_valid(txid, mintPowCommit string) bool {
+	bitworkCommitParts := ParseBitwork(mintPowCommit)
+	if bitworkCommitParts == nil {
+		return false
+	}
+	mintBitworkPrefix := bitworkCommitParts.Prefix
+	mintBitworkExt := bitworkCommitParts.Ext
+	if IsProofOfWorkPrefixMatch(txid, mintBitworkPrefix, mintBitworkExt) {
+		return true
+	}
+	return false
+}
+
+func Calculate_expected_bitwork(bitwork_vec string, actual_mints, max_mints, target_increment, starting_target int64) string {
+	if starting_target < 64 || starting_target > 256 {
+		panic("err")
+	}
+	if max_mints < 1 || max_mints > 100000 {
+		panic("err")
+	}
+	if target_increment < 1 || target_increment > 64 {
+		panic("err")
+	}
+	target_steps := (actual_mints) / (max_mints)
+	current_target := starting_target + (target_steps * target_increment)
+	return derive_bitwork_prefix_from_target(bitwork_vec, current_target)
+}
+
+func derive_bitwork_prefix_from_target(baseBitworkPrefix string, target int64) string {
+	if target < 16 {
+		panic(fmt.Sprintf("increments must be at least 16. Provided: %d", target))
+	}
+
+	baseBitworkPadded := fmt.Sprintf("%-32s", baseBitworkPrefix)
+	multiples := float64(target) / 16
+	fullAmount := int(math.Floor(multiples))
+	modulo := target % 16
+
+	bitworkPrefix := baseBitworkPadded
+	if fullAmount < 32 {
+		bitworkPrefix = baseBitworkPadded[:fullAmount]
+	}
+
+	if modulo > 0 {
+		return bitworkPrefix + "." + fmt.Sprint(modulo)
+	}
+
+	return bitworkPrefix
 }

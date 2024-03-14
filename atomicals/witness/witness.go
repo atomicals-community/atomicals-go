@@ -19,6 +19,7 @@ type WitnessAtomicalsOperation struct {
 
 	CommitTxID      string // vin's txID
 	CommitVoutIndex int64  // vin's index as vout in last tx
+	AtomicalsID     string
 	CommitHeight    int64
 
 	RevealLocationTxID      string
@@ -29,6 +30,10 @@ type WitnessAtomicalsOperation struct {
 // is_dft_bitwork_rollover_activated
 func (m *WitnessAtomicalsOperation) IsDftBitworkRolloverActivated() bool {
 	return m.RevealLocationHeight >= common.ATOMICALS_ACTIVATION_HEIGHT_DFT_BITWORK_ROLLOVER
+}
+
+func (m *WitnessAtomicalsOperation) IsValidRevealLocationAndCommitVoutIndex() bool {
+	return !(m.RevealLocationHeight >= common.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && m.CommitVoutIndex != common.VOUT_EXPECT_OUTPUT_INDEX)
 }
 
 func (m *WitnessAtomicalsOperation) IsValidCommitVoutIndexForNameRevel() bool {
@@ -125,6 +130,7 @@ func ParseWitness(tx btcjson.TxRawResult, height int64) *WitnessAtomicalsOperati
 				Script:                  script,
 				CommitTxID:              vin.Txid,
 				CommitVoutIndex:         int64(vin.Vout),
+				AtomicalsID:             common.AtomicalsID(vin.Txid, int64(vin.Vout)),
 				RevealLocationTxID:      tx.Txid,
 				RevealLocationVoutIndex: common.VOUT_EXPECT_OUTPUT_INDEX,
 				RevealLocationHeight:    height,
@@ -154,7 +160,7 @@ func ParseOperationAndPayLoad(script string) (string, *PayLoad, error) {
 	// TODO: the loop below is so confused. procotal should give specific index range
 	for index := int64(33); index < scriptEntryLen-6; index++ {
 		opFlag := scriptBytes[index]
-		if opFlag != common.OP_IF {
+		if opFlag != OP_IF {
 			continue
 		}
 		if hex.EncodeToString(scriptBytes[index+1:index+6]) != common.ATOMICALS_ENVELOPE_MARKER_BYTES {

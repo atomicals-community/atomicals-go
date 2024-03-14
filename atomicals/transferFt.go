@@ -4,8 +4,10 @@ import (
 	"encoding/hex"
 	"sort"
 
+	db "github.com/atomicals-core/atomicals/DB"
 	"github.com/atomicals-core/atomicals/common"
 	"github.com/atomicals-core/atomicals/witness"
+	"github.com/atomicals-core/pkg/log"
 	"github.com/btcsuite/btcd/btcjson"
 )
 
@@ -17,24 +19,26 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 		// burn the rest Dmt
 		// total_amount_to_skip_potential := float64(operation.Payload.total_amount_to_skip_potential(preAtomicalsID))
 		total_amount_to_skip_potential := int64(0) // Todo: haven't catched this param, it confused me, why we need to skip of some amount?
-		ftAtomicals := make([]*UserFtInfo, 0)
+		ftAtomicals := make([]*db.UserFtInfo, 0)
 		for _, vin := range tx.Vin {
-			preLocationID := atomicalsID(vin.Txid, int64(vin.Vout))
-			if _, ok := m.FtUTXOs[preLocationID]; !ok {
-				continue
+			preLocationID := common.AtomicalsID(vin.Txid, int64(vin.Vout))
+			preFts, err := m.FtUTXOsByLocationID(preLocationID)
+			if err != nil {
+				log.Log.Panicf("FtUTXOsByLocationID err:%v", err)
 			}
-			preAtomicals := m.FtUTXOs[preLocationID]
-			if preAtomicals != nil || len(preAtomicals) == 0 {
+			if preFts == nil || len(preFts) == 0 {
 				continue
 			}
 			if 0 < total_amount_to_skip_potential {
-				for _, ft := range preAtomicals {
+				for _, ft := range preFts {
 					ftAtomicals = append(ftAtomicals, ft)
 					ft.Amount = total_amount_to_skip_potential
 				}
 			} else {
-				ftAtomicals = append(ftAtomicals, preAtomicals...)
-				m.FtUTXOs[preLocationID] = nil
+				ftAtomicals = append(ftAtomicals, preFts...)
+				if err := m.DeleteFtUTXO(preLocationID); err != nil {
+					log.Log.Panicf("DeleteFtUTXO err:%v", err)
+				}
 			}
 		}
 		sort.Slice(ftAtomicals, func(i, j int) bool {
@@ -47,12 +51,11 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 					break
 				}
 				remaining_value -= int64(vout.Value * common.Satoshi)
-				locationID := atomicalsID(operation.RevealLocationTxID, int64(outputIndex))
-				m.ensureFtUTXONotNil(locationID)
-				m.FtUTXOs[locationID] = append(m.FtUTXOs[locationID], &UserFtInfo{
+				locationID := common.AtomicalsID(operation.RevealLocationTxID, int64(outputIndex))
+				if err := m.InsertFtUTXO(&db.UserFtInfo{
 					UserPk:          vout.ScriptPubKey.Address,
 					AtomicalsID:     ft.AtomicalsID,
-					LocaiontID:      locationID,
+					LocationID:      locationID,
 					MintTicker:      ft.MintTicker,
 					Nonce:           ft.Nonce,
 					Time:            ft.Time,
@@ -62,27 +65,31 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 					MintBitworkcInc: ft.MintBitworkcInc,
 					MintBitworkrInc: ft.MintBitworkrInc,
 					Amount:          int64(vout.Value * common.Satoshi),
-				})
+				}); err != nil {
+					log.Log.Panicf("InsertFtUTXO err:%v", err)
+				}
 			}
 		}
 	} else { // color_ft_atomicals_regular
 		// a ft in Vin has a total amount: entity.Amount,
 		// color exactly the same amount of vout
 		// burn the rest ft
-		atomicalsFts := make([]*UserFtInfo, 0)
+		atomicalsFts := make([]*db.UserFtInfo, 0)
 		if common.IsDmintActivated(operation.RevealLocationHeight) {
-			atomicalsFtsVinIndexMap := make(map[int64][]*UserFtInfo, 0) // key: vinIndex
+			atomicalsFtsVinIndexMap := make(map[int64][]*db.UserFtInfo, 0) // key: vinIndex
 			for vinIndex, vin := range tx.Vin {
-				preNftLocationID := atomicalsID(vin.Txid, int64(vin.Vout))
-				if _, ok := m.FtUTXOs[preNftLocationID]; !ok {
-					continue
+				preLocationID := common.AtomicalsID(vin.Txid, int64(vin.Vout))
+				preFts, err := m.FtUTXOsByLocationID(preLocationID)
+				if err != nil {
+					log.Log.Panicf("FtUTXOsByLocationID err:%v", err)
 				}
-				preFts := m.FtUTXOs[preNftLocationID]
-				if preFts != nil || len(preFts) == 0 {
+				if preFts == nil || len(preFts) == 0 {
 					continue
 				}
 				atomicalsFtsVinIndexMap[int64(vinIndex)] = preFts
-				m.FtUTXOs[preNftLocationID] = nil
+				if err := m.DeleteFtUTXO(preLocationID); err != nil {
+					log.Log.Panicf("DeleteFtUTXO err:%v", err)
+				}
 			}
 			seenFtmap := make(map[string]bool, 0) // key: atomicalsID
 			for _, fts := range atomicalsFtsVinIndexMap {
@@ -99,16 +106,18 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 			}
 		} else {
 			for _, vin := range tx.Vin {
-				preNftLocationID := atomicalsID(vin.Txid, int64(vin.Vout))
-				if _, ok := m.FtUTXOs[preNftLocationID]; !ok {
-					continue
+				preLocationID := common.AtomicalsID(vin.Txid, int64(vin.Vout))
+				preFts, err := m.FtUTXOsByLocationID(preLocationID)
+				if err != nil {
+					log.Log.Panicf("FtUTXOsByLocationID err:%v", err)
 				}
-				preFts := m.FtUTXOs[preNftLocationID]
-				if preFts != nil || len(preFts) == 0 {
+				if preFts == nil || len(preFts) == 0 {
 					continue
 				}
 				atomicalsFts = append(atomicalsFts, preFts...)
-				m.FtUTXOs[preNftLocationID] = nil
+				if err := m.DeleteFtUTXO(preLocationID); err != nil {
+					log.Log.Panicf("DeleteFtUTXO err:%v", err)
+				}
 			}
 			sort.Slice(atomicalsFts, func(i, j int) bool {
 				return atomicalsFts[i].AtomicalsID < atomicalsFts[j].AtomicalsID
@@ -116,7 +125,7 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 		}
 
 		// calculate_outputs_to_color_for_ft_atomical_ids
-		newFts := make([]*UserFtInfo, 0)
+		newFts := make([]*db.UserFtInfo, 0)
 		next_start_out_idx := int64(0)
 		non_clean_output_slots := false
 		for _, ft := range atomicalsFts {
@@ -127,7 +136,7 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 				newFts = append(newFts, fts...)
 			} else {
 				non_clean_output_slots = true
-				newFts = make([]*UserFtInfo, 0)
+				newFts = make([]*db.UserFtInfo, 0)
 				break
 			}
 		}
@@ -139,16 +148,17 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 			}
 		}
 		for _, ft := range newFts {
-			m.ensureFtUTXONotNil(ft.LocaiontID)
-			m.FtUTXOs[ft.LocaiontID] = append(m.FtUTXOs[ft.LocaiontID], ft)
+			if err := m.InsertFtUTXO(ft); err != nil {
+				log.Log.Panicf("InsertFtUTXO err:%v", err)
+			}
 		}
 		return nil
 	}
 	return nil
 }
 
-func assign_expected_outputs_basic(ft *UserFtInfo, operation *witness.WitnessAtomicalsOperation, tx btcjson.TxRawResult, start_out_idx int64) (bool, int64, []*UserFtInfo) {
-	newFts := make([]*UserFtInfo, 0)
+func assign_expected_outputs_basic(ft *db.UserFtInfo, operation *witness.WitnessAtomicalsOperation, tx btcjson.TxRawResult, start_out_idx int64) (bool, int64, []*db.UserFtInfo) {
+	newFts := make([]*db.UserFtInfo, 0)
 	remaining_value := ft.Amount
 	if start_out_idx >= int64(len(tx.Vout)) {
 		return false, start_out_idx, nil
@@ -171,11 +181,11 @@ func assign_expected_outputs_basic(ft *UserFtInfo, operation *witness.WitnessAto
 			return false, assignedVoutIndex, nil
 		}
 		remaining_value -= int64(vout.Value * common.Satoshi)
-		locationID := atomicalsID(operation.RevealLocationTxID, int64(outputIndex))
-		newFts = append(newFts, &UserFtInfo{
+		locationID := common.AtomicalsID(operation.RevealLocationTxID, int64(outputIndex))
+		newFts = append(newFts, &db.UserFtInfo{
 			UserPk:          vout.ScriptPubKey.Address,
 			AtomicalsID:     ft.AtomicalsID,
-			LocaiontID:      locationID,
+			LocationID:      locationID,
 			MintTicker:      ft.MintTicker,
 			Nonce:           ft.Nonce,
 			Time:            ft.Time,

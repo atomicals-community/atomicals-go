@@ -3,75 +3,12 @@ package common
 import (
 	"crypto/hmac"
 	sha256p "crypto/sha256"
-	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"math"
 )
-
-func Get_next_bitwork_full_str(bitworkVec string, currentPrefixLen int) string {
-	baseBitworkPadded := fmt.Sprintf("%-32s", bitworkVec)
-	if currentPrefixLen >= 31 {
-		return baseBitworkPadded
-	}
-	return baseBitworkPadded[:currentPrefixLen+1]
-}
-
-func Is_mint_pow_valid(txid, mintPowCommit string) bool {
-	bitworkCommitParts := ParseBitwork(mintPowCommit)
-	if bitworkCommitParts == nil {
-		return false
-	}
-	mintBitworkPrefix := bitworkCommitParts.Prefix
-	mintBitworkExt := bitworkCommitParts.Ext
-	if IsProofOfWorkPrefixMatch(txid, mintBitworkPrefix, mintBitworkExt) {
-		return true
-	}
-	return false
-}
-
-func isIntInRange(value, min, max int) bool {
-	return value >= min && value <= max
-}
-
-func Calculate_expected_bitwork(bitwork_vec string, actual_mints, max_mints, target_increment, starting_target int64) string {
-	if starting_target < 64 || starting_target > 256 {
-		panic("err")
-	}
-	if max_mints < 1 || max_mints > 100000 {
-		panic("err")
-	}
-	if target_increment < 1 || target_increment > 64 {
-		panic("err")
-	}
-	target_steps := (actual_mints) / (max_mints)
-	current_target := starting_target + (target_steps * target_increment)
-	return derive_bitwork_prefix_from_target(bitwork_vec, current_target)
-}
-
-func derive_bitwork_prefix_from_target(baseBitworkPrefix string, target int64) string {
-	if target < 16 {
-		panic(fmt.Sprintf("increments must be at least 16. Provided: %d", target))
-	}
-
-	baseBitworkPadded := fmt.Sprintf("%-32s", baseBitworkPrefix)
-	multiples := float64(target) / 16
-	fullAmount := int(math.Floor(multiples))
-	modulo := target % 16
-
-	bitworkPrefix := baseBitworkPadded
-	if fullAmount < 32 {
-		bitworkPrefix = baseBitworkPadded[:fullAmount]
-	}
-
-	if modulo > 0 {
-		return bitworkPrefix + "." + fmt.Sprint(modulo)
-	}
-
-	return bitworkPrefix
-}
 
 // Convert the compact string form to the expanded 36 byte sequence
 func compact_to_location_id_bytes(value string) ([]byte, error) {
@@ -105,58 +42,6 @@ func compact_to_location_id_bytes(value string) ([]byte, error) {
 	return append(rawHash, packLEUint32(num)...), nil
 }
 
-func parseLEUint32(s string) (uint32, error) {
-	bytes, err := hex.DecodeString(s)
-	if err != nil {
-		return 0, err
-	}
-	if len(bytes) != 4 {
-		return 0, errors.New("invalid length for LE uint32")
-	}
-	return binary.LittleEndian.Uint32(bytes), nil
-}
-
-func packLEUint32(num uint32) []byte {
-	bytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(bytes, num)
-	return bytes
-}
-
-// Base atomical commit to reveal delay allowed
-func is_within_acceptable_blocks_for_general_reveal(commitHeight, revealLocationHeight int64) bool {
-	return commitHeight >= revealLocationHeight-MINT_GENERAL_COMMIT_REVEAL_DELAY_BLOCKS
-}
-
-// A realm, ticker, or container reveal is valid as long as it is within MINT_REALM_CONTAINER_TICKER_COMMIT_REVEAL_DELAY_BLOCKS of the reveal and commit
-func is_within_acceptable_blocks_for_name_reveal(commitHeight, revealLocationHeight int64) bool {
-	return commitHeight >= revealLocationHeight-MINT_REALM_CONTAINER_TICKER_COMMIT_REVEAL_DELAY_BLOCKS
-}
-
-// A payment for a subrealm is acceptable as long as it is within MINT_SUBNAME_COMMIT_PAYMENT_DELAY_BLOCKS of the commitHeight
-func isWithinAcceptableBlocksForSubItemPayment(commitHeight, currentHeight int64) bool {
-	return currentHeight <= commitHeight+MINT_SUBNAME_COMMIT_PAYMENT_DELAY_BLOCKS
-}
-
-// Encoder struct
-type Encoder struct {
-	data []byte
-}
-
-// NewEncoder creates a new Encoder
-func NewEncoder() *Encoder {
-	return &Encoder{}
-}
-
-// Update updates the encoder with the given data
-func (e *Encoder) Update(data []byte) {
-	e.data = append(e.data, data...)
-}
-
-// Finalize finalizes the encoding and returns the result as a hex string
-func (e *Encoder) Finalize() string {
-	return hex.EncodeToString(e.data)
-}
-
 // reverseHex reverses a hex
 func reverseHex(input string) []byte {
 	hexBytes, _ := hex.DecodeString(input)
@@ -164,13 +49,6 @@ func reverseHex(input string) []byte {
 		hexBytes[i], hexBytes[j] = hexBytes[j], hexBytes[i]
 	}
 	return hexBytes
-}
-
-func is_density_activated(height int64) bool {
-	if height >= ATOMICALS_ACTIVATION_HEIGHT_DENSITY {
-		return true
-	}
-	return false
 }
 
 func sha256(data []byte) []byte {
@@ -311,4 +189,8 @@ func readfile() string {
 	// Convert content to a string
 	longString := string(content)
 	return longString
+}
+
+func AtomicalsID(txID string, voutIndex int64) string {
+	return fmt.Sprintf("%vi%v", txID, voutIndex)
 }

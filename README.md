@@ -1,29 +1,30 @@
 # atomicals-core ⚛️
 
-atomicals协议是一个构建于BTC上的染色币协议，但目前atomicals的具体内容并未以文档或protocal代码形式提供。目前atomicals作者只提供了一个python版本的索引器[atomicals-electrumx](https://github.com/atomicals/atomicals-electrumx)和一个[atomicals-js](https://github.com/atomicals/atomicals-js)命令工具
+Atomicals: 是一个使用染色方法在BTC链上发行资产的协议，作者[Arthur's twitter(X)](https://twitter.com/atomicalsxyz)，该协议包括：域名机制（realm），nft，ft（arc-20）
 
-我想了解atomicals协议的具体格式，大约两周前我开始用golang重构该索引器atomicals-core，目前的构想是做到以下几点:
+- 目前Arthur 并未以文档或protocal形式披露atomicals的具体内容。但是提供了一个python版本的实现，包括：
+    - atomicals索引器[atomicals-electrumx](https://github.com/atomicals/atomicals-electrumx)
+    - atomicals交易发送工具[atomicals-js](https://github.com/atomicals/atomicals-js)命令工具
 
-- 整理出协议规范
-- 将协议本身和服务接口与存储剥离
-- 提供高性能防宕机的indexer
-- 提供golang命令行工具
+Atomicals-core: 是atomicals索引器atomicals-electrumx的golang版本，并以文本方式提供了atomicals协议的详细内容（在本仓库的doc目录下）
+
+- 请注意，如果Arthur想要对atomicals-electrumx进行协议升级或更新，Atomicals-core是滞后的。
+- 在未来一段时间内[yiming](https://github.com/yimingWOW)仍然会维护该项目（及时同步atomicals-electrumx的更新）
+- 期待更多项目方或开发者加入，我会将本仓库提交到某个公开项目下，并移交仓库管理权限
 
 ## [atomicals-core文档目录](https://github.com/yimingWOW/atomicals-core/tree/main/doc)
-
 - [UXTO染色币原理](https://github.com/yimingWOW/atomicals-core/tree/main/doc/1.utxoColor.md)
+- [atomicals-core 架构](https://github.com/yimingWOW/atomicals-core/tree/main/doc/0.atomicalsCoreFramework.md)
 - atomicals protocal 链上命令解析器+indexer检查条件
-    部署和铸造
-    - dft 部署distributed ft
-    - dmt 铸造distributed ft
-    - nft 铸造nft
-    - ft  铸造Direct ft
-    转账
-    - x 拆分
-    - y 移动
-- atomicals-core架构
-- 存储层接入条件
-    - 我会分别提供sql和redis的防宕机方案
+    - 部署和铸造
+        - [dft 部署distributed ft](https://github.com/yimingWOW/atomicals-core/tree/main/doc/3.dft.md)
+        - [dmt 铸造distributed ft](https://github.com/yimingWOW/atomicals-core/tree/main/doc/4.dmt.md)
+        - [nft 铸造nft](https://github.com/yimingWOW/atomicals-core/tree/main/doc/5.nft.md)
+        - [ft  铸造Direct ft](https://github.com/yimingWOW/atomicals-core/tree/main/doc/6.ft.md)
+    - 转账
+        - x 拆分
+        - y 移动
+    - payment
 
 ## How to run atomicals-core
 - you need a btc node and make sure golang has been installed on ur os.
@@ -36,30 +37,23 @@ there are many unnencessary log, i will delete them when we have a stable versio
 
 ## TODO:
 - atomicals协议文档编写
-
-- atomicals optionType待测试：
-
-    - atomicals/operationDmt.go
-    - atomicals/operationDft.go
-    - atomicals/operationNft.go
-    - atomicals/operationFt.go
-
 - atomicals optionType未完成：
-
     - operationType = "dat" // dat - Store data on a transaction (dat)
     - operationType = "evt" // evt - Message response/reply
     - operationType = "mod" // mod - Modify general state
     - operationType = "sl" // sl - Seal an NFT and lock it from further changes forever
-
 - transfer测试：
     - atomicals/transferFt.go
     - atomicals/transferNft.go
-
-- 存储层抽象
-
 - http接口
-
 - golang命令
+
+- atomicals optionType待测试：
+    - atomicals/operationDmt.go
+    - atomicals/operationDft.go
+    - atomicals/operationNft.go
+    - atomicals/operationFt.go
+- 存储层抽象
 
 
 这个项目的后续开发和测试工作还有很多，欢迎感兴趣的开发者和项目方联系我一起构建它

@@ -1,41 +1,25 @@
 package main
 
 import (
-	"time"
-
 	"github.com/atomicals-core/atomicals"
 	"github.com/atomicals-core/atomicals/common"
 	"github.com/atomicals-core/pkg/btcsync"
-	"github.com/atomicals-core/pkg/log"
 )
 
 func main() {
-	a := atomicals.NewAtomicals(common.ATOMICALS_ACTIVATION_HEIGHT)
 	b, err := btcsync.NewBtcSync("rpcURL", "user", "password")
 	if err != nil {
 		panic(err)
 	}
-	tracedAllTx(a, b)
-	// tracedSpecificTx(a, b, "384b707797e10637b9c3c5f971b3beee0b7cd531ab7c14fda6a320e4b19d4b1f", 0)
-}
-
-func tracedAllTx(a *atomicals.Atomicals, b *btcsync.BtcSync) {
+	a := atomicals.NewAtomicals(b, common.ATOMICALS_ACTIVATION_HEIGHT-1) // common.ATOMICALS_ACTIVATION_HEIGHT
 	for {
-		startTime := time.Now()
-		blockInfo, err := b.GetBlockByHeight(a.Height)
-		if err != nil {
-			log.Log.Warnf("GetBlockByHeight err:%v height:%v", err, a.Height)
-			panic(err)
-		}
-		a.TraceBlock(blockInfo)
-		log.Log.Warnf("time.Since(startTime):%v", time.Since(startTime))
+		a.TraceBlock()
 	}
-}
 
-func tracedSpecificTx(a *atomicals.Atomicals, b *btcsync.BtcSync, txHash string, height int64) {
-	tx, err := b.GetTransaction(txHash)
-	if err != nil {
-		log.Log.Warnf("GetTransaction err:%v", err)
-	}
-	a.TraceTx(*tx, height)
+	// traced Specific Tx
+	// tx, err := b.GetTransaction("b28f089b5a96c4803db73d51ed801aec4efec997761ee8dc914e0f934b6fcd59")
+	// if err != nil {
+	// 	log.Log.Warnf("GetTransaction err:%v", err)
+	// }
+	// a.TraceTx(*tx, height)
 }
