@@ -23,17 +23,16 @@ func (m *Atomicals) TraceBlock() {
 		panic(err)
 	}
 	log.Log.Warnf("GetBlockByHeight Time:%v, height:%v", time.Since(startTime), blockInfo.Height)
-
 	startTime = time.Now()
 	for _, tx := range blockInfo.Tx {
+		if err := m.UpdateLocation(blockInfo.Height, tx.Txid); err != nil {
+			log.Log.Warnf("UpdateLocation err:%v", err)
+		}
 		// skip this tx, it's from miner
 		if tx.Vin[0].Txid == "" {
 			continue
 		}
 		// log.Log.Warnf("height:%v,txIndex:%v,txHash:%v", blockInfo.Height, index, tx.Hash)
-		if err := m.UpdateLocation(blockInfo.Height, tx.Txid); err != nil {
-			log.Log.Warnf("UpdateLocation err:%v", err)
-		}
 		m.TraceTx(tx, blockInfo.Height)
 	}
 	log.Log.Warnf("time.Since(startTime):%v, height:%v, txs num%v", time.Since(startTime), blockInfo.Height, len(blockInfo.Tx))
