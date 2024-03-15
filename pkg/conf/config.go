@@ -11,6 +11,7 @@ type Config struct {
 	BtcRpcUser     string `json:"btc_rpc_user"`
 	BtcRpcPassword string `json:"btc_rpc_password"`
 	SqlDNS         string `json:"sql_dns"`
+	SelectDB       string `json:"select_db"`
 }
 
 func ReadJSONFromJSFile(filePath string) (*Config, error) {

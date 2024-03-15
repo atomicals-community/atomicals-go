@@ -11,8 +11,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	a := atomicals.NewAtomicalsWithMemory(conf, common.ATOMICALS_ACTIVATION_HEIGHT-1)
-	// a := atomicals.NewAtomicalsWithSQL(conf, common.ATOMICALS_ACTIVATION_HEIGHT-1)
+	var a *atomicals.Atomicals
+	if conf.SelectDB == "memory" {
+		a = atomicals.NewAtomicalsWithMemory(conf, common.ATOMICALS_ACTIVATION_HEIGHT-1)
+	} else {
+		a = atomicals.NewAtomicalsWithSQL(conf, common.ATOMICALS_ACTIVATION_HEIGHT-1)
+	}
 	for {
 		a.TraceBlock()
 	}
