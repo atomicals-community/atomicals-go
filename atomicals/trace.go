@@ -22,7 +22,7 @@ func (m *Atomicals) TraceBlock() {
 		log.Log.Panicf("GetBlockByHeight err:%v height:%v", err, height)
 		panic(err)
 	}
-	log.Log.Warnf("time.Since(startTime):%v, height:%v", time.Since(startTime), blockInfo.Height)
+	log.Log.Warnf("GetBlockByHeight Time:%v, height:%v", time.Since(startTime), blockInfo.Height)
 
 	startTime = time.Now()
 	for _, tx := range blockInfo.Tx {
@@ -36,7 +36,7 @@ func (m *Atomicals) TraceBlock() {
 		}
 		m.TraceTx(tx, blockInfo.Height)
 	}
-	log.Log.Warnf("time.Since(startTime):%v, height:%v", time.Since(startTime), blockInfo.Height)
+	log.Log.Warnf("time.Since(startTime):%v, height:%v, txs num%v", time.Since(startTime), blockInfo.Height, len(blockInfo.Tx))
 }
 
 func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) error {
@@ -51,42 +51,31 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) error {
 	if err := m.transferFt(operation, tx); err != nil {
 		log.Log.Warnf("transferFt err:%+v", err)
 	}
-
 	// step 2: process operation
-	for _, vin := range tx.Vin {
-		if operation.Op != "" {
-			var err error
-			operation.CommitHeight, err = m.btcClient.GetCommitHeight(operation.CommitTxID)
-			if err != nil {
-				log.Log.Warnf("GetCommitHeight err:%+v", err)
-				// todo: retry,ensure success
-			}
+	userPk := tx.Vout[common.VOUT_EXPECT_OUTPUT_INDEX].ScriptPubKey.Address
+	if operation.Op == "dmt" {
+		if err := m.mintDistributedFt(operation, tx.Vout, userPk); err != nil {
+			// log.Log.Warnf("mintDistributedFt err:%+v", err)
 		}
-		userPk := tx.Vout[common.VOUT_EXPECT_OUTPUT_INDEX].ScriptPubKey.Address
-		if operation.Op == "dmt" {
-			if err := m.mintDistributedFt(operation, vin, tx.Vout, userPk); err != nil {
-				log.Log.Warnf("mintDistributedFt err:%+v", err)
+	} else {
+		switch operation.Op {
+		case "dft":
+			if err := m.deployDistributedFt(operation, tx.Vout, userPk); err != nil {
+				// log.Log.Warnf("deployDistributedFt err:%+v", err)
 			}
-		} else {
-			switch operation.Op {
-			case "dft":
-				if err := m.deployDistributedFt(operation, vin, tx.Vout, userPk); err != nil {
-					log.Log.Warnf("deployDistributedFt err:%+v", err)
-				}
-			case "ft":
-				if err := m.mintDirectFt(operation, vin, tx.Vout, userPk); err != nil {
-					log.Log.Warnf("mintFt err:%+v", err)
-				}
-			case "nft":
-				if err := m.mintNft(operation, vin, tx.Vout, userPk); err != nil {
-					log.Log.Warnf("mintNft err:%+v", err)
-				}
-			case "mod":
-			case "evt":
-			case "dat":
-			case "sl":
-			default:
+		case "ft":
+			if err := m.mintDirectFt(operation, tx.Vout, userPk); err != nil {
+				// log.Log.Warnf("mintFt err:%+v", err)
 			}
+		case "nft":
+			if err := m.mintNft(operation, tx.Vout, userPk); err != nil {
+				// log.Log.Warnf("mintNft err:%+v", err)
+			}
+		case "mod":
+		case "evt":
+		case "dat":
+		case "sl":
+		default:
 		}
 	}
 	// step 3 check payment

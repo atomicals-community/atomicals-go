@@ -1,5 +1,9 @@
 package db
 
+import (
+	"gorm.io/gorm"
+)
+
 type DB interface {
 	// atomicals-core current location
 	CurrentHeitht() (int64, error)
@@ -55,4 +59,14 @@ func NewMemoryDB(height int64, txID string) DB {
 		globalDistributedFtMap: make(map[string]*DistributedFtInfo, 0),
 		globalDirectFtMap:      make(map[string]bool, 0),
 	}
+}
+
+func NewSqlDB(DB *gorm.DB, height int64, txID string) DB {
+	m := &Postgres{
+		DB,
+	}
+	if err := m.UpdateLocation(height, txID); err != nil {
+		panic(err)
+	}
+	return m
 }

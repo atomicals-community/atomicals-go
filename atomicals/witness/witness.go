@@ -2,9 +2,6 @@ package witness
 
 import (
 	"encoding/hex"
-	"encoding/json"
-
-	"github.com/atomicals-core/pkg/log"
 
 	"github.com/atomicals-core/atomicals/common"
 	"github.com/atomicals-core/pkg/errors"
@@ -23,6 +20,7 @@ type WitnessAtomicalsOperation struct {
 	CommitHeight    int64
 
 	RevealLocationTxID      string
+	RevealInputIndex        int64
 	RevealLocationVoutIndex int64 // always is expect VOUT_EXPECT_OUTPUT_INDEX
 	RevealLocationHeight    int64
 }
@@ -30,17 +28,6 @@ type WitnessAtomicalsOperation struct {
 // is_dft_bitwork_rollover_activated
 func (m *WitnessAtomicalsOperation) IsDftBitworkRolloverActivated() bool {
 	return m.RevealLocationHeight >= common.ATOMICALS_ACTIVATION_HEIGHT_DFT_BITWORK_ROLLOVER
-}
-
-func (m *WitnessAtomicalsOperation) IsValidRevealLocationAndCommitVoutIndex() bool {
-	return !(m.RevealLocationHeight >= common.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && m.CommitVoutIndex != common.VOUT_EXPECT_OUTPUT_INDEX)
-}
-
-func (m *WitnessAtomicalsOperation) IsValidCommitVoutIndexForNameRevel() bool {
-	return !(m.RevealLocationHeight >= common.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && m.CommitVoutIndex != common.VOUT_EXPECT_OUTPUT_INDEX)
-}
-func (m *WitnessAtomicalsOperation) IsValidCommitVoutIndexForDmt() bool {
-	return m.CommitVoutIndex == common.VOUT_EXPECT_OUTPUT_INDEX
 }
 
 // is_within_acceptable_blocks_for_name_reveal
@@ -115,7 +102,7 @@ func (m *WitnessAtomicalsOperation) IsSplitOperation() bool {
 // # Parses and detects valid Atomicals protocol operations in a witness script
 // # Stops when it finds the first operation in the first input
 func ParseWitness(tx btcjson.TxRawResult, height int64) *WitnessAtomicalsOperation {
-	for _, vin := range tx.Vin {
+	for vinIndex, vin := range tx.Vin {
 		if !vin.HasWitness() {
 			continue
 		}
@@ -132,6 +119,7 @@ func ParseWitness(tx btcjson.TxRawResult, height int64) *WitnessAtomicalsOperati
 				CommitVoutIndex:         int64(vin.Vout),
 				AtomicalsID:             common.AtomicalsID(vin.Txid, int64(vin.Vout)),
 				RevealLocationTxID:      tx.Txid,
+				RevealInputIndex:        int64(vinIndex),
 				RevealLocationVoutIndex: common.VOUT_EXPECT_OUTPUT_INDEX,
 				RevealLocationHeight:    height,
 			}
@@ -139,6 +127,7 @@ func ParseWitness(tx btcjson.TxRawResult, height int64) *WitnessAtomicalsOperati
 	}
 	return &WitnessAtomicalsOperation{
 		RevealLocationTxID:      tx.Txid,
+		RevealInputIndex:        -1,
 		RevealLocationVoutIndex: common.VOUT_EXPECT_OUTPUT_INDEX,
 		RevealLocationHeight:    height,
 	}
@@ -184,27 +173,26 @@ func ParseOperationAndPayLoad(script string) (string, *PayLoad, error) {
 		if !payload.check() {
 			return "", nil, errors.ErrInvalidPayLoad
 		}
-		payloadstr, _ := json.Marshal(payload)
-		if operation == "dft" {
-			log.Log.Warnf("script:%+v", script)
-		}
-		if payload.Args.RequestContainer != "" {
-			log.Log.Warnf("script:%+v", script)
-			log.Log.Warnf("payload:%+v", string(payloadstr))
-		}
-		if payload.Args.RequestDmitem != "" {
-			log.Log.Warnf("script:%+v", script)
-			log.Log.Warnf("payload:%+v", string(payloadstr))
-		}
-		if payload.Args.RequestSubRealm != "" {
-			log.Log.Warnf("script:%+v", script)
-			log.Log.Warnf("payload:%+v", string(payloadstr))
-		}
-		if payload.Args.RequestRealm != "" {
-			log.Log.Warnf("script:%+v", script)
-			log.Log.Warnf("payload:%+v", string(payloadstr))
-		}
-
+		// payloadstr, _ := json.Marshal(payload)
+		// if operation == "dft" {
+		// 	log.Log.Warnf("script:%+v", script)
+		// }
+		// if payload.Args.RequestContainer != "" {
+		// 	log.Log.Warnf("script:%+v", script)
+		// 	log.Log.Warnf("payload:%+v", string(payloadstr))
+		// }
+		// if payload.Args.RequestDmitem != "" {
+		// 	log.Log.Warnf("script:%+v", script)
+		// 	log.Log.Warnf("payload:%+v", string(payloadstr))
+		// }
+		// if payload.Args.RequestSubRealm != "" {
+		// 	log.Log.Warnf("script:%+v", script)
+		// 	log.Log.Warnf("payload:%+v", string(payloadstr))
+		// }
+		// if payload.Args.RequestRealm != "" {
+		// 	log.Log.Warnf("script:%+v", script)
+		// 	log.Log.Warnf("payload:%+v", string(payloadstr))
+		// }
 		return operation, payload, nil
 	}
 	return "", nil, errors.ErrOptionNotFound

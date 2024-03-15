@@ -59,7 +59,42 @@ func (m *PayLoad) check() bool {
 		if m.Args.RequestRealm != "" {
 			request_counter += 1
 		}
+		if m.Args.RequestSubRealm != "" {
+			request_counter += 1
+		}
 		if m.Args.RequestContainer != "" {
+			request_counter += 1
+		}
+		if m.Args.RequestTicker != "" {
+			request_counter += 1
+		}
+		if m.Args.RequestDmitem != "" {
+			request_counter += 1
+		}
+		if request_counter > 1 {
+			return false
+		}
+	}
+	return true
+}
+func (m *PayLoad) CheckRequest() bool {
+	if m.Args == nil {
+		return false
+	} else {
+		request_counter := 0 // # Ensure that only one of the following may be requested || fail
+		if m.Args.RequestRealm != "" {
+			request_counter += 1
+		}
+		if m.Args.RequestSubRealm != "" {
+			request_counter += 1
+		}
+		if m.Args.RequestContainer != "" {
+			request_counter += 1
+		}
+		if m.Args.RequestTicker != "" {
+			request_counter += 1
+		}
+		if m.Args.RequestDmitem != "" {
 			request_counter += 1
 		}
 		if request_counter > 1 {
@@ -83,20 +118,23 @@ type Args struct {
 	Proof   []Proof          `cbor:"proof"`
 	Parents map[string]int64 `cbor:"parents"` // key: parent_atomical_id, value: , haven't catch this param, used in operation:nft
 
-	// dft
+	// dft & ft
 	RequestTicker string `cbor:"request_ticker"`
-	MintAmount    int64  `cbor:"mint_amount"`
-	MintHeight    int64  `cbor:"mint_height"`
-	MaxMints      int64  `cbor:"max_mints"`
-	MintBitworkc  string `cbor:"mint_bitworkc"`
-	MintBitworkr  string `cbor:"mint_bitworkr"`
-	Md            string `cbor:"md"` // emu:"", "0", "1"
-	Bv            string `cbor:"bv"`
-	Bci           string `cbor:"bci"`
-	Bri           string `cbor:"bri"`
-	Bcs           int64  `cbor:"bcs"`
-	Brs           int64  `cbor:"brs"`
-	Maxg          int64  `cbor:"maxg"`
+	// ft
+
+	// dft
+	MintAmount   int64  `cbor:"mint_amount"`
+	MintHeight   int64  `cbor:"mint_height"`
+	MaxMints     int64  `cbor:"max_mints"`
+	MintBitworkc string `cbor:"mint_bitworkc"`
+	MintBitworkr string `cbor:"mint_bitworkr"`
+	Md           string `cbor:"md"` // emu:"", "0", "1"
+	Bv           string `cbor:"bv"`
+	Bci          string `cbor:"bci"`
+	Bri          string `cbor:"bri"`
+	Bcs          int64  `cbor:"bcs"`
+	Brs          int64  `cbor:"brs"`
+	Maxg         int64  `cbor:"maxg"`
 
 	// dmt
 	MintTicker string `cbor:"mint_ticker"` // mint ft name

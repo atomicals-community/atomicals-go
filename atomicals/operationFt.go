@@ -10,23 +10,47 @@ import (
 )
 
 // mintDirectFt: Mint fungible token with direct fixed supply
-func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, vin btcjson.Vin, vout []btcjson.Vout, userPk string) error {
-	if operation.CommitHeight >= operation.RevealLocationHeight-common.MINT_GENERAL_COMMIT_REVEAL_DELAY_BLOCKS {
-		return errors.ErrInvalidCommitHeight
+func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, vout []btcjson.Vout, userPk string) (err error) {
+	if !operation.Payload.CheckRequest() {
+		return errors.ErrCheckRequest
 	}
-	if operation.CommitHeight < common.ATOMICALS_ACTIVATION_HEIGHT {
-		return errors.ErrInvalidCommitHeight
-	}
-	if operation.CommitVoutIndex != common.VOUT_EXPECT_OUTPUT_INDEX {
-		return errors.ErrInvalidVinIndex
+	if !common.IsValidTicker(operation.Payload.Args.RequestTicker) {
+		return errors.ErrInvalidTicker
 	}
 	if operation.IsImmutable() {
 		return errors.ErrCannotBeImmutable
+	}
+	if operation.Payload.Args.Bitworkc == "" {
+		return errors.ErrBitworkcNeeded
 	}
 	bitworkc, bitworkr, err := operation.IsValidBitwork()
 	if err != nil {
 		return err
 	}
+	operation.CommitHeight, err = m.btcClient.GetCommitHeight(operation.CommitTxID)
+	if err != nil {
+		log.Log.Warnf("GetCommitHeight err:%+v", err)
+		// todo: retry,ensure success
+	}
+	if operation.CommitHeight < common.ATOMICALS_ACTIVATION_HEIGHT {
+		return errors.ErrInvalidCommitHeight
+	}
+	if !operation.IsWithinAcceptableBlocksForGeneralReveal() {
+		return errors.ErrInvalidCommitHeight
+	}
+	if !operation.IsWithinAcceptableBlocksForNameReveal() {
+		return errors.ErrInvalidCommitHeight
+	}
+	if operation.RevealLocationHeight > common.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && operation.CommitVoutIndex != common.VOUT_EXPECT_OUTPUT_INDEX {
+		return errors.ErrInvalidVinIndex
+	}
+
+	//
+
+	if operation.CommitVoutIndex != common.VOUT_EXPECT_OUTPUT_INDEX {
+		return errors.ErrInvalidVinIndex
+	}
+
 	locationID := operation.AtomicalsID
 	atomicalsFtInfo := &db.UserFtInfo{
 		UserPk:        userPk,
@@ -39,9 +63,6 @@ func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, v
 		Bitworkc:      bitworkc,
 		Bitworkr:      bitworkr,
 		MaxSupply:     int64(vout[common.VOUT_EXPECT_OUTPUT_INDEX].Value * common.Satoshi),
-	}
-	if !common.IsValidTicker(atomicalsFtInfo.RequestTicker) {
-		return errors.ErrInvalidTicker
 	}
 	if err := m.InsertFtUTXO(atomicalsFtInfo); err != nil {
 		log.Log.Panicf("InsertFtUTXO err:%v", err)

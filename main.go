@@ -3,15 +3,16 @@ package main
 import (
 	"github.com/atomicals-core/atomicals"
 	"github.com/atomicals-core/atomicals/common"
-	"github.com/atomicals-core/pkg/btcsync"
+	"github.com/atomicals-core/pkg/conf"
 )
 
 func main() {
-	b, err := btcsync.NewBtcSync("rpcURL", "user", "password")
+	conf, err := conf.ReadJSONFromJSFile("./conf/config.json")
 	if err != nil {
 		panic(err)
 	}
-	a := atomicals.NewAtomicals(b, common.ATOMICALS_ACTIVATION_HEIGHT-1) // common.ATOMICALS_ACTIVATION_HEIGHT
+	a := atomicals.NewAtomicalsWithMemory(conf, common.ATOMICALS_ACTIVATION_HEIGHT-1)
+	// a := atomicals.NewAtomicalsWithSQL(conf, common.ATOMICALS_ACTIVATION_HEIGHT-1)
 	for {
 		a.TraceBlock()
 	}

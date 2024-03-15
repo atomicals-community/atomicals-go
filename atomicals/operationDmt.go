@@ -12,29 +12,27 @@ import (
 )
 
 // mintDistributedFt:operation dmt, Mint tokens of distributed mint type
-func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperation, vin btcjson.Vin, vout []btcjson.Vout, userPk string) error {
+func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperation, vout []btcjson.Vout, userPk string) error {
 	ticker := operation.Payload.Args.MintTicker
-	ft, err := m.DistributedFtByName(ticker)
-	if err != nil {
-		log.Log.Panicf("DistributedFtByName err:%v", err)
-	}
-	if ft == nil {
-		return errors.ErrNotDeployFt
-	}
 	ftEntity, err := m.DistributedFtByName(ticker)
 	if err != nil {
 		log.Log.Panicf("DistributedFtByName err:%v", err)
 	}
+	if ftEntity == nil {
+		return errors.ErrNotDeployFt
+	}
 	if ftEntity.CommitHeight <= operation.RevealLocationHeight-common.MINT_REALM_CONTAINER_TICKER_COMMIT_REVEAL_DELAY_BLOCKS {
 		return errors.ErrInvalidCommitHeight
 	}
-	if operation.RevealLocationHeight < ftEntity.MintHeight {
-		return errors.ErrInvalidMintHeight
+	operation.CommitHeight, err = m.btcClient.GetCommitHeight(operation.CommitTxID)
+	if err != nil {
+		log.Log.Warnf("GetCommitHeight err:%+v", err)
+		// todo: retry,ensure success
 	}
 	if operation.CommitHeight < ftEntity.MintHeight {
 		return errors.ErrInvalidCommitHeight
 	}
-	if !operation.IsValidRevealLocationAndCommitVoutIndex() {
+	if operation.RevealLocationHeight >= common.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && operation.CommitVoutIndex != common.VOUT_EXPECT_OUTPUT_INDEX {
 		return errors.ErrInvalidVinIndex
 	}
 	// if mint_amount == txout.value:
@@ -82,24 +80,6 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 			}
 		}
 	}
-	// if !operation.IsValidCommitVoutIndexForDmt() {
-	// 	return errors.ErrInvalidVinIndex
-	// }
-	// if operation.RevealLocationHeight < common.ATOMICALS_ACTIVATION_HEIGHT_DMINT {
-	// 	return errors.ErrInvalidRevealLocationHeight
-	// }
-	// if !operation.IsWithinAcceptableBlocksForGeneralReveal() {
-	// 	return errors.ErrInvalidCommitHeight
-	// }
-	// if !operation.IsWithinAcceptableBlocksForNameReveal() {
-	// 	return errors.ErrInvalidCommitHeight
-	// }
-	// if operation.CommitHeight < common.ATOMICALS_ACTIVATION_HEIGHT {
-	// 	return errors.ErrInvalidCommitHeight
-	// }
-	// if !operation.IsValidCommitVoutIndexForNameRevel() {
-	// 	return errors.ErrInvalidCommitVoutIndex
-	// }
 	bitworkc, bitworkr, err := operation.IsValidBitwork()
 	if err != nil {
 		return err

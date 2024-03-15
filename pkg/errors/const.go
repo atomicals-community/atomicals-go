@@ -43,4 +43,7 @@ var (
 	ErrInvalidPerpetualBitwork      = New(20010, "ErrInvalidPerpetualBitwork")
 	ErrInvalidMintedTimes           = New(20010, "ErrInvalidMintedTimes")
 	ErrInvalidBitworkcPrefix        = New(20010, "ErrInvalidBitworkcPrefix")
+	ErrBitworkcNeeded               = New(20010, "ErrBitworkcNeeded")
+	ErrCheckRequest                 = New(20010, "ErrCheckRequest")
+	ErrDmintNotStart                = New(20010, "ErrDmintNotStart")
 )
