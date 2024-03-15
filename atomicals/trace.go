@@ -22,7 +22,7 @@ func (m *Atomicals) TraceBlock() {
 		log.Log.Panicf("GetBlockByHeight err:%v height:%v", err, height)
 		panic(err)
 	}
-	log.Log.Warnf("GetBlockByHeight Time:%v, height:%v", time.Since(startTime), blockInfo.Height)
+	log.Log.Warnf("GetBlockByHeight take:%v, height:%v", time.Since(startTime), blockInfo.Height)
 	startTime = time.Now()
 	for _, tx := range blockInfo.Tx {
 		if err := m.UpdateLocation(blockInfo.Height, tx.Txid); err != nil {
@@ -35,7 +35,7 @@ func (m *Atomicals) TraceBlock() {
 		// log.Log.Warnf("height:%v,txIndex:%v,txHash:%v", blockInfo.Height, index, tx.Hash)
 		m.TraceTx(tx, blockInfo.Height)
 	}
-	log.Log.Warnf("time.Since(startTime):%v, height:%v, txs num%v", time.Since(startTime), blockInfo.Height, len(blockInfo.Tx))
+	log.Log.Warnf("process block take:%v, height:%v, txs num%v", time.Since(startTime), blockInfo.Height, len(blockInfo.Tx))
 }
 
 func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) error {

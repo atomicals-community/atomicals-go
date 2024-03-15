@@ -120,7 +120,6 @@ type Args struct {
 
 	// dft & ft
 	RequestTicker string `cbor:"request_ticker"`
-	// ft
 
 	// dft
 	MintAmount   int64  `cbor:"mint_amount"`
