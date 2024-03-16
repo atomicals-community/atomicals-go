@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{DisableForeignKeyConstraintWhenMigrating: true})
+var DB, err = gorm.Open(postgres.Open(""), &gorm.Config{DisableForeignKeyConstraintWhenMigrating: true})
 
 func InitModels(db *gorm.DB) {
 	(&postsql.UserNftInfo{}).Init(db)
