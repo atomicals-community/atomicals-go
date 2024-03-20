@@ -91,12 +91,12 @@ func IsValidMintBitwork(commitTxID, mintBitworkc, mintBitworkr string) (*common.
 
 // is_splat_operation
 func (m *WitnessAtomicalsOperation) IsSplatOperation() bool {
-	return m != nil && m.Op == "x" && m.CommitVoutIndex == 0
+	return m != nil && m.Op == "x" && m.RevealInputIndex == 0
 }
 
 // is_split_operation
 func (m *WitnessAtomicalsOperation) IsSplitOperation() bool {
-	return m != nil && m.Op == "y" && m.CommitVoutIndex == 0
+	return m != nil && m.Op == "y" && m.RevealInputIndex == 0
 }
 
 // # Parses and detects valid Atomicals protocol operations in a witness script
@@ -124,6 +124,7 @@ func ParseWitness(tx btcjson.TxRawResult, height int64) *WitnessAtomicalsOperati
 				RevealLocationHeight:    height,
 			}
 		}
+		break
 	}
 	return &WitnessAtomicalsOperation{
 		RevealLocationTxID:      tx.Txid,
@@ -175,23 +176,23 @@ func ParseOperationAndPayLoad(script string) (string, *PayLoad, error) {
 		}
 		// payloadstr, _ := json.Marshal(payload)
 		// if operation == "dft" {
-		// 	log.Log.Warnf("script:%+v", script)
+		// 	log.Log.Panicf("script:%+v", script)
 		// }
 		// if payload.Args.RequestContainer != "" {
-		// 	log.Log.Warnf("script:%+v", script)
-		// 	log.Log.Warnf("payload:%+v", string(payloadstr))
+		// 	log.Log.Panicf("script:%+v", script)
+		// 	log.Log.Panicf("payload:%+v", string(payloadstr))
 		// }
 		// if payload.Args.RequestDmitem != "" {
-		// 	log.Log.Warnf("script:%+v", script)
-		// 	log.Log.Warnf("payload:%+v", string(payloadstr))
+		// 	log.Log.Panicf("script:%+v", script)
+		// 	log.Log.Panicf("payload:%+v", string(payloadstr))
 		// }
 		// if payload.Args.RequestSubRealm != "" {
-		// 	log.Log.Warnf("script:%+v", script)
-		// 	log.Log.Warnf("payload:%+v", string(payloadstr))
+		// 	log.Log.Panicf("script:%+v", script)
+		// 	log.Log.Panicf("payload:%+v", string(payloadstr))
 		// }
 		// if payload.Args.RequestRealm != "" {
-		// 	log.Log.Warnf("script:%+v", script)
-		// 	log.Log.Warnf("payload:%+v", string(payloadstr))
+		// 	log.Log.Panicf("script:%+v", script)
+		// 	log.Log.Panicf("payload:%+v", string(payloadstr))
 		// }
 		return operation, payload, nil
 	}

@@ -11,6 +11,9 @@ import (
 
 // mintDirectFt: Mint fungible token with direct fixed supply
 func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, vout []btcjson.Vout, userPk string) (err error) {
+	if operation.RevealInputIndex != 0 {
+		return errors.ErrInvalidRevealInputIndex
+	}
 	if !operation.Payload.CheckRequest() {
 		return errors.ErrCheckRequest
 	}
@@ -27,11 +30,7 @@ func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, v
 	if err != nil {
 		return err
 	}
-	operation.CommitHeight, err = m.btcClient.GetCommitHeight(operation.CommitTxID)
-	if err != nil {
-		log.Log.Warnf("GetCommitHeight err:%+v", err)
-		// todo: retry,ensure success
-	}
+	operation.CommitHeight = m.GetCommitHeight(operation.CommitTxID)
 	if operation.CommitHeight < common.ATOMICALS_ACTIVATION_HEIGHT {
 		return errors.ErrInvalidCommitHeight
 	}
@@ -44,9 +43,6 @@ func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, v
 	if operation.RevealLocationHeight > common.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && operation.CommitVoutIndex != common.VOUT_EXPECT_OUTPUT_INDEX {
 		return errors.ErrInvalidVinIndex
 	}
-
-	//
-
 	if operation.CommitVoutIndex != common.VOUT_EXPECT_OUTPUT_INDEX {
 		return errors.ErrInvalidVinIndex
 	}

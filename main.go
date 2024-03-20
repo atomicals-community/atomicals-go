@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/atomicals-core/atomicals"
-	"github.com/atomicals-core/atomicals/common"
 	"github.com/atomicals-core/pkg/conf"
 )
 
@@ -13,9 +12,9 @@ func main() {
 	}
 	var a *atomicals.Atomicals
 	if conf.SelectDB == "memory" {
-		a = atomicals.NewAtomicalsWithMemory(conf, common.ATOMICALS_ACTIVATION_HEIGHT-1)
+		a = atomicals.NewAtomicalsWithMemory(conf)
 	} else {
-		a = atomicals.NewAtomicalsWithSQL(conf, common.ATOMICALS_ACTIVATION_HEIGHT-1)
+		a = atomicals.NewAtomicalsWithSQL(conf)
 	}
 	for {
 		a.TraceBlock()
@@ -24,7 +23,7 @@ func main() {
 	// traced Specific Tx
 	// tx, err := b.GetTransaction("b28f089b5a96c4803db73d51ed801aec4efec997761ee8dc914e0f934b6fcd59")
 	// if err != nil {
-	// 	log.Log.Warnf("GetTransaction err:%v", err)
+	// 	log.Log.Panicf("GetTransaction err:%v", err)
 	// }
 	// a.TraceTx(*tx, height)
 }

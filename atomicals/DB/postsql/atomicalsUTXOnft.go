@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-const UserNftInfoTableName = "atomicals_user_nft_info"
+const UserNftInfoTableName = "atomicals_user_nft_utxo"
 
 type UserNftInfo struct {
 	gorm.Model
@@ -14,21 +14,19 @@ type UserNftInfo struct {
 	AtomicalsID string `gorm:"index"` // txID _ VOUT_EXPECT_OUTPUT_INDEX when be minted
 	LocationID  string `gorm:"index"` // txID_voutIndex updated after being transfered
 
-	NftType int64
-
 	// realm
-	RealmName string
+	RealmName string `gorm:"index"`
 
 	// subRealm
-	SubRealmName           string
+	SubRealmName           string `gorm:"index"`
 	ClaimType              witness.NftSubrealmClaimType
 	ParentRealmAtomicalsID string // ParentRealm atomicalsID
 
 	// container
-	ContainerName string
+	ContainerName string `gorm:"index"`
 
 	// Dmitem
-	Dmitem                     string
+	Dmitem                     string `gorm:"index"`
 	ParentContainerAtomicalsID string
 
 	Nonce int64

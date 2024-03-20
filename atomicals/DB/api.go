@@ -1,6 +1,9 @@
 package db
 
 import (
+	"github.com/atomicals-core/atomicals/common"
+	"github.com/atomicals-core/pkg/btcsync"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -13,23 +16,20 @@ type DB interface {
 	// NftUTXOsByAtomicalsID and NftUTXOsByLocationID are two index map from one table
 	// NftUTXOsByAtomicalsID: indexed by AtomicalsID, NftUTXOsByLocationID: indexed by LocationID
 	NftUTXOsByAtomicalsID(atomicalsID string) ([]*UserNftInfo, error)
-	InsertNftUTXOByAtomicalsID(UTXO *UserNftInfo) error
 	NftUTXOsByLocationID(locationID string) ([]*UserNftInfo, error)
-	InsertNftUTXOByLocationID(UTXO *UserNftInfo) error
-	DeleteNftUTXOByLocationID(locationID string) error
+	InsertNftUTXO(UTXO *UserNftInfo) error
+	TransferNftUTXO(oldLocationID, newLocationID, newUserPk string) error
+	InsertGlobalNft(nftType int64, name, subName string) error
 
 	// an golbal map to check if realm nft has been registed
 	ParentRealmHasExist(parentRealmAtomicalsID string) (string, error)
-	NftRealmByName(realmName string) (map[string]bool, error)
-	NftSubRealmByName(realmName, subRealm string) (bool, error)
-	InsertRealm(realmName string) error
-	InsertSubRealm(realmName, subRealm string) error
+	NftRealmByNameHasExist(realmName string) (bool, error)
+	NftSubRealmByNameHasExist(realmName, subRealm string) (bool, error)
 
 	// an golbal map to check if container nft has been registed
 	ParentContainerHasExist(parentContainerAtomicalsID string) (string, error)
-	NftContainerByName(containerName string) (map[string]bool, error)
-	InsertContainer(containerName string) error
-	InsertItemInContainer(containerName, itemID string) error
+	NftContainerByNameHasExist(containerName string) (bool, error)
+	ContainerItemByNameHasExist(container, item string) (bool, error)
 
 	// FtUTXOsByLocationID: fts indexed by LocationID (operation: dmt, mint ft)
 	FtUTXOsByLocationID(locationID string) ([]*UserFtInfo, error)
@@ -46,27 +46,42 @@ type DB interface {
 	InsertDirectFt(tickerName string) error
 }
 
-func NewMemoryDB(height int64, txID string) DB {
-	return &Memory{
-		height:                height,
-		txID:                  txID,
-		nftUTXOsByAtomicalsID: make(map[string][]*UserNftInfo, 0),
-		nftUTXOsByLocationID:  make(map[string][]*UserNftInfo, 0),
-		globalNftRealmMap:     make(map[string]map[string]bool, 0),
-		globalNftContainerMap: make(map[string]map[string]bool, 0),
-
-		ftUTXOs:                make(map[string][]*UserFtInfo, 0),
-		globalDistributedFtMap: make(map[string]*DistributedFtInfo, 0),
-		globalDirectFtMap:      make(map[string]bool, 0),
-	}
-}
-
-func NewSqlDB(DB *gorm.DB, height int64, txID string) DB {
-	m := &Postgres{
-		DB,
-	}
-	if err := m.UpdateLocation(height, txID); err != nil {
+func NewSqlDB(sqlDNS string, btcClient *btcsync.BtcSync) DB {
+	DB, err := gorm.Open(postgres.Open(sqlDNS))
+	if err != nil {
 		panic(err)
+	}
+	m := &Postgres{
+		DB:               DB,
+		SQLRaw:           "",
+		UserNftInfoCache: make(map[string][]*UserNftInfo, 0),
+		UserFtInfoCache:  make(map[string][]*UserFtInfo, 0),
+	}
+	_, err = m.CurrentHeitht()
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			if err := m.UpdateLocation(common.ATOMICALS_ACTIVATION_HEIGHT-1, ""); err != nil {
+				panic(err)
+			}
+		} else {
+			panic(err)
+		}
 	}
 	return m
 }
+
+// NewMemoryDB will be supported later
+// func NewMemoryDB() DB {
+// 	return &Memory{
+// 		height:                common.ATOMICALS_ACTIVATION_HEIGHT - 1,
+// 		txID:                  "",
+// 		nftUTXOsByAtomicalsID: make(map[string][]*UserNftInfo, 0),
+// 		nftUTXOsByLocationID:  make(map[string][]*UserNftInfo, 0),
+// 		globalNftRealmMap:     make(map[string]map[string]bool, 0),
+// 		globalNftContainerMap: make(map[string]map[string]bool, 0),
+
+// 		ftUTXOs:                make(map[string][]*UserFtInfo, 0),
+// 		globalDistributedFtMap: make(map[string]*DistributedFtInfo, 0),
+// 		globalDirectFtMap:      make(map[string]bool, 0),
+// 	}
+// }

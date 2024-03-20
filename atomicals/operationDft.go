@@ -13,6 +13,9 @@ import (
 
 // deployDistributedFt: operation dft
 func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOperation, vout []btcjson.Vout, userPk string) error {
+	if operation.RevealInputIndex != 0 {
+		return errors.ErrInvalidRevealInputIndex
+	}
 	if !operation.Payload.CheckRequest() {
 		return errors.ErrCheckRequest
 	}
@@ -61,11 +64,7 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 	if err != nil {
 		return err
 	}
-	operation.CommitHeight, err = m.btcClient.GetCommitHeight(operation.CommitTxID)
-	if err != nil {
-		log.Log.Warnf("GetCommitHeight err:%+v", err)
-		// todo: retry,ensure success
-	}
+	operation.CommitHeight = m.GetCommitHeight(operation.CommitTxID)
 	if operation.CommitHeight < common.ATOMICALS_ACTIVATION_HEIGHT {
 		return errors.ErrInvalidCommitHeight
 	}
@@ -81,7 +80,7 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 	atomicalsID := operation.AtomicalsID
 	entity := &db.DistributedFtInfo{
 		AtomicalsID:  atomicalsID,
-		Ticker:       operation.Payload.Args.RequestTicker,
+		TickerName:   operation.Payload.Args.RequestTicker,
 		Type:         "FT",
 		Subtype:      "decentralized",
 		MintAmount:   operation.Payload.Args.MintAmount,

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
+	"strings"
 )
 
 // Convert the compact string form to the expanded 36 byte sequence
@@ -193,4 +194,12 @@ func readfile() string {
 
 func AtomicalsID(txID string, voutIndex int64) string {
 	return fmt.Sprintf("%vi%v", txID, voutIndex)
+}
+
+func SplitAtomicalsID(atomicalsID string) (string, string) {
+	parts := strings.SplitN(atomicalsID, "i", 2)
+	if len(parts) == 2 {
+		return parts[0], parts[1]
+	}
+	return "", ""
 }

@@ -13,6 +13,9 @@ import (
 
 // mintDistributedFt:operation dmt, Mint tokens of distributed mint type
 func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperation, vout []btcjson.Vout, userPk string) error {
+	if operation.RevealInputIndex != 0 {
+		return errors.ErrInvalidRevealInputIndex
+	}
 	ticker := operation.Payload.Args.MintTicker
 	ftEntity, err := m.DistributedFtByName(ticker)
 	if err != nil {
@@ -21,14 +24,10 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 	if ftEntity == nil {
 		return errors.ErrNotDeployFt
 	}
-	if ftEntity.CommitHeight <= operation.RevealLocationHeight-common.MINT_REALM_CONTAINER_TICKER_COMMIT_REVEAL_DELAY_BLOCKS {
+	if operation.RevealLocationHeight < ftEntity.CommitHeight+common.MINT_REALM_CONTAINER_TICKER_COMMIT_REVEAL_DELAY_BLOCKS {
 		return errors.ErrInvalidCommitHeight
 	}
-	operation.CommitHeight, err = m.btcClient.GetCommitHeight(operation.CommitTxID)
-	if err != nil {
-		log.Log.Warnf("GetCommitHeight err:%+v", err)
-		// todo: retry,ensure success
-	}
+	operation.CommitHeight = m.GetCommitHeight(operation.CommitTxID)
 	if operation.CommitHeight < ftEntity.MintHeight {
 		return errors.ErrInvalidCommitHeight
 	}
@@ -86,6 +85,7 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 	}
 	locationID := operation.AtomicalsID
 	entity := &db.UserFtInfo{
+		UserPk:      userPk,
 		MintTicker:  ticker,
 		Nonce:       operation.Payload.Args.Nonce,
 		Time:        operation.Payload.Args.Time,

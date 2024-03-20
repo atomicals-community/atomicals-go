@@ -16,7 +16,7 @@ type UserFtInfo struct {
 	// Bitworkr    *common.Bitwork
 
 	// DistributedFt
-	MintTicker string
+	MintTicker string `gorm:"index"`
 	Nonce      int64
 	Time       int64
 	// MintBitworkVec  *common.Bitwork

@@ -26,7 +26,10 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 			if err != nil {
 				log.Log.Panicf("FtUTXOsByLocationID err:%v", err)
 			}
-			if preFts == nil || len(preFts) == 0 {
+			if preFts == nil {
+				continue
+			}
+			if len(preFts) == 0 {
 				continue
 			}
 			if 0 < total_amount_to_skip_potential {
@@ -83,7 +86,10 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 				if err != nil {
 					log.Log.Panicf("FtUTXOsByLocationID err:%v", err)
 				}
-				if preFts == nil || len(preFts) == 0 {
+				if preFts == nil {
+					continue
+				}
+				if len(preFts) == 0 {
 					continue
 				}
 				atomicalsFtsVinIndexMap[int64(vinIndex)] = preFts
@@ -111,7 +117,10 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 				if err != nil {
 					log.Log.Panicf("FtUTXOsByLocationID err:%v", err)
 				}
-				if preFts == nil || len(preFts) == 0 {
+				if preFts == nil {
+					continue
+				}
+				if len(preFts) == 0 {
 					continue
 				}
 				atomicalsFts = append(atomicalsFts, preFts...)

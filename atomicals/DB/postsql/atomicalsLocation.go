@@ -14,6 +14,10 @@ type Location struct {
 	TxID   string
 }
 
+func (*Location) TableName() string {
+	return locationTableName
+}
+
 func (*Location) Init(db *gorm.DB) {
 	var err error
 	dmodel := newDefaultModel(locationTableName, db)

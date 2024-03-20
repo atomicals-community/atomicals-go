@@ -26,13 +26,13 @@ func (m *Atomicals) transferNft(operation *witness.WitnessAtomicalsOperation, tx
 			if err != nil {
 				log.Log.Panicf("NftUTXOsByLocationID err:%v", err)
 			}
-			if preNfts == nil || len(preNfts) == 0 {
+			if preNfts == nil {
+				continue
+			}
+			if len(preNfts) == 0 {
 				continue
 			}
 			atomicalsNfts = append(atomicalsNfts, preNfts...)
-			if err := m.DeleteNftUTXOByLocationID(preNftLocationID); err != nil {
-				log.Log.Panicf("NftUTXOsByLocationID err:%v", err)
-			}
 		}
 		sort.Slice(atomicalsNfts, func(i, j int) bool {
 			return atomicalsNfts[i].AtomicalsID < atomicalsNfts[j].AtomicalsID
@@ -50,30 +50,29 @@ func (m *Atomicals) transferNft(operation *witness.WitnessAtomicalsOperation, tx
 				output_index = int64(0)
 			}
 			nft.UserPk = tx.Vout[output_index].ScriptPubKey.Address
-			locationID := common.AtomicalsID(operation.RevealLocationTxID, output_index)
-			nft.LocationID = locationID
-			if err := m.InsertNftUTXOByLocationID(nft); err != nil {
-				log.Log.Panicf("NftUTXOsByLocationID err:%v", err)
+			locationID := common.AtomicalsID(tx.Txid, output_index)
+			if err := m.TransferNftUTXO(nft.LocationID, locationID, nft.UserPk); err != nil {
+				log.Log.Panicf("TransferNftUTXO err:%v", err)
 			}
 			expected_output_index_incrementing += 1
 		}
 	} else { // build_nft_input_idx_to_atomical_map && calculate_nft_atomicals_regular
-		input_idx_to_atomical_ids_map := make(map[int64][]*db.UserNftInfo, 0) // key txInIndex
-		for vinIndex, vin := range tx.Vin {
-			preNftLocationID := common.AtomicalsID(vin.Txid, int64(vin.Vout))
-			preNfts, err := m.NftUTXOsByLocationID(preNftLocationID)
-			if err != nil {
-				log.Log.Panicf("NftUTXOsByLocationID err:%v", err)
-			}
-			if preNfts == nil || len(preNfts) == 0 {
-				continue
-			}
-			input_idx_to_atomical_ids_map[int64(vinIndex)] = preNfts
-			if err := m.DeleteNftUTXOByLocationID(preNftLocationID); err != nil {
-				log.Log.Panicf("NftUTXOsByLocationID err:%v", err)
-			}
-		}
 		if common.IsDmintActivated(operation.RevealLocationHeight) {
+			input_idx_to_atomical_ids_map := make(map[int64][]*db.UserNftInfo, 0) // key txInIndex
+			for vinIndex, vin := range tx.Vin {
+				preNftLocationID := common.AtomicalsID(vin.Txid, int64(vin.Vout))
+				preNfts, err := m.NftUTXOsByLocationID(preNftLocationID)
+				if err != nil {
+					log.Log.Panicf("NftUTXOsByLocationID err:%v", err)
+				}
+				if preNfts == nil {
+					continue
+				}
+				if len(preNfts) == 0 {
+					continue
+				}
+				input_idx_to_atomical_ids_map[int64(vinIndex)] = preNfts
+			}
 			next_output_idx := int64(0)
 			found_atomical_at_input := false
 			for _, nfts := range input_idx_to_atomical_ids_map {
@@ -91,15 +90,15 @@ func (m *Atomicals) transferNft(operation *witness.WitnessAtomicalsOperation, tx
 				}
 				for _, nft := range nfts {
 					nft.UserPk = tx.Vout[expected_output_index].ScriptPubKey.Address
-					locationID := common.AtomicalsID(operation.RevealLocationTxID, expected_output_index)
+					locationID := common.AtomicalsID(tx.Txid, expected_output_index)
 					nft.LocationID = locationID
-					if err := m.InsertNftUTXOByLocationID(nft); err != nil {
-						log.Log.Panicf("NftUTXOsByLocationID err:%v", err)
+					if err := m.TransferNftUTXO(nft.LocationID, locationID, nft.UserPk); err != nil {
+						log.Log.Panicf("TransferNftUTXO err:%v", err)
 					}
 				}
-			}
-			if found_atomical_at_input {
-				next_output_idx++
+				if found_atomical_at_input {
+					next_output_idx++
+				}
 			}
 		} else { // calculate_nft_output_index_legacy
 			for vinIndex, vin := range tx.Vin {
@@ -108,7 +107,10 @@ func (m *Atomicals) transferNft(operation *witness.WitnessAtomicalsOperation, tx
 				if err != nil {
 					log.Log.Panicf("NftUTXOsByLocationID err:%v", err)
 				}
-				if preNfts == nil || len(preNfts) == 0 {
+				if preNfts == nil {
+					continue
+				}
+				if len(preNfts) == 0 {
 					continue
 				}
 				expected_output_index := int64(vinIndex)
@@ -129,14 +131,11 @@ func (m *Atomicals) transferNft(operation *witness.WitnessAtomicalsOperation, tx
 				}
 				for _, nft := range preNfts {
 					nft.UserPk = tx.Vout[expected_output_index].ScriptPubKey.Address
-					locationID := common.AtomicalsID(operation.RevealLocationTxID, expected_output_index)
+					locationID := common.AtomicalsID(tx.Txid, expected_output_index)
 					nft.LocationID = locationID
-					if err := m.InsertNftUTXOByLocationID(nft); err != nil {
-						log.Log.Panicf("NftUTXOsByLocationID err:%v", err)
+					if err := m.TransferNftUTXO(nft.LocationID, locationID, nft.UserPk); err != nil {
+						log.Log.Panicf("TransferNftUTXO err:%v", err)
 					}
-				}
-				if err := m.DeleteNftUTXOByLocationID(preNftLocationID); err != nil {
-					log.Log.Panicf("NftUTXOsByLocationID err:%v", err)
 				}
 			}
 		}

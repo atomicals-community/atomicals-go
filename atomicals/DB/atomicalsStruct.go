@@ -7,7 +7,7 @@ import (
 
 type DistributedFtInfo struct {
 	AtomicalsID    string
-	Ticker         string
+	TickerName     string
 	Type           string
 	Subtype        string
 	MintMode       string // emu: perpetual, fixed
@@ -36,7 +36,8 @@ const (
 	TypeNftRealm     = 0
 	TypeNftSubRealm  = 1
 	TypeNftContainer = 2
-	TypeNftTicker    = 3
+	TypeNftItem      = 3
+	TypeNftTicker    = 4
 )
 
 type UserNftInfo struct {

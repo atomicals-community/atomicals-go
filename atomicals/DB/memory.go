@@ -59,6 +59,9 @@ func (m *Memory) InsertNftUTXOByLocationID(UTXO *UserNftInfo) error {
 	m.nftUTXOsByLocationID[UTXO.LocationID] = append(m.nftUTXOsByLocationID[UTXO.LocationID], UTXO)
 	return nil
 }
+func (m *Memory) TransferNftUTXO(oldLocationID, newLocationID, newUserPk string) error {
+	return nil
+}
 
 func (m *Memory) DeleteNftUTXOByLocationID(locationID string) error {
 	m.nftUTXOsByLocationID[locationID] = nil
@@ -95,12 +98,12 @@ func (m *Memory) ParentContainerHasExist(parentContainerAtomicalsID string) (str
 	return parentContainerName, nil
 }
 
-func (m *Memory) NftRealmByName(realmName string) (map[string]bool, error) {
-	realm, ok := m.globalNftRealmMap[realmName]
+func (m *Memory) NftRealmByNameHasExist(realmName string) (bool, error) {
+	_, ok := m.globalNftRealmMap[realmName]
 	if !ok {
-		return nil, nil
+		return false, nil
 	}
-	return realm, nil
+	return true, nil
 }
 
 func (m *Memory) NftSubRealmByName(realmName, subRealm string) (bool, error) {
@@ -115,33 +118,33 @@ func (m *Memory) NftSubRealmByName(realmName, subRealm string) (bool, error) {
 	return true, nil
 }
 
-func (m *Memory) InsertRealm(realmName string) error {
-	m.globalNftRealmMap[realmName] = make(map[string]bool, 0)
-	return nil
-}
+// func (m *Memory) InsertRealm(realmName string) error {
+// 	m.globalNftRealmMap[realmName] = make(map[string]bool, 0)
+// 	return nil
+// }
 
-func (m *Memory) InsertSubRealm(realmName, subRealm string) error {
-	m.globalNftRealmMap[realmName][subRealm] = true
-	return nil
-}
+// func (m *Memory) InsertSubRealm(realmName, subRealm string) error {
+// 	m.globalNftRealmMap[realmName][subRealm] = true
+// 	return nil
+// }
 
-func (m *Memory) NftContainerByName(containerName string) (map[string]bool, error) {
-	container, ok := m.globalNftContainerMap[containerName]
+func (m *Memory) NftContainerByName(containerName string) (bool, error) {
+	_, ok := m.globalNftContainerMap[containerName]
 	if !ok {
-		return nil, nil
+		return false, nil
 	}
-	return container, nil
+	return true, nil
 }
 
-func (m *Memory) InsertContainer(containerName string) error {
-	m.globalNftContainerMap[containerName] = make(map[string]bool, 0)
-	return nil
-}
+// func (m *Memory) InsertContainer(containerName string) error {
+// 	m.globalNftContainerMap[containerName] = make(map[string]bool, 0)
+// 	return nil
+// }
 
-func (m *Memory) InsertItemInContainer(containerName, itemID string) error {
-	m.globalNftContainerMap[containerName][itemID] = true
-	return nil
-}
+// func (m *Memory) InsertItemInContainer(containerName, itemID string) error {
+// 	m.globalNftContainerMap[containerName][itemID] = true
+// 	return nil
+// }
 
 func (m *Memory) FtUTXOsByLocationID(locationID string) ([]*UserFtInfo, error) {
 	fts, ok := m.ftUTXOs[locationID]
@@ -173,7 +176,7 @@ func (m *Memory) DistributedFtByName(tickerName string) (*DistributedFtInfo, err
 }
 
 func (m *Memory) InsertDistributedFt(ft *DistributedFtInfo) error {
-	m.globalDistributedFtMap[ft.Ticker] = ft
+	m.globalDistributedFtMap[ft.TickerName] = ft
 	return nil
 }
 

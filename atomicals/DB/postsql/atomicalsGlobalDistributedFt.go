@@ -5,12 +5,12 @@ import (
 	"gorm.io/gorm"
 )
 
-const globalDistributedFtTableName = "atomicals_nft_utxo"
+const globalDistributedFtTableName = "atomicals_distributed_ft"
 
 type GlobalDistributedFt struct {
 	gorm.Model
 	AtomicalsID    string
-	Ticker         string `gorm:"uniqueindex"`
+	TickerName     string `gorm:"uniqueindex"`
 	Type           string
 	Subtype        string
 	MintMode       string // emu: perpetual, fixed

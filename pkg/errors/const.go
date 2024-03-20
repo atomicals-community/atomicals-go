@@ -1,6 +1,9 @@
 package errors
 
 var (
+	// error in package
+	ErrNotExistBlock = New(10001, "ErrNotExistBlock")
+
 	// error in witness package
 	ErrInvalidWitnessScriptLength = New(10001, "ErrInvalidWitnessScriptLength")
 	ErrInvalidWitnessScriptPkFlag = New(10002, "ErrInvalidWitnessScriptPkFlag")
@@ -46,4 +49,5 @@ var (
 	ErrBitworkcNeeded               = New(20010, "ErrBitworkcNeeded")
 	ErrCheckRequest                 = New(20010, "ErrCheckRequest")
 	ErrDmintNotStart                = New(20010, "ErrDmintNotStart")
+	ErrInvalidRevealInputIndex      = New(20010, "ErrInvalidRevealInputIndex")
 )
