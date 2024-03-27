@@ -10,7 +10,6 @@ Atomicals-core: 是atomicals索引器atomicals-electrumx的golang版本，并以
 
 - 请注意，如果Arthur想要对atomicals-electrumx进行协议升级或更新，Atomicals-core是滞后的。
 - 在未来一段时间内[yiming](https://github.com/yimingWOW)仍然会维护该项目（及时同步atomicals-electrumx的更新）
-- 期待更多项目方或开发者加入（快来联系我～赶紧，我给您加仓库管理权限），我会将本仓库提交到某个公开项目下，并移交仓库管理权限
 - 我并没有完成atomicals-core的全部测试工作，我没有趁手的机器在本地跑btc local node，这太花费我的时间了，atomicals生态项目方比我更有动力做这件事。
 - 测试工作非常简单
     - 如果您同步完全部节点后发现某个账户资产x和atomicals-electrum的结果不一致，您清理库表，重新运行atomicals-core至x被mint或deploy的交易，即可找到x在atomicals-core下没有被正确mint的原因
