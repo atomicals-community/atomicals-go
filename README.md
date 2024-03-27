@@ -36,19 +36,25 @@ Atomicals-core: 是atomicals索引器atomicals-electrumx的golang版本，并以
     - payment
 
 ## How to run atomicals-core
-- you need a btc node and make sure golang has been installed on ur os.
+- you need a btc node
+- install golang and docker
+- start a postgres sql by docker
+```
+$ docker run --name YourDatabaseName -p 5432:5432 -e POSTGRES_DB=postgres -e POSTGRES_USER=yourUserName -e POSTGRES_PASSWORD=yourPassword postgres
+``` 
 - download atomicals-core
-- edit conf/config.json : update it with your btc node url, user and password; if you want to run atomicals-core with sql, update sql_dns
+- edit conf/config.json : update it with your btc node url, user and password, and sql_dns(you have got it )
 - cd to atomicals-core path
-- run: go mod tidy
-- run: go run ./
+``` 
+go mod tidy
+go run ./
+``` 
 
 ## Performance
-
-- if u use a local btc node, it will take 600~800ms to obtain block data, but atomicals-core only spend 10~15ms to process one block. 
-if blockheight=808080 to 834773, it will take about 7 hours to sync all btc blocks
+- atomicals-core will spend 2.5s to process one block. if currentBlockHeight=834773, it will take about 20 hours to sync all btc blocks
 
 ## TODO:
+- TraceTx可以并发处理
 - PayLoad.Arg中有一个parents字段，它在get_mint_info_op_factory中被使用，但是我还没有捕捉到这个字段
 - PayLoad中有一个存储nft图片信息的字段：image.png，但是在golang中解析为cbor结构体时有问题，我还没有解决它
 - payment的逻辑我没有写，看起来不影响atomicals资产归属
@@ -70,9 +76,7 @@ if blockheight=808080 to 834773, it will take about 7 hours to sync all btc bloc
     - 这个不属于indexer的职能，开始我很有动力去完成它，但是最近的紧张的开发让我身心疲惫，我现在觉的它是在没必要，有一些golang btc钱包库做的非常好，我觉得感兴趣的人可以去看看
 
 
-这个项目的后续开发和测试工作还有很多，欢迎感兴趣的开发者和项目方联系我一起构建它
-
-请各位看观有多提pr和isssus，代码中不合理之处尽管提出来，我一个人的能力有限，感兴趣的小伙伴共建才能越来越好
+这个项目的后续开发和测试工作还有很多，欢迎感兴趣的开发者和项目方联系我一起构建它。请各位看观有多提pr和isssus，代码中不合理之处尽管提出来，我一个人的能力有限，感兴趣的小伙伴共建才能越来越好
 
 
 ## futher more

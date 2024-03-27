@@ -30,11 +30,9 @@ func (m *Atomicals) TraceBlock() {
 			continue
 		}
 		m.TraceTx(tx, blockInfo.Height)
-		// log.Log.Infof("height:%v,txIndex:%v,txHash:%v", blockInfo.Height, index, tx.Hash)
 	}
-	m.DeleteUselessTxCache(blockInfo.Height - common.MINT_GENERAL_COMMIT_REVEAL_DELAY_BLOCKS - 1)
-	if err := m.UpdateLocation(blockInfo.Height, ""); err != nil {
-		log.Log.Panicf("UpdateLocation err:%v", err)
+	if err := m.UpdateCurrentHeightAndExecAllSql(blockInfo.Height, ""); err != nil {
+		log.Log.Panicf("UpdateCurrentHeight err:%v", err)
 	}
 	log.Log.Infof("height:%v, take time:%v,", blockInfo.Height, time.Since(startTime))
 }
@@ -46,6 +44,7 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) error {
 	// step 1: transfer nft, transfer ft
 	m.transferNft(operation, tx)
 	m.transferFt(operation, tx)
+
 	// log.Log.Infof("--------- -------------take time:%v,", time.Since(startTime))
 
 	// step 2: process operation
@@ -55,11 +54,13 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) error {
 	} else {
 		switch operation.Op {
 		case "dft":
-			m.deployDistributedFt(operation, tx.Vout, userPk)
+			m.deployDistributedFt(operation, userPk)
 		case "ft":
 			m.mintDirectFt(operation, tx.Vout, userPk)
 		case "nft":
-			m.mintNft(operation, tx.Vout, userPk)
+
+			m.mintNft(operation, userPk)
+
 		case "mod":
 		case "evt":
 		case "dat":
@@ -67,6 +68,7 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) error {
 		default:
 		}
 	}
+
 	// step 3 check payment
 	return nil
 }

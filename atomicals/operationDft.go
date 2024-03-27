@@ -3,16 +3,15 @@ package atomicals
 import (
 	"strconv"
 
-	db "github.com/atomicals-core/atomicals/DB"
+	"github.com/atomicals-core/atomicals/DB/postsql"
 	"github.com/atomicals-core/atomicals/common"
 	"github.com/atomicals-core/atomicals/witness"
 	"github.com/atomicals-core/pkg/errors"
 	"github.com/atomicals-core/pkg/log"
-	"github.com/btcsuite/btcd/btcjson"
 )
 
 // deployDistributedFt: operation dft
-func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOperation, vout []btcjson.Vout, userPk string) error {
+func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOperation, userPk string) error {
 	if operation.RevealInputIndex != 0 {
 		return errors.ErrInvalidRevealInputIndex
 	}
@@ -47,9 +46,12 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 			return errors.ErrInvalidMaxMints
 		}
 	}
-	mintBitworkc, mintBitworkr, err := witness.IsValidMintBitwork(operation.CommitTxID, operation.Payload.Args.MintBitworkc, operation.Payload.Args.MintBitworkr)
+	mintBitworkc, _, err := witness.IsValidMintBitwork(operation.CommitTxID, operation.Payload.Args.MintBitworkc, operation.Payload.Args.MintBitworkr)
 	if err != nil {
 		return err
+	}
+	if mintBitworkc != nil && len(mintBitworkc.Prefix) < 4 {
+		return errors.ErrInvalidBitworkcPrefix
 	}
 	if operation.IsImmutable() {
 		return errors.ErrCannotBeImmutable
@@ -60,7 +62,7 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 	if operation.Payload.Args.Bitworkc == "" {
 		return errors.ErrBitworkcNeeded
 	}
-	bitworkc, bitworkr, err := operation.IsValidBitwork()
+	_, _, err = operation.IsValidBitwork()
 	if err != nil {
 		return err
 	}
@@ -78,7 +80,7 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 		return errors.ErrInvalidVinIndex
 	}
 	atomicalsID := operation.AtomicalsID
-	entity := &db.DistributedFtInfo{
+	entity := &postsql.GlobalDistributedFt{
 		AtomicalsID:  atomicalsID,
 		TickerName:   operation.Payload.Args.RequestTicker,
 		Type:         "FT",
@@ -86,11 +88,11 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 		MintAmount:   operation.Payload.Args.MintAmount,
 		MaxMints:     operation.Payload.Args.MaxMints,
 		MintHeight:   operation.Payload.Args.MintHeight,
-		MintBitworkc: mintBitworkc,
-		MintBitworkr: mintBitworkr,
-		Bitworkc:     bitworkc,
-		Bitworkr:     bitworkr,
-		Meta:         operation.Payload.Meta,
+		MintBitworkc: operation.Payload.Args.MintBitworkc,
+		MintBitworkr: operation.Payload.Args.MintBitworkr,
+		Bitworkc:     operation.Payload.Args.Bitworkc,
+		Bitworkr:     operation.Payload.Args.Bitworkr,
+		// Meta:         operation.Payload.Meta,
 		MintedTimes:  0,
 		Md:           operation.Payload.Args.Md,
 		Bv:           operation.Payload.Args.Bv,
@@ -101,9 +103,7 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 		Maxg:         operation.Payload.Args.Maxg,
 		CommitHeight: operation.CommitHeight,
 	}
-	if entity.Bitworkc != nil && len(entity.Bitworkc.Prefix) < 4 {
-		return errors.ErrInvalidBitworkcPrefix
-	}
+
 	if common.ATOMICALS_ACTIVATION_HEIGHT_DENSITY <= operation.RevealLocationHeight && entity.Md == "1" {
 		if !common.IsHexStringRegex(operation.Payload.Args.Bv) || len(operation.Payload.Args.Bv) < 4 {
 			return errors.ErrInvalidDftBv

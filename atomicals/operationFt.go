@@ -1,7 +1,7 @@
 package atomicals
 
 import (
-	db "github.com/atomicals-core/atomicals/DB"
+	"github.com/atomicals-core/atomicals/DB/postsql"
 	"github.com/atomicals-core/atomicals/common"
 	"github.com/atomicals-core/atomicals/witness"
 	"github.com/atomicals-core/pkg/errors"
@@ -26,7 +26,7 @@ func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, v
 	if operation.Payload.Args.Bitworkc == "" {
 		return errors.ErrBitworkcNeeded
 	}
-	bitworkc, bitworkr, err := operation.IsValidBitwork()
+	_, _, err = operation.IsValidBitwork()
 	if err != nil {
 		return err
 	}
@@ -48,17 +48,17 @@ func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, v
 	}
 
 	locationID := operation.AtomicalsID
-	atomicalsFtInfo := &db.UserFtInfo{
+	atomicalsFtInfo := &postsql.UTXOFtInfo{
 		UserPk:        userPk,
 		AtomicalsID:   locationID,
 		LocationID:    locationID,
 		Type:          "FT",
 		Subtype:       "direct",
 		RequestTicker: operation.Payload.Args.RequestTicker,
-		Meta:          operation.Payload.Meta,
-		Bitworkc:      bitworkc,
-		Bitworkr:      bitworkr,
-		MaxSupply:     int64(vout[common.VOUT_EXPECT_OUTPUT_INDEX].Value * common.Satoshi),
+		// Meta:          operation.Payload.Meta,
+		Bitworkc:  operation.Payload.Args.Bitworkc,
+		Bitworkr:  operation.Payload.Args.Bitworkr,
+		MaxSupply: int64(vout[common.VOUT_EXPECT_OUTPUT_INDEX].Value * common.Satoshi),
 	}
 	if err := m.InsertFtUTXO(atomicalsFtInfo); err != nil {
 		log.Log.Panicf("InsertFtUTXO err:%v", err)

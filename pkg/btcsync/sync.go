@@ -3,19 +3,20 @@ package btcsync
 import (
 	"sync"
 
+	"github.com/atomicals-core/atomicals/common"
 	"github.com/btcsuite/btcd/rpcclient"
 )
 
+const BlockCacheNum = 3
+
 type BtcSync struct {
 	*rpcclient.Client
-	blockCacheNum      int
 	blockHeightChannel chan int64
 	blockCache         sync.Map
-
 	*TxHeightCache
 }
 
-func NewBtcSync(rpcURL, rpcUser, rpcPassword string) (*BtcSync, error) {
+func NewBtcSync(rpcURL, rpcUser, rpcPassword string, startHeight int64) (*BtcSync, error) {
 	client, err := rpcclient.New(&rpcclient.ConnConfig{
 		HTTPPostMode: true,
 		DisableTLS:   true,
@@ -26,14 +27,15 @@ func NewBtcSync(rpcURL, rpcUser, rpcPassword string) (*BtcSync, error) {
 	if err != nil {
 		return nil, err
 	}
-	b := &BtcSync{
+	m := &BtcSync{
 		Client:             client,
-		blockCacheNum:      5,
-		blockHeightChannel: make(chan int64, 5),
-		TxHeightCache:      newTxHeightCache(),
+		blockHeightChannel: make(chan int64, 3),
+		TxHeightCache:      &TxHeightCache{},
 	}
-	go b.FetchBlocks()
-
-	return b, nil
+	go m.FetchBlocks()
+	for height := startHeight - common.MINT_GENERAL_COMMIT_REVEAL_DELAY_BLOCKS - 2; height <= startHeight; height++ {
+		m.GetBlockByHeight(height)
+	}
+	return m, nil
 
 }

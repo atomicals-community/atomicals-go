@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"strings"
 )
@@ -176,20 +175,6 @@ func get_nominal_token_value(value float64, exponent int64) float64 {
 		panic("Value and exponent must be non-negative")
 	}
 	return value / math.Pow10(int(exponent))
-}
-
-func readfile() string {
-	filePath := "./witnessscript.txt"
-	// Read the content of the file
-	content, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		fmt.Println("Error reading file:", err)
-		return ""
-	}
-
-	// Convert content to a string
-	longString := string(content)
-	return longString
 }
 
 func AtomicalsID(txID string, voutIndex int64) string {

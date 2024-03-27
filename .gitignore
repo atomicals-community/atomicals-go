@@ -7,9 +7,9 @@
 *.dll
 *.so
 *.dylib
-
 # config file
 *.json
+*init.go
 
 # Test binary, built with `go test -c`
 *.test

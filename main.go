@@ -1,6 +1,8 @@
 package main
 
 import (
+	_ "net/http/pprof"
+
 	"github.com/atomicals-core/atomicals"
 	"github.com/atomicals-core/pkg/conf"
 )
@@ -10,12 +12,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	var a *atomicals.Atomicals
-	if conf.SelectDB == "memory" {
-		a = atomicals.NewAtomicalsWithMemory(conf)
-	} else {
-		a = atomicals.NewAtomicalsWithSQL(conf)
-	}
+	a := atomicals.NewAtomicalsWithSQL(conf)
 	for {
 		a.TraceBlock()
 	}

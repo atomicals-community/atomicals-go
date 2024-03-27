@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"sort"
 
-	db "github.com/atomicals-core/atomicals/DB"
+	"github.com/atomicals-core/atomicals/DB/postsql"
 	"github.com/atomicals-core/atomicals/common"
 	"github.com/atomicals-core/atomicals/witness"
 	"github.com/atomicals-core/pkg/log"
@@ -19,7 +19,7 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 		// burn the rest Dmt
 		// total_amount_to_skip_potential := float64(operation.Payload.total_amount_to_skip_potential(preAtomicalsID))
 		total_amount_to_skip_potential := int64(0) // Todo: haven't catched this param, it confused me, why we need to skip of some amount?
-		ftAtomicals := make([]*db.UserFtInfo, 0)
+		ftAtomicals := make([]*postsql.UTXOFtInfo, 0)
 		for _, vin := range tx.Vin {
 			preLocationID := common.AtomicalsID(vin.Txid, int64(vin.Vout))
 			preFts, err := m.FtUTXOsByLocationID(preLocationID)
@@ -55,7 +55,7 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 				}
 				remaining_value -= int64(vout.Value * common.Satoshi)
 				locationID := common.AtomicalsID(operation.RevealLocationTxID, int64(outputIndex))
-				if err := m.InsertFtUTXO(&db.UserFtInfo{
+				if err := m.InsertFtUTXO(&postsql.UTXOFtInfo{
 					UserPk:          vout.ScriptPubKey.Address,
 					AtomicalsID:     ft.AtomicalsID,
 					LocationID:      locationID,
@@ -77,9 +77,9 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 		// a ft in Vin has a total amount: entity.Amount,
 		// color exactly the same amount of vout
 		// burn the rest ft
-		atomicalsFts := make([]*db.UserFtInfo, 0)
+		atomicalsFts := make([]*postsql.UTXOFtInfo, 0)
 		if common.IsDmintActivated(operation.RevealLocationHeight) {
-			atomicalsFtsVinIndexMap := make(map[int64][]*db.UserFtInfo, 0) // key: vinIndex
+			atomicalsFtsVinIndexMap := make(map[int64][]*postsql.UTXOFtInfo, 0) // key: vinIndex
 			for vinIndex, vin := range tx.Vin {
 				preLocationID := common.AtomicalsID(vin.Txid, int64(vin.Vout))
 				preFts, err := m.FtUTXOsByLocationID(preLocationID)
@@ -134,7 +134,7 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 		}
 
 		// calculate_outputs_to_color_for_ft_atomical_ids
-		newFts := make([]*db.UserFtInfo, 0)
+		newFts := make([]*postsql.UTXOFtInfo, 0)
 		next_start_out_idx := int64(0)
 		non_clean_output_slots := false
 		for _, ft := range atomicalsFts {
@@ -145,7 +145,7 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 				newFts = append(newFts, fts...)
 			} else {
 				non_clean_output_slots = true
-				newFts = make([]*db.UserFtInfo, 0)
+				newFts = make([]*postsql.UTXOFtInfo, 0)
 				break
 			}
 		}
@@ -166,8 +166,8 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 	return nil
 }
 
-func assign_expected_outputs_basic(ft *db.UserFtInfo, operation *witness.WitnessAtomicalsOperation, tx btcjson.TxRawResult, start_out_idx int64) (bool, int64, []*db.UserFtInfo) {
-	newFts := make([]*db.UserFtInfo, 0)
+func assign_expected_outputs_basic(ft *postsql.UTXOFtInfo, operation *witness.WitnessAtomicalsOperation, tx btcjson.TxRawResult, start_out_idx int64) (bool, int64, []*postsql.UTXOFtInfo) {
+	newFts := make([]*postsql.UTXOFtInfo, 0)
 	remaining_value := ft.Amount
 	if start_out_idx >= int64(len(tx.Vout)) {
 		return false, start_out_idx, nil
@@ -191,7 +191,7 @@ func assign_expected_outputs_basic(ft *db.UserFtInfo, operation *witness.Witness
 		}
 		remaining_value -= int64(vout.Value * common.Satoshi)
 		locationID := common.AtomicalsID(operation.RevealLocationTxID, int64(outputIndex))
-		newFts = append(newFts, &db.UserFtInfo{
+		newFts = append(newFts, &postsql.UTXOFtInfo{
 			UserPk:          vout.ScriptPubKey.Address,
 			AtomicalsID:     ft.AtomicalsID,
 			LocationID:      locationID,

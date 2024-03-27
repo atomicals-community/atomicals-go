@@ -5,7 +5,7 @@ import (
 	"gorm.io/gorm"
 )
 
-const globalDistributedFtTableName = "atomicals_distributed_ft"
+const globalDistributedFtTableName = "atomicals_global_distributed_ft"
 
 type GlobalDistributedFt struct {
 	gorm.Model
@@ -20,10 +20,10 @@ type GlobalDistributedFt struct {
 	MaxSupply      int64  // total supply = MaxMintsGlobal*MintAmount
 	MintHeight     int64  // start mint height
 	MintedTimes    int64  // record minted times
-	// MintBitworkc   *common.Bitwork
-	// MintBitworkr   *common.Bitwork
-	// Bitworkc       *common.Bitwork
-	// Bitworkr       *common.Bitwork
+	MintBitworkc   string
+	MintBitworkr   string
+	Bitworkc       string
+	Bitworkr       string
 	// Meta           *witness.Meta
 	Md           string // emu:"", "0", "1"
 	Bv           string // mint_info['$mint_bitwork_vec'] = bv

@@ -5,7 +5,7 @@ import (
 	"gorm.io/gorm"
 )
 
-const globalDirectFtTableName = "atomicals_direct_tf"
+const globalDirectFtTableName = "atomicals_global_direct_tf"
 
 type GlobalDirectFt struct {
 	gorm.Model

@@ -3,7 +3,7 @@ package atomicals
 import (
 	"strconv"
 
-	db "github.com/atomicals-core/atomicals/DB"
+	"github.com/atomicals-core/atomicals/DB/postsql"
 	"github.com/atomicals-core/atomicals/common"
 	"github.com/atomicals-core/atomicals/witness"
 	"github.com/atomicals-core/pkg/errors"
@@ -21,6 +21,7 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 	if err != nil {
 		log.Log.Panicf("DistributedFtByName err:%v", err)
 	}
+
 	if ftEntity == nil {
 		return errors.ErrNotDeployFt
 	}
@@ -38,6 +39,7 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 	if int64(vout[common.VOUT_EXPECT_OUTPUT_INDEX].Value*common.Satoshi) != ftEntity.MintAmount {
 		return errors.ErrInvalidMintAmount
 	}
+
 	if ftEntity.MintMode == "perpetual" {
 		if ftEntity.MaxMintsGlobal == ftEntity.MintedTimes {
 			return nil
@@ -79,18 +81,18 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 			}
 		}
 	}
-	bitworkc, bitworkr, err := operation.IsValidBitwork()
+	_, _, err = operation.IsValidBitwork()
 	if err != nil {
 		return err
 	}
 	locationID := operation.AtomicalsID
-	entity := &db.UserFtInfo{
+	entity := &postsql.UTXOFtInfo{
 		UserPk:      userPk,
 		MintTicker:  ticker,
 		Nonce:       operation.Payload.Args.Nonce,
 		Time:        operation.Payload.Args.Time,
-		Bitworkc:    bitworkc,
-		Bitworkr:    bitworkr,
+		Bitworkc:    operation.Payload.Args.Bitworkc,
+		Bitworkr:    operation.Payload.Args.Bitworkr,
 		Amount:      int64(vout[common.VOUT_EXPECT_OUTPUT_INDEX].Value * common.Satoshi),
 		AtomicalsID: locationID,
 		LocationID:  locationID,

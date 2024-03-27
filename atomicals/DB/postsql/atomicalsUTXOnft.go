@@ -6,9 +6,16 @@ import (
 	"gorm.io/gorm"
 )
 
-const UserNftInfoTableName = "atomicals_user_nft_utxo"
+const UserNftInfoTableName = "atomicals_utxo_nft"
 
-type UserNftInfo struct {
+const (
+	TypeNftRealm     = "Realm"
+	TypeNftSubRealm  = "SubRealm"
+	TypeNftContainer = "NftContainer"
+	TypeNftItem      = "Item"
+)
+
+type UTXONftInfo struct {
 	gorm.Model
 	UserPk      string
 	AtomicalsID string `gorm:"index"` // txID _ VOUT_EXPECT_OUTPUT_INDEX when be minted
@@ -16,7 +23,6 @@ type UserNftInfo struct {
 
 	// realm
 	RealmName string `gorm:"index"`
-
 	// subRealm
 	SubRealmName           string `gorm:"index"`
 	ClaimType              witness.NftSubrealmClaimType
@@ -24,29 +30,30 @@ type UserNftInfo struct {
 
 	// container
 	ContainerName string `gorm:"index"`
-
 	// Dmitem
 	Dmitem                     string `gorm:"index"`
 	ParentContainerAtomicalsID string
 
-	Nonce int64
-	Time  int64
+	Nonce    int64
+	Time     int64
+	Bitworkc string
+	Bitworkr string
 }
 
-func (*UserNftInfo) TableName() string {
+func (*UTXONftInfo) TableName() string {
 	return UserNftInfoTableName
 }
 
-func (*UserNftInfo) Init(db *gorm.DB) {
+func (*UTXONftInfo) Init(db *gorm.DB) {
 	var err error
 	dmodel := newDefaultModel(UserNftInfoTableName, db)
 	err = dmodel.DropTable()
 	assert.Nil(nil, err)
-	err = dmodel.CreateTable(&UserNftInfo{})
+	err = dmodel.CreateTable(&UTXONftInfo{})
 	assert.Nil(nil, err)
 }
 
-func (*UserNftInfo) AutoMigrate(db *gorm.DB) {
-	err := db.AutoMigrate(UserNftInfo{})
+func (*UTXONftInfo) AutoMigrate(db *gorm.DB) {
+	err := db.AutoMigrate(UTXONftInfo{})
 	assert.Nil(nil, err)
 }

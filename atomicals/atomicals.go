@@ -11,23 +11,16 @@ type Atomicals struct {
 	db.DB
 }
 
-func NewAtomicalsWithMemory(conf *conf.Config) *Atomicals {
-	b, err := btcsync.NewBtcSync(conf.BtcRpcURL, conf.BtcRpcUser, conf.BtcRpcPassword)
-	if err != nil {
-		panic(err)
-	}
-	return &Atomicals{
-		// DB:        db.NewMemoryDB(),
-		BtcSync: b,
-	}
-}
-
 func NewAtomicalsWithSQL(conf *conf.Config) *Atomicals {
-	b, err := btcsync.NewBtcSync(conf.BtcRpcURL, conf.BtcRpcUser, conf.BtcRpcPassword)
+	d := db.NewSqlDB(conf.SqlDNS)
+	height, err := d.CurrentHeitht()
 	if err != nil {
 		panic(err)
 	}
-	d := db.NewSqlDB(conf.SqlDNS, b)
+	b, err := btcsync.NewBtcSync(conf.BtcRpcURL, conf.BtcRpcUser, conf.BtcRpcPassword, height)
+	if err != nil {
+		panic(err)
+	}
 	return &Atomicals{
 		DB:      d,
 		BtcSync: b,

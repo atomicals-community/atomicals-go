@@ -5,24 +5,24 @@ import (
 	"gorm.io/gorm"
 )
 
-const UserFtInfoTableName = "atomicals_user_ft_utxo"
+const UserFtInfoTableName = "atomicals_utxo_ft"
 
-type UserFtInfo struct {
+type UTXOFtInfo struct {
 	gorm.Model
 	UserPk      string
 	AtomicalsID string `gorm:"index"` // (txID,VOUT_EXPECT_OUTPUT_INDEX) init when be minted
 	LocationID  string `gorm:"index"` // (txID,voutIndex)updated after being transfered
-	// Bitworkc    *common.Bitwork
-	// Bitworkr    *common.Bitwork
+	Bitworkc    string
+	Bitworkr    string
 
 	// DistributedFt
-	MintTicker string `gorm:"index"`
-	Nonce      int64
-	Time       int64
-	// MintBitworkVec  *common.Bitwork
-	// MintBitworkcInc *common.Bitwork
-	// MintBitworkrInc *common.Bitwork
-	Amount int64
+	MintTicker      string `gorm:"index"`
+	Nonce           int64
+	Time            int64
+	MintBitworkVec  string
+	MintBitworkcInc string
+	MintBitworkrInc string
+	Amount          int64
 
 	// DirectFt
 	Type          string
@@ -35,20 +35,20 @@ type UserFtInfo struct {
 	// Meta          *witness.Meta
 }
 
-func (*UserFtInfo) TableName() string {
+func (*UTXOFtInfo) TableName() string {
 	return UserFtInfoTableName
 }
 
-func (*UserFtInfo) Init(db *gorm.DB) {
+func (*UTXOFtInfo) Init(db *gorm.DB) {
 	var err error
 	dmodel := newDefaultModel(UserFtInfoTableName, db)
 	err = dmodel.DropTable()
 	assert.Nil(nil, err)
-	err = dmodel.CreateTable(&UserFtInfo{})
+	err = dmodel.CreateTable(&UTXOFtInfo{})
 	assert.Nil(nil, err)
 }
 
-func (*UserFtInfo) AutoMigrate(db *gorm.DB) {
-	err := db.AutoMigrate(UserFtInfo{})
+func (*UTXOFtInfo) AutoMigrate(db *gorm.DB) {
+	err := db.AutoMigrate(UTXOFtInfo{})
 	assert.Nil(nil, err)
 }
