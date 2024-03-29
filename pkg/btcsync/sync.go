@@ -3,7 +3,6 @@ package btcsync
 import (
 	"sync"
 
-	"github.com/atomicals-core/atomicals/common"
 	"github.com/btcsuite/btcd/rpcclient"
 )
 
@@ -33,9 +32,6 @@ func NewBtcSync(rpcURL, rpcUser, rpcPassword string, startHeight int64) (*BtcSyn
 		TxHeightCache:      &TxHeightCache{},
 	}
 	go m.FetchBlocks()
-	for height := startHeight - common.MINT_GENERAL_COMMIT_REVEAL_DELAY_BLOCKS - 2; height <= startHeight; height++ {
-		m.GetBlockByHeight(height)
-	}
 	return m, nil
 
 }

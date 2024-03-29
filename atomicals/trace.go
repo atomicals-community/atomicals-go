@@ -20,7 +20,6 @@ func (m *Atomicals) TraceBlock() {
 	blockInfo, err := m.GetBlockByHeight(height + 1)
 	if err != nil {
 		log.Log.Panicf("GetBlockByHeight err:%v height:%v", err, height)
-		panic(err)
 	}
 	log.Log.Infof("height:%v, GetBlockByHeight take time:%v,", blockInfo.Height, time.Since(startTime))
 	startTime = time.Now()

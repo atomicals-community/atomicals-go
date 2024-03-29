@@ -28,7 +28,10 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 	if operation.RevealLocationHeight < ftEntity.CommitHeight+common.MINT_REALM_CONTAINER_TICKER_COMMIT_REVEAL_DELAY_BLOCKS {
 		return errors.ErrInvalidCommitHeight
 	}
-	operation.CommitHeight = m.GetCommitHeight(operation.CommitTxID)
+	operation.CommitHeight, err = m.GetCommitHeight(operation.CommitTxID)
+	if err != nil {
+		panic(err)
+	}
 	if operation.CommitHeight < ftEntity.MintHeight {
 		return errors.ErrInvalidCommitHeight
 	}

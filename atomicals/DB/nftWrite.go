@@ -7,10 +7,20 @@ import (
 
 func (m *Postgres) InsertNftUTXO(UTXO *postsql.UTXONftInfo) error {
 	if UTXO.RealmName != "" {
-		m.RealmCache[UTXO.RealmName] = true
+		if _, exist := m.RealmCache[UTXO.RealmName]; exist {
+			m.RealmCache[UTXO.RealmName][UTXO.SubRealmName] = true
+		} else {
+			m.RealmCache[UTXO.RealmName] = make(map[string]bool)
+			m.RealmCache[UTXO.RealmName][UTXO.SubRealmName] = true
+		}
 	}
 	if UTXO.ContainerName != "" {
-		m.ContainerCache[UTXO.ContainerName] = true
+		if _, exist := m.ContainerCache[UTXO.ContainerName]; exist {
+			m.ContainerCache[UTXO.ContainerName][UTXO.Dmitem] = true
+		} else {
+			m.ContainerCache[UTXO.ContainerName] = make(map[string]bool)
+			m.ContainerCache[UTXO.ContainerName][UTXO.Dmitem] = true
+		}
 	}
 
 	m.SQLRaw += m.ToSQL(func(tx *gorm.DB) *gorm.DB {

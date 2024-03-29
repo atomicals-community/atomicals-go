@@ -4,7 +4,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/atomicals-core/atomicals/common"
 	"github.com/btcsuite/btcd/btcjson"
 )
 
@@ -26,6 +25,7 @@ func (m *BtcSync) GetBlockByHeight(blockHeight int64) (*btcjson.GetBlockVerboseT
 
 func (m *BtcSync) FetchBlocks() error {
 	for height := range m.blockHeightChannel {
+		// set block cache
 		if _, ok := m.blockCache.Load(height); ok {
 			continue
 		}
@@ -37,11 +37,15 @@ func (m *BtcSync) FetchBlocks() error {
 		if err != nil {
 			continue
 		}
-		for _, tx := range block.Tx {
-			m.SetTxHeightCache(tx.Txid, block.Height)
-		}
 		m.blockCache.Store(height, block)
-		m.DeleteUselessTxCache(height - common.MINT_GENERAL_COMMIT_REVEAL_DELAY_BLOCKS - 2)
+
+		// set tx Vin's BlockHeight cache
+		for _, tx := range block.Tx {
+			for _, vin := range tx.Vin {
+				m.SetTxHeightCache(vin.Txid, block.Height)
+			}
+		}
+		m.DeleteUselessTxCache(height - BlockCacheNum)
 	}
 	return nil
 }

@@ -20,7 +20,10 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 	if err != nil {
 		return err
 	}
-	operation.CommitHeight = m.GetCommitHeight(operation.CommitTxID)
+	operation.CommitHeight, err = m.GetCommitHeight(operation.CommitTxID)
+	if err != nil {
+		panic(err)
+	}
 	if operation.CommitHeight < common.ATOMICALS_ACTIVATION_HEIGHT {
 		return errors.ErrInvalidCommitHeight
 	}

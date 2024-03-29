@@ -87,15 +87,23 @@ func (m *Postgres) NftRealmByNameHasExist(realmName string) (bool, error) {
 }
 
 func (m *Postgres) NftSubRealmByNameHasExist(realmName, subRealm string) (bool, error) {
-	var entities []*postsql.UTXONftInfo
-	dbTx := m.Where("realm_name = ? and sub_realm_name = ?", realmName, subRealm).First(&entities)
-	if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {
-		return false, dbTx.Error
+	if _, exist := m.RealmCache[realmName]; !exist {
+		return false, nil
 	}
-	if dbTx.RowsAffected == 0 {
+	if _, exist := m.RealmCache[realmName][subRealm]; !exist {
 		return false, nil
 	}
 	return true, nil
+
+	// var entities []*postsql.UTXONftInfo
+	// dbTx := m.Where("realm_name = ? and sub_realm_name = ?", realmName, subRealm).First(&entities)
+	// if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {
+	// 	return false, dbTx.Error
+	// }
+	// if dbTx.RowsAffected == 0 {
+	// 	return false, nil
+	// }
+	// return true, nil
 }
 
 func (m *Postgres) NftContainerByNameHasExist(containerName string) (bool, error) {
@@ -115,13 +123,21 @@ func (m *Postgres) NftContainerByNameHasExist(containerName string) (bool, error
 }
 
 func (m *Postgres) ContainerItemByNameHasExist(containerName, itemID string) (bool, error) {
-	var entities []*postsql.UTXONftInfo
-	dbTx := m.Where("container_name = ? and dmitem = ?", containerName, itemID).Find(&entities)
-	if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {
-		return false, dbTx.Error
+	if _, exist := m.ContainerCache[containerName]; !exist {
+		return false, nil
 	}
-	if dbTx.RowsAffected == 0 {
+	if _, exist := m.ContainerCache[containerName][itemID]; !exist {
 		return false, nil
 	}
 	return true, nil
+
+	// var entities []*postsql.UTXONftInfo
+	// dbTx := m.Where("container_name = ? and dmitem = ?", containerName, itemID).Find(&entities)
+	// if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {
+	// 	return false, dbTx.Error
+	// }
+	// if dbTx.RowsAffected == 0 {
+	// 	return false, nil
+	// }
+	// return true, nil
 }

@@ -42,10 +42,10 @@ func NewSqlDB(sqlDNS string) DB {
 	m := &Postgres{
 		DB:             DB,
 		SQLRaw:         "",
-		RealmCache:     make(map[string]bool),
-		ContainerCache: make(map[string]bool),
+		RealmCache:     make(map[string]map[string]bool),
+		ContainerCache: make(map[string]map[string]bool),
 	}
-	m.initCache()
+	m.initDBCache()
 	_, err = m.CurrentHeitht()
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
