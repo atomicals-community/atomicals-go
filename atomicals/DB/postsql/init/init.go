@@ -2,12 +2,11 @@ package main
 
 import (
 	"github.com/atomicals-core/atomicals/DB/postsql"
+	"github.com/atomicals-core/pkg/conf"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
-
-var DB, _ = gorm.Open(postgres.Open("host=127.0.0.1 user=postgres password=ZecreyProtocolDB@123 dbname=atomicals port=5432 sslmode=disable"), &gorm.Config{DisableForeignKeyConstraintWhenMigrating: true})
 
 func InitModels(db *gorm.DB) {
 	(&postsql.Location{}).Init(db)
@@ -26,6 +25,14 @@ func AutoMigrate(db *gorm.DB) {
 }
 
 func main() {
+	conf, err := conf.ReadJSONFromJSFile("../../../../conf/config.json")
+	if err != nil {
+		panic(err)
+	}
+	DB, err := gorm.Open(postgres.Open(conf.SqlDNS), &gorm.Config{DisableForeignKeyConstraintWhenMigrating: true})
+	if err != nil {
+		panic(err)
+	}
 	InitModels(DB)
 	// AutoMigrate(DB)
 }
