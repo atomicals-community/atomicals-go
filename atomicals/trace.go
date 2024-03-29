@@ -40,11 +40,10 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) error {
 	operation := witness.ParseWitness(tx, height)
 	// TODO:
 	// get_if_parent_spent_in_same_tx
+
 	// step 1: transfer nft, transfer ft
 	m.transferNft(operation, tx)
 	m.transferFt(operation, tx)
-
-	// log.Log.Infof("--------- -------------take time:%v,", time.Since(startTime))
 
 	// step 2: process operation
 	userPk := tx.Vout[common.VOUT_EXPECT_OUTPUT_INDEX].ScriptPubKey.Address
@@ -57,9 +56,7 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) error {
 		case "ft":
 			m.mintDirectFt(operation, tx.Vout, userPk)
 		case "nft":
-
 			m.mintNft(operation, userPk)
-
 		case "mod":
 		case "evt":
 		case "dat":

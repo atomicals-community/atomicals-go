@@ -39,15 +39,14 @@ Atomicals-core: 是atomicals索引器atomicals-electrumx的golang版本，并以
 - install golang and docker
 - start a postgres sql by docker
 ```
-$ docker run --name YourDatabaseName -p 5432:5432 -e POSTGRES_DB=postgres -e POSTGRES_USER=yourUserName -e POSTGRES_PASSWORD=yourPassword postgres
-$ docker run --name atomicals -p 5432:5432 -e POSTGRES_DB=postgres -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=admin123 postgres
+$ docker run --name postgres -p 5432:5432 -e POSTGRES_DB=postgres -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=admin123 postgres:14
 ``` 
 - download atomicals-core
-- edit conf/config.json : update it with your btc node url, user and password, and sql_dns(you have got it )
+- edit conf/config.json : update it with your btc node url, user and password, and sql_dns("sql_dns": "host= 127.0.0.1 user=admin password=admin123 dbname=postgres port=5432 sslmode=disable")
 - cd to atomicals-core path
 ``` 
 go mod tidy
-cd atomicals/DB/postsql/init/init.go
+cd atomicals/DB/postsql/init/
 go run ./
 cd ../../../../
 go run ./
