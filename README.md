@@ -49,7 +49,7 @@ go mod tidy
 cd atomicals/DB/postsql/init/
 go run ./
 cd ../../../../
-go run ./
+nohup go run ./ > log.txt 2>&1 &
 ``` 
 
 ## Performance

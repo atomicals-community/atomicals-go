@@ -9,12 +9,12 @@ import (
 	"github.com/atomicals-core/pkg/log"
 )
 
-const port = "127.0.0.1.9999"
+const port = "127.0.0.1:9999"
 
 func main() {
 	listener, err := net.Listen("tcp", port)
 	if err != nil {
-		log.Log.Panicf("Port is in use...")
+		log.Log.Panicf("......net.Listen error:%v", err)
 	}
 	defer listener.Close()
 
