@@ -1,6 +1,7 @@
 ### A solution to swap atomicals ft based on btc chain
 
 #### creat pool
+``` 
 // operation and args in witness
 "cpool"
 type Args struct {
@@ -11,9 +12,9 @@ type Args struct {
 	LpAmount int64
 	FeeRate  float
 }
-
+``` 
 Craft a Bitcoin transaction containing a "cpool" operation with accompanying arguments. Subsequently, we'll establish a liquidity pool. Atomicals indexer will then generate a structure containing essential pool information.
-
+``` 
 // pool data updated by indexer
 type PoolInfo struct {
 	AtomicalsID string
@@ -24,37 +25,40 @@ type PoolInfo struct {
 	LpAmount float64
 	FeeRate  float
 }
-
+``` 
 #### add liquidity
+``` 
 "al" 
 type Args struct {
 	PoolAtomicalsID string 
 }
-
+``` 
 When the indexer retrieves an "al" operation, it will examine the transaction inputs (Vins), remove the corresponding UTXOFtInfo entries from the Atomicals database(atomicalsUTXOFt.go), and update the PoolInfo. Additionally, it will designate the transaction outputs (Vouts) as pool tokens by coloring them.
-
+``` 
 type PoolToken struct {
 	AtomicalsID string
 	UserPk string
 	PoolAtomicalsID string // pool's AtomicalsID
 	LpAmount float64
 }
-
+``` 
 #### remove liquidity
+``` 
 "rl" 
 type Args struct {
 	PoolAtomicalsID string
 }
-
+``` 
 When the indexer retrieves an "rl" operation, it will examine the transaction inputs (Vins), remove the corresponding PoolToken entries, update the PoolInfo accordingly, and designate the transaction outputs (Vouts) as LiquidityA and LiquidityB by coloring them.
 
 #### swap
+``` 
 "swap" 
 type Args struct {
 
 	PoolAtomicalsID string
 }
-
+``` 
 When the indexer encounters a "swap" operation, it verifies the transaction inputs (Vins), removes the corresponding UTXOFtInfo entries, updates the PoolInfo accordingly, and designates the transaction outputs (Vouts) as LiquidityA or LiquidityB by coloring them.
 
 #### some issue
