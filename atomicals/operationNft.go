@@ -36,6 +36,8 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 	if operation.RevealLocationHeight >= common.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && operation.CommitVoutIndex != common.VOUT_EXPECT_OUTPUT_INDEX {
 		return errors.ErrInvalidVinIndex
 	}
+	// TODO: create_or_delete_dmitem_entry_if_requested
+
 	atomicalsID := operation.AtomicalsID
 	if operation.Payload.Args.RequestRealm != "" {
 		if !common.IsValidRealm(operation.Payload.Args.RequestRealm) {

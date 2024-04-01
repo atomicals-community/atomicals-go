@@ -6,6 +6,7 @@ const (
 	ATOMICALS_ACTIVATION_HEIGHT_COMMITZ              = 822800
 	ATOMICALS_ACTIVATION_HEIGHT_DENSITY              = 828128
 	ATOMICALS_ACTIVATION_HEIGHT_DFT_BITWORK_ROLLOVER = 828628
+	AtOMICALS_FT_PARTIAL_SPLITING_HEIGHT             = 845000 // 845000 is a tmp value, it will be changed depending on the situation
 )
 
 // is_dmint_activated sort_fifo

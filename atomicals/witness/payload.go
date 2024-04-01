@@ -7,8 +7,9 @@ import (
 
 type PayLoad struct {
 	// ImagePng map[string]string `cbor:"image.png"` // Todo: there are some err when unmarshal ImagePng
-	Args *Args `cbor:"args"`
-	Meta *Meta `cbor:"meta"`
+	Args                       *Args            `cbor:"args"`
+	Meta                       *Meta            `cbor:"meta"`
+	TotalAmountToSkipPotential map[string]int64 // key: locationID
 }
 
 // parse_atomicals_data_definition_operation

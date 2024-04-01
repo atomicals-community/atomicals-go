@@ -43,7 +43,11 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) error {
 
 	// step 1: transfer nft, transfer ft
 	m.transferNft(operation, tx)
-	m.transferFt(operation, tx)
+	if height < common.AtOMICALS_FT_PARTIAL_SPLITING_HEIGHT {
+		m.transferFt(operation, tx)
+	} else {
+		m.transferFtPartialSpliting(operation, tx)
+	}
 
 	// step 2: process operation
 	userPk := tx.Vout[common.VOUT_EXPECT_OUTPUT_INDEX].ScriptPubKey.Address

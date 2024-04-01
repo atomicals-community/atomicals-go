@@ -11,7 +11,7 @@ import (
 	"github.com/btcsuite/btcd/btcjson"
 )
 
-func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx btcjson.TxRawResult) error {
+func (m *Atomicals) transferFtPartialSpliting(operation *witness.WitnessAtomicalsOperation, tx btcjson.TxRawResult) error {
 	if operation.IsSplitOperation() { // color_ft_atomicals_split
 		ftAtomicals := make([]*postsql.UTXOFtInfo, 0)
 		for _, vin := range tx.Vin {
@@ -37,16 +37,20 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 		// Todo: haven't catched this param from operation
 		for _, ft := range ftAtomicals {
 			total_amount_to_skip_potential := operation.Payload.TotalAmountToSkipPotential[ft.LocationID]
-			remaining_value := ft.Amount
+			remainingValue := ft.Amount
 			for outputIndex, vout := range tx.Vout {
+				toBeColoredAmount := int64(vout.Value * common.Satoshi)
 				if 0 < total_amount_to_skip_potential {
-					total_amount_to_skip_potential -= int64(vout.Value * common.Satoshi)
+					total_amount_to_skip_potential -= toBeColoredAmount
 					continue
 				}
-				if remaining_value < int64(vout.Value*common.Satoshi) { // burn rest ft
-					break
+				if remainingValue >= toBeColoredAmount {
+					remainingValue -= toBeColoredAmount
+				} else {
+					// partial colored utxo
+					toBeColoredAmount = remainingValue
+					remainingValue -= toBeColoredAmount
 				}
-				remaining_value -= int64(vout.Value * common.Satoshi)
 				locationID := common.AtomicalsID(operation.RevealLocationTxID, int64(outputIndex))
 				if err := m.InsertFtUTXO(&postsql.UTXOFtInfo{
 					UserPk:          vout.ScriptPubKey.Address,
@@ -60,7 +64,7 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 					MintBitworkVec:  ft.MintBitworkVec,
 					MintBitworkcInc: ft.MintBitworkcInc,
 					MintBitworkrInc: ft.MintBitworkrInc,
-					Amount:          int64(vout.Value * common.Satoshi),
+					Amount:          toBeColoredAmount,
 				}); err != nil {
 					log.Log.Panicf("InsertFtUTXO err:%v", err)
 				}
@@ -128,80 +132,105 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 
 		// calculate_outputs_to_color_for_ft_atomical_ids
 		newFts := make([]*postsql.UTXOFtInfo, 0)
-		next_start_out_idx := int64(0)
-		non_clean_output_slots := false
+		// case 1: cleanly assigned
+		nextStartOutIndex := int64(0)
 		for _, ft := range atomicalsFts {
-			cleanly_assigned, assignedVoutIndex, fts := assign_expected_outputs_basic(ft, operation, tx, next_start_out_idx)
-			if cleanly_assigned {
-				next_start_out_idx = assignedVoutIndex + 1
-				newFts = append(newFts, fts...)
-			} else {
-				non_clean_output_slots = true
-				newFts = make([]*postsql.UTXOFtInfo, 0)
-				break
+			remainingValue := ft.Amount
+			for outputIndex := nextStartOutIndex; outputIndex < int64(len(tx.Vout)); outputIndex++ {
+				vout := tx.Vout[outputIndex]
+				if int64(outputIndex) < nextStartOutIndex {
+					continue
+				}
+				toBeColoredAmount := int64(vout.Value * common.Satoshi)
+				if remainingValue >= toBeColoredAmount {
+					remainingValue -= toBeColoredAmount
+				} else {
+					// partial colored utxo
+					toBeColoredAmount = remainingValue
+					remainingValue -= toBeColoredAmount
+				}
+				nextStartOutIndex = outputIndex + 1
+
+				scriptPubKeyBytes, err := hex.DecodeString(vout.ScriptPubKey.Hex)
+				if err != nil {
+					panic(err)
+				}
+				if common.IsUnspendableGenesis(scriptPubKeyBytes) ||
+					common.IsUnspendableLegacy(scriptPubKeyBytes) {
+					continue
+				}
+				newLocationID := common.AtomicalsID(operation.RevealLocationTxID, int64(outputIndex))
+				newFts = append(newFts, &postsql.UTXOFtInfo{
+					UserPk:          vout.ScriptPubKey.Address,
+					AtomicalsID:     ft.AtomicalsID,
+					LocationID:      newLocationID,
+					MintTicker:      ft.MintTicker,
+					Nonce:           ft.Nonce,
+					Time:            ft.Time,
+					Bitworkc:        ft.Bitworkc,
+					Bitworkr:        ft.Bitworkr,
+					MintBitworkVec:  ft.MintBitworkVec,
+					MintBitworkcInc: ft.MintBitworkcInc,
+					MintBitworkrInc: ft.MintBitworkrInc,
+					Amount:          int64(vout.Value * common.Satoshi),
+				})
+			}
+			// # If the output slots did not fit cleanly, then default to just assigning everything from the 0'th output index
+			if remainingValue <= 0 {
+				for _, ft := range newFts {
+					if err := m.InsertFtUTXO(ft); err != nil {
+						log.Log.Panicf("InsertFtUTXO err:%v", err)
+					}
+				}
+				return nil
 			}
 		}
-		// # If the output slots did not fit cleanly, then default to just assigning everything from the 0'th output index
-		if non_clean_output_slots {
-			newFts = make([]*postsql.UTXOFtInfo, 0)
-			for _, ft := range atomicalsFts {
-				_, _, fts := assign_expected_outputs_basic(ft, operation, tx, 0) //always is 0'th
-				newFts = append(newFts, fts...)
+		// case 2: not cleanly assigned
+		newFts = make([]*postsql.UTXOFtInfo, 0)
+		for _, ft := range atomicalsFts {
+			remainingValue := ft.Amount
+			for outputIndex, vout := range tx.Vout {
+				toBeColoredAmount := int64(vout.Value * common.Satoshi)
+				if remainingValue >= toBeColoredAmount {
+					remainingValue -= toBeColoredAmount
+				} else {
+					// partial colored utxo
+					toBeColoredAmount = remainingValue
+					remainingValue -= toBeColoredAmount
+				}
+				scriptPubKeyBytes, err := hex.DecodeString(vout.ScriptPubKey.Hex)
+				if err != nil {
+					panic(err)
+				}
+				if common.IsUnspendableGenesis(scriptPubKeyBytes) ||
+					common.IsUnspendableLegacy(scriptPubKeyBytes) {
+					continue
+				}
+				newLocationID := common.AtomicalsID(operation.RevealLocationTxID, int64(outputIndex))
+				newFts = append(newFts, &postsql.UTXOFtInfo{
+					UserPk:          vout.ScriptPubKey.Address,
+					AtomicalsID:     ft.AtomicalsID,
+					LocationID:      newLocationID,
+					MintTicker:      ft.MintTicker,
+					Nonce:           ft.Nonce,
+					Time:            ft.Time,
+					Bitworkc:        ft.Bitworkc,
+					Bitworkr:        ft.Bitworkr,
+					MintBitworkVec:  ft.MintBitworkVec,
+					MintBitworkcInc: ft.MintBitworkcInc,
+					MintBitworkrInc: ft.MintBitworkrInc,
+					Amount:          int64(vout.Value * common.Satoshi),
+				})
 			}
-		}
-		for _, ft := range newFts {
-			if err := m.InsertFtUTXO(ft); err != nil {
-				log.Log.Panicf("InsertFtUTXO err:%v", err)
+			// # If the output slots did not fit cleanly, then default to just assigning everything from the 0'th output index
+			for _, ft := range newFts {
+				if err := m.InsertFtUTXO(ft); err != nil {
+					log.Log.Panicf("InsertFtUTXO err:%v", err)
+				}
 			}
+			return nil
 		}
-		return nil
+
 	}
 	return nil
-}
-
-// assign_expected_outputs_basic
-func assign_expected_outputs_basic(ft *postsql.UTXOFtInfo, operation *witness.WitnessAtomicalsOperation, tx btcjson.TxRawResult, start_out_idx int64) (bool, int64, []*postsql.UTXOFtInfo) {
-	newFts := make([]*postsql.UTXOFtInfo, 0)
-	remaining_value := ft.Amount
-	if start_out_idx >= int64(len(tx.Vout)) {
-		return false, start_out_idx, nil
-	}
-	assignedVoutIndex := int64(0)
-	for outputIndex, vout := range tx.Vout {
-		if int64(outputIndex) < start_out_idx {
-			continue
-		}
-		assignedVoutIndex = int64(outputIndex)
-		scriptPubKeyBytes, err := hex.DecodeString(vout.ScriptPubKey.Hex)
-		if err != nil {
-			panic(err)
-		}
-		if common.IsUnspendableGenesis(scriptPubKeyBytes) ||
-			common.IsUnspendableLegacy(scriptPubKeyBytes) {
-			continue
-		}
-		if int64(vout.Value*common.Satoshi) > remaining_value { // burn rest ft
-			return false, assignedVoutIndex, nil
-		}
-		remaining_value -= int64(vout.Value * common.Satoshi)
-		locationID := common.AtomicalsID(operation.RevealLocationTxID, int64(outputIndex))
-		newFts = append(newFts, &postsql.UTXOFtInfo{
-			UserPk:          vout.ScriptPubKey.Address,
-			AtomicalsID:     ft.AtomicalsID,
-			LocationID:      locationID,
-			MintTicker:      ft.MintTicker,
-			Nonce:           ft.Nonce,
-			Time:            ft.Time,
-			Bitworkc:        ft.Bitworkc,
-			Bitworkr:        ft.Bitworkr,
-			MintBitworkVec:  ft.MintBitworkVec,
-			MintBitworkcInc: ft.MintBitworkcInc,
-			MintBitworkrInc: ft.MintBitworkrInc,
-			Amount:          int64(vout.Value * common.Satoshi),
-		})
-		if remaining_value == 0 {
-			return true, assignedVoutIndex, newFts
-		}
-	}
-	return false, assignedVoutIndex, nil
 }
