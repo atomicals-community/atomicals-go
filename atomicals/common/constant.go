@@ -19,6 +19,8 @@ const (
 	DFT_MINT_MAX_MAX_COUNT_DENSITY                         = 21000000
 	DFT_MINT_HEIGHT_MIN                                    = 0
 	DFT_MINT_HEIGHT_MAX                                    = 10000000
-	SUBNAME_MIN_PAYMENT_DUST_LIMIT                         = 0
 	VOUT_EXPECT_OUTPUT_INDEX                               = 0
+	DMINT_PATH                                             = "dmint"
+	SUBNAME_MIN_PAYMENT_DUST_LIMIT                         = 0 // # It can be possible to do free
+
 )

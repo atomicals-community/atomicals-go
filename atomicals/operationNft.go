@@ -1,15 +1,14 @@
 package atomicals
 
 import (
-	"github.com/atomicals-core/pkg/log"
-
 	"github.com/atomicals-core/atomicals/DB/postsql"
 	"github.com/atomicals-core/atomicals/common"
 	"github.com/atomicals-core/atomicals/witness"
 	"github.com/atomicals-core/pkg/errors"
+	"github.com/atomicals-core/pkg/log"
 )
 
-func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk string) error {
+func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk string, height int64) error {
 	if operation.RevealInputIndex != 0 {
 		return errors.ErrInvalidRevealInputIndex
 	}
@@ -36,8 +35,6 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 	if operation.RevealLocationHeight >= common.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && operation.CommitVoutIndex != common.VOUT_EXPECT_OUTPUT_INDEX {
 		return errors.ErrInvalidVinIndex
 	}
-	// TODO: create_or_delete_dmitem_entry_if_requested
-
 	atomicalsID := operation.AtomicalsID
 	if operation.Payload.Args.RequestRealm != "" {
 		if !common.IsValidRealm(operation.Payload.Args.RequestRealm) {
@@ -149,26 +146,31 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 		if !common.IsDmintActivated(operation.RevealLocationHeight) {
 			return errors.ErrDmintNotStart
 		}
-		parentContainerName, err := m.ParentContainerHasExist(operation.Payload.Args.ParentContainer)
+		parentContainer, err := m.ParentContainerHasExist(operation.Payload.Args.ParentContainer)
 		if err != nil {
 			log.Log.Panicf("ParentContainerHasExist err:%v", err)
 		}
-		if parentContainerName == "" {
-			return errors.ErrParentRealmNotExist
+		if parentContainer == nil {
+			return errors.ErrContainerNotExist
 		}
 		if !common.IsValidDmitem(operation.Payload.Args.RequestDmitem) {
 			return errors.ErrInvalidContainerDmitem
 		}
-		isExist, err := m.ContainerItemByNameHasExist(parentContainerName, operation.Payload.Args.RequestDmitem)
+		isExist, err := m.ContainerItemByNameHasExist(parentContainer.ContainerName, operation.Payload.Args.RequestDmitem)
 		if err != nil {
 			log.Log.Panicf("ContainerItemByName err:%v", err)
 		}
 		if isExist {
 			return errors.ErrSubRealmHasExist
 		}
+		if height >= common.ATOMICALS_ACTIVATION_HEIGHT_DMINT {
+			if !verifyRuleAndMerkle(operation, height) {
+				return errors.ErrInvalidMerkleVerify
+			}
+		}
 		entity := &postsql.UTXONftInfo{
 			UserPk:                     userPk,
-			ContainerName:              parentContainerName,
+			ContainerName:              parentContainer.ContainerName,
 			Dmitem:                     operation.Payload.Args.RequestDmitem,
 			ParentContainerAtomicalsID: operation.Payload.Args.ParentContainer,
 			Nonce:                      operation.Payload.Args.Nonce,
@@ -182,10 +184,5 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 			log.Log.Panicf("InsertNftUTXO err:%v", err)
 		}
 	}
-	// skip other nft
-	// else {
-	// 	log.Log.Panicf("operation.Script:%+v", operation.Script)
-	// 	log.Log.Panicf("operation.Payload.Args:%+v", operation.Payload.Args)
-	// }
 	return nil
 }

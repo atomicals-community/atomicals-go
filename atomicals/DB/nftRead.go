@@ -54,16 +54,16 @@ func (m *Postgres) ParentRealmHasExist(parentRealmAtomicalsID string) (string, e
 	return entity.RealmName, nil
 }
 
-func (m *Postgres) ParentContainerHasExist(parentContainerAtomicalsID string) (string, error) {
+func (m *Postgres) ParentContainerHasExist(parentContainerAtomicalsID string) (*postsql.UTXONftInfo, error) {
 	var entity *postsql.UTXONftInfo
 	dbTx := m.Where("atomicals_id = ?", parentContainerAtomicalsID).Find(&entity)
 	if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {
-		return "", dbTx.Error
+		return nil, dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		return "", nil
+		return nil, nil
 	}
-	return entity.ContainerName, nil
+	return entity, nil
 }
 
 func (m *Postgres) NftRealmByNameHasExist(realmName string) (bool, error) {

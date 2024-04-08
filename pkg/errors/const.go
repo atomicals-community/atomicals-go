@@ -25,6 +25,7 @@ var (
 	ErrInvalidContainer             = New(20006, "ErrInvalidContainer")
 	ErrInvalidContainerDmitem       = New(20006, "ErrInvalidContainerDmitem")
 	ErrContainerHasExist            = New(20005, "ErrContainerHasExist")
+	ErrContainerNotExist            = New(20005, "ErrContainerNotExist")
 	ErrParentRealmNotExist          = New(20005, "ErrParentRealmNotExist")
 	ErrSubRealmHasExist             = New(20005, "ErrSubRealmHasExist")
 	ErrNotDeployFt                  = New(20007, "ErrNotDeployFt")
@@ -50,4 +51,5 @@ var (
 	ErrCheckRequest                 = New(20010, "ErrCheckRequest")
 	ErrDmintNotStart                = New(20010, "ErrDmintNotStart")
 	ErrInvalidRevealInputIndex      = New(20010, "ErrInvalidRevealInputIndex")
+	ErrInvalidMerkleVerify          = New(20010, "ErrInvalidMerkleVerify")
 )

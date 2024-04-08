@@ -26,11 +26,4 @@ func main() {
 	for {
 		a.TraceBlock()
 	}
-
-	// traced Specific Tx
-	// tx, err := b.GetTransaction("b28f089b5a96c4803db73d51ed801aec4efec997761ee8dc914e0f934b6fcd59")
-	// if err != nil {
-	// 	log.Log.Panicf("GetTransaction err:%v", err)
-	// }
-	// a.TraceTx(*tx, height)
 }

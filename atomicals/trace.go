@@ -38,11 +38,8 @@ func (m *Atomicals) TraceBlock() {
 
 func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) error {
 	operation := witness.ParseWitness(tx, height)
-	// TODO:
-	// get_if_parent_spent_in_same_tx
-
 	// step 1: transfer nft, transfer ft
-	m.transferNft(operation, tx)
+	// m.transferNft(operation, tx)
 	if height < common.AtOMICALS_FT_PARTIAL_SPLITING_HEIGHT {
 		m.transferFt(operation, tx)
 	} else {
@@ -60,7 +57,7 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) error {
 		case "ft":
 			m.mintDirectFt(operation, tx.Vout, userPk)
 		case "nft":
-			m.mintNft(operation, userPk)
+			// m.mintNft(operation, userPk, height)
 		case "mod":
 		case "evt":
 		case "dat":

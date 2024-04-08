@@ -10,6 +10,7 @@ type PayLoad struct {
 	Args                       *Args            `cbor:"args"`
 	Meta                       *Meta            `cbor:"meta"`
 	TotalAmountToSkipPotential map[string]int64 // key: locationID
+	Main                       []byte
 }
 
 // parse_atomicals_data_definition_operation
@@ -153,6 +154,7 @@ type Args struct {
 	// nft: dmitem
 	RequestDmitem   string `cbor:"request_dmitem"`   // item num in ParentContainer
 	ParentContainer string `cbor:"parent_container"` // ParentContainer atomicalsID
+
 }
 
 type NftSubrealmClaimType string
@@ -178,7 +180,7 @@ type ImagePng struct {
 }
 
 type Proof struct {
-	D string `cbor:"d"`
+	D []byte `cbor:"d"`
 	P bool   `cbor:"p"`
 }
 

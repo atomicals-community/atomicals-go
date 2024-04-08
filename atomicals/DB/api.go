@@ -17,7 +17,7 @@ type DB interface {
 	ParentRealmHasExist(parentRealmAtomicalsID string) (string, error)
 	NftRealmByNameHasExist(realmName string) (bool, error)
 	NftSubRealmByNameHasExist(realmName, subRealm string) (bool, error)
-	ParentContainerHasExist(parentContainerAtomicalsID string) (string, error)
+	ParentContainerHasExist(parentContainerAtomicalsID string) (*postsql.UTXONftInfo, error)
 	NftContainerByNameHasExist(containerName string) (bool, error)
 	ContainerItemByNameHasExist(container, item string) (bool, error)
 	// nft write
