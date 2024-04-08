@@ -150,7 +150,6 @@ func (m *Atomicals) transferFtPartialSpliting(operation *witness.WitnessAtomical
 					remainingValue -= toBeColoredAmount
 				}
 				nextStartOutIndex = outputIndex + 1
-
 				scriptPubKeyBytes, err := hex.DecodeString(vout.ScriptPubKey.Hex)
 				if err != nil {
 					panic(err)
@@ -176,7 +175,7 @@ func (m *Atomicals) transferFtPartialSpliting(operation *witness.WitnessAtomical
 				})
 			}
 			// # If the output slots did not fit cleanly, then default to just assigning everything from the 0'th output index
-			if remainingValue <= 0 {
+			if remainingValue == 0 {
 				for _, ft := range newFts {
 					if err := m.InsertFtUTXO(ft); err != nil {
 						log.Log.Panicf("InsertFtUTXO err:%v", err)
