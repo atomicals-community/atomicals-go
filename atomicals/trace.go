@@ -15,13 +15,13 @@ func (m *Atomicals) TraceBlock() {
 	height, err := m.CurrentHeitht()
 	if err != nil {
 		log.Log.Panicf("CurrentHeitht err:%v", err)
-		panic(err)
 	}
-	blockInfo, err := m.GetBlockByHeight(height + 1)
+	height++
+	blockInfo, err := m.GetBlockByHeight(height)
 	if err != nil {
 		log.Log.Panicf("GetBlockByHeight err:%v height:%v", err, height)
 	}
-	log.Log.Infof("height:%v, GetBlockByHeight take time:%v,", blockInfo.Height, time.Since(startTime))
+	getBlockByHeightTime := time.Since(startTime)
 	startTime = time.Now()
 	for _, tx := range blockInfo.Tx {
 		// skip this tx, it's from miner
@@ -30,10 +30,10 @@ func (m *Atomicals) TraceBlock() {
 		}
 		m.TraceTx(tx, blockInfo.Height)
 	}
-	if err := m.UpdateCurrentHeightAndExecAllSql(blockInfo.Height, ""); err != nil {
+	if err := m.UpdateCurrentHeightAndExecAllSql(blockInfo.Height); err != nil {
 		log.Log.Panicf("UpdateCurrentHeight err:%v", err)
 	}
-	log.Log.Infof("height:%v, take time:%v,", blockInfo.Height, time.Since(startTime))
+	log.Log.Infof("height:%v, getBlockByHeight take time:%v, TraceTx take time:%v", blockInfo.Height, getBlockByHeightTime, time.Since(startTime))
 }
 
 func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) error {

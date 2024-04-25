@@ -11,6 +11,10 @@ func (e *error) Error() string {
 	return fmt.Sprintf("%d: %s", e.code, e.message)
 }
 
+func (e *error) Msg() string {
+	return e.message
+}
+
 func (e *error) Code() int64 {
 	return e.code
 }

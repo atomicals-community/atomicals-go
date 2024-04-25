@@ -1,51 +1,58 @@
 package btcsync
 
 import (
-	"errors"
 	"time"
 
 	"github.com/btcsuite/btcd/btcjson"
 )
 
 func (m *BtcSync) GetBlockByHeight(blockHeight int64) (*btcjson.GetBlockVerboseTxResult, error) {
-	for height := int64(blockHeight); height < blockHeight+int64(BlockCacheNum); height++ {
-		m.blockHeightChannel <- height
-	}
-	block, ok := m.blockCache.LoadAndDelete(blockHeight)
-	if !ok {
-		time.Sleep(2 * time.Second)
-		block, ok = m.blockCache.LoadAndDelete(blockHeight)
-		if !ok {
-			return nil, errors.ErrUnsupported
+	for height := blockHeight; height < blockHeight+int64(BlockCacheNum); height++ {
+		if m.CurrentHeight < height {
+			m.blockHeightChannel <- height
+			m.CurrentHeight = height
 		}
 	}
-	b, _ := block.(*btcjson.GetBlockVerboseTxResult)
+	var b *btcjson.GetBlockVerboseTxResult
+	for {
+		block, ok := m.blockCache.LoadAndDelete(blockHeight)
+		if ok {
+			b, _ = block.(*btcjson.GetBlockVerboseTxResult)
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
 	return b, nil
 }
 
 func (m *BtcSync) FetchBlocks() error {
 	for height := range m.blockHeightChannel {
 		// set block cache
-		if _, ok := m.blockCache.Load(height); ok {
-			continue
-		}
-		blockHash, err := m.GetBlockHash(height)
-		if err != nil {
-			continue
-		}
-		block, err := m.GetBlockVerboseTx(blockHash)
+		block, err := m.getBlockByHeight(height)
 		if err != nil {
 			continue
 		}
 		m.blockCache.Store(height, block)
-
 		// set tx Vin's BlockHeight cache
 		for _, tx := range block.Tx {
 			for _, vin := range tx.Vin {
-				m.SetTxHeightCache(vin.Txid, block.Height)
+				m.setTxHeightCache(vin.Txid, block.Height)
 			}
 		}
-		m.DeleteUselessTxCache(height - BlockCacheNum)
+		m.deleteUselessTxCache(height - 2*BlockCacheNum)
+		time.Sleep(1 * time.Second)
 	}
 	return nil
+}
+
+func (m *BtcSync) getBlockByHeight(height int64) (*btcjson.GetBlockVerboseTxResult, error) {
+	blockHash, err := m.GetBlockHash(height)
+	if err != nil {
+		return nil, err
+	}
+	block, err := m.GetBlockVerboseTx(blockHash)
+	if err != nil {
+		return nil, err
+	}
+	return block, nil
 }

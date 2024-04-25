@@ -22,7 +22,7 @@ func (m *BtcSync) GetCommitHeight(txID string) (int64, error) {
 	return height, nil
 }
 
-func (m *BtcSync) SetTxHeightCache(txID string, height int64) {
+func (m *BtcSync) setTxHeightCache(txID string, height int64) {
 	m.TxCache.Store(txID, height)
 	res, ok := m.TxCacheByHeight.Load(height)
 	if !ok {
@@ -35,7 +35,7 @@ func (m *BtcSync) SetTxHeightCache(txID string, height int64) {
 }
 
 // deleteHeight := currentHeight - common.MINT_GENERAL_COMMIT_REVEAL_DELAY_BLOCKS-1
-func (m *BtcSync) DeleteUselessTxCache(deleteHeight int64) {
+func (m *BtcSync) deleteUselessTxCache(deleteHeight int64) {
 	res, ok := m.TxCacheByHeight.LoadAndDelete(deleteHeight)
 	if !ok {
 		return

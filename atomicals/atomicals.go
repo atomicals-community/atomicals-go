@@ -13,11 +13,7 @@ type Atomicals struct {
 
 func NewAtomicalsWithSQL(conf *conf.Config) *Atomicals {
 	d := db.NewSqlDB(conf.SqlDNS)
-	height, err := d.CurrentHeitht()
-	if err != nil {
-		panic(err)
-	}
-	b, err := btcsync.NewBtcSync(conf.BtcRpcURL, conf.BtcRpcUser, conf.BtcRpcPassword, height)
+	b, err := btcsync.NewBtcSync(conf.BtcRpcURL, conf.BtcRpcUser, conf.BtcRpcPassword)
 	if err != nil {
 		panic(err)
 	}

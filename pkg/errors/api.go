@@ -5,8 +5,9 @@ package errors
 
 type Error interface {
 	Error() string
-	Code() int64
-	RefineError(err ...interface{}) *error
+	// Msg() string
+	// Code() int64
+	// RefineError(err ...interface{}) *error
 }
 
 func New(code int64, msg string) Error {

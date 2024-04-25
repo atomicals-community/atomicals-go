@@ -10,7 +10,7 @@ import (
 type DB interface {
 	// atomicals-core current location
 	CurrentHeitht() (int64, error)
-	UpdateCurrentHeightAndExecAllSql(int64, string) error
+	UpdateCurrentHeightAndExecAllSql(int64) error
 
 	// nft read
 	NftUTXOsByLocationID(locationID string) ([]*postsql.UTXONftInfo, error)
@@ -49,7 +49,7 @@ func NewSqlDB(sqlDNS string) DB {
 	_, err = m.CurrentHeitht()
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			if err := m.UpdateCurrentHeightAndExecAllSql(common.ATOMICALS_ACTIVATION_HEIGHT-1, ""); err != nil {
+			if err := m.UpdateCurrentHeightAndExecAllSql(common.ATOMICALS_ACTIVATION_HEIGHT - 1); err != nil {
 				panic(err)
 			}
 		} else {

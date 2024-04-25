@@ -44,7 +44,7 @@ func (m *Postgres) initDBCache() error {
 	return nil
 }
 
-func (m *Postgres) UpdateCurrentHeightAndExecAllSql(height int64, txID string) error {
+func (m *Postgres) UpdateCurrentHeightAndExecAllSql(height int64) error {
 	entity := &postsql.Location{}
 	dbTx := m.Take(&entity)
 	if dbTx.Error != nil && dbTx.Error != gorm.ErrRecordNotFound {
@@ -52,7 +52,6 @@ func (m *Postgres) UpdateCurrentHeightAndExecAllSql(height int64, txID string) e
 	}
 	entity.Owner = "atomicals"
 	entity.Height = height
-	entity.TxID = txID
 	sql := m.ToSQL(func(tx *gorm.DB) *gorm.DB {
 		return tx.Save(entity)
 	})

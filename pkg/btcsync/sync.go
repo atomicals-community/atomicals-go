@@ -10,12 +10,13 @@ const BlockCacheNum = 3
 
 type BtcSync struct {
 	*rpcclient.Client
+	CurrentHeight      int64
 	blockHeightChannel chan int64
 	blockCache         sync.Map
 	*TxHeightCache
 }
 
-func NewBtcSync(rpcURL, rpcUser, rpcPassword string, startHeight int64) (*BtcSync, error) {
+func NewBtcSync(rpcURL, rpcUser, rpcPassword string) (*BtcSync, error) {
 	client, err := rpcclient.New(&rpcclient.ConnConfig{
 		HTTPPostMode: true,
 		DisableTLS:   true,
@@ -28,10 +29,9 @@ func NewBtcSync(rpcURL, rpcUser, rpcPassword string, startHeight int64) (*BtcSyn
 	}
 	m := &BtcSync{
 		Client:             client,
-		blockHeightChannel: make(chan int64, 3),
+		blockHeightChannel: make(chan int64, BlockCacheNum),
 		TxHeightCache:      &TxHeightCache{},
 	}
 	go m.FetchBlocks()
 	return m, nil
-
 }

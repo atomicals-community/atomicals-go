@@ -11,7 +11,6 @@ type Location struct {
 	gorm.Model
 	Owner  string `gorm:"uniqueindex" json:"owner"`
 	Height int64
-	TxID   string
 }
 
 func (*Location) TableName() string {

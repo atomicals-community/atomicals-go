@@ -2,7 +2,7 @@ package common
 
 import (
 	"crypto/hmac"
-	sha256p "crypto/sha256"
+	"crypto/sha256"
 	"encoding/hex"
 	"math"
 )
@@ -17,7 +17,7 @@ func reverseHex(input string) []byte {
 }
 
 func hmacDigest(key, data []byte) []byte {
-	hash := hmac.New(sha256p.New, key)
+	hash := hmac.New(sha256.New, key)
 	hash.Write(data)
 	return hash.Sum(nil)
 }
@@ -32,7 +32,7 @@ func header_hash(header []byte) []byte {
 }
 
 func Sha256(data []byte) []byte {
-	hash := sha256p.New()
+	hash := sha256.New()
 	hash.Write(data)
 	return hash.Sum(nil)
 }
