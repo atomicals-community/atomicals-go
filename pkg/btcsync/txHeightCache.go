@@ -9,18 +9,18 @@ type TxHeightCache struct {
 	TxCacheByHeight sync.Map // key: blockHeight, value: map[string]bool(key: txid); used for delete useless txCache(blockHeight<currentHeight-common.MINT_GENERAL_COMMIT_REVEAL_DELAY_BLOCKS)
 }
 
-func (m *BtcSync) GetCommitHeight(txID string) (int64, error) {
-	res, ok := m.TxCache.LoadAndDelete(txID)
-	if ok {
-		height, _ := res.(int64)
-		return height, nil
-	}
-	height, err := m.GetTxHeightByTxID(txID)
-	if err != nil {
-		return -1, err
-	}
-	return height, nil
-}
+// func (m *BtcSync) GetCommitHeight(txID string) (int64, error) {
+// 	res, ok := m.TxCache.LoadAndDelete(txID)
+// 	if ok {
+// 		height, _ := res.(int64)
+// 		return height, nil
+// 	}
+// 	height, err := m.GetTxHeightByTxID(txID)
+// 	if err != nil {
+// 		return -1, err
+// 	}
+// 	return height, nil
+// }
 
 func (m *BtcSync) setTxHeightCache(txID string, height int64) {
 	m.TxCache.Store(txID, height)

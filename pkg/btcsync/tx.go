@@ -6,11 +6,11 @@ import (
 )
 
 func (m *BtcSync) GetTxHeightByTxID(txID string) (int64, error) {
-	txHash, err := TxID2txHash(txID)
-	if err != nil {
-		return -1, err
-	}
-	t, err := m.GetTransaction(txHash)
+	// txHash, err := TxID2txHash(txID)
+	// if err != nil {
+	// 	return -1, err
+	// }
+	t, err := m.GetTransaction("07090050c70fb5917445c24c35da40d6978f7978bccc3339f935cf39b6392014")
 	if err != nil {
 		return -1, err
 	}

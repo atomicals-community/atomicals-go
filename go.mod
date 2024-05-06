@@ -1,4 +1,4 @@
-module github.com/atomicals-core
+module github.com/atomicals-go
 
 go 1.21.5
 

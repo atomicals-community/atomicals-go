@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 
-	"github.com/atomicals-core/atomicals/witness"
+	"github.com/atomicals-go/atomicals-core/witness"
 )
 
 type MerkleNode struct {
