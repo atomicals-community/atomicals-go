@@ -33,13 +33,6 @@ func (m *BtcSync) FetchBlocks() error {
 			continue
 		}
 		m.blockCache.Store(height, block)
-		// set tx Vin's BlockHeight cache
-		for _, tx := range block.Tx {
-			for _, vin := range tx.Vin {
-				m.setTxHeightCache(vin.Txid, block.Height)
-			}
-		}
-		m.deleteUselessTxCache(height - 2*BlockCacheNum)
 		time.Sleep(1 * time.Second)
 	}
 	return nil

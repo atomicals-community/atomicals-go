@@ -3,11 +3,11 @@ package atomicals
 import (
 	"strconv"
 
-	"github.com/atomicals-go/atomicals-core/common"
-	"github.com/atomicals-go/atomicals-core/repo/postsql"
 	"github.com/atomicals-go/atomicals-core/witness"
 	"github.com/atomicals-go/pkg/errors"
 	"github.com/atomicals-go/pkg/log"
+	"github.com/atomicals-go/repo/postsql"
+	"github.com/atomicals-go/utils"
 	"github.com/btcsuite/btcd/btcjson"
 )
 
@@ -25,7 +25,7 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 	if ftEntity == nil {
 		return errors.ErrNotDeployFt
 	}
-	if operation.RevealLocationHeight < ftEntity.CommitHeight+common.MINT_REALM_CONTAINER_TICKER_COMMIT_REVEAL_DELAY_BLOCKS {
+	if operation.RevealLocationHeight < ftEntity.CommitHeight+utils.MINT_REALM_CONTAINER_TICKER_COMMIT_REVEAL_DELAY_BLOCKS {
 		return errors.ErrInvalidCommitHeight
 	}
 	operation.CommitHeight, err = m.BtcTxHeight(operation.CommitTxID)
@@ -35,11 +35,11 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 	if operation.CommitHeight < ftEntity.MintHeight {
 		return errors.ErrInvalidCommitHeight
 	}
-	if operation.RevealLocationHeight >= common.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && operation.CommitVoutIndex != common.VOUT_EXPECT_OUTPUT_INDEX {
+	if operation.RevealLocationHeight >= utils.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && operation.CommitVoutIndex != utils.VOUT_EXPECT_OUTPUT_INDEX {
 		return errors.ErrInvalidVinIndex
 	}
 	// if mint_amount == txout.value:
-	if int64(vout[common.VOUT_EXPECT_OUTPUT_INDEX].Value*common.Satoshi) != ftEntity.MintAmount {
+	if int64(vout[utils.VOUT_EXPECT_OUTPUT_INDEX].Value*utils.Satoshi) != ftEntity.MintAmount {
 		return errors.ErrInvalidMintAmount
 	}
 
@@ -83,12 +83,12 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 				return err
 			}
 			if bitworkc != nil {
-				if !common.IsProofOfWorkPrefixMatch(operation.CommitTxID, bitworkc.Prefix, bitworkc.Ext) {
+				if !utils.IsProofOfWorkPrefixMatch(operation.CommitTxID, bitworkc.Prefix, bitworkc.Ext) {
 					return errors.ErrInvalidBitWork
 				}
 			}
 			if bitworkr != nil {
-				if !common.IsProofOfWorkPrefixMatch(operation.CommitTxID, bitworkr.Prefix, bitworkr.Ext) {
+				if !utils.IsProofOfWorkPrefixMatch(operation.CommitTxID, bitworkr.Prefix, bitworkr.Ext) {
 					return errors.ErrInvalidBitWork
 				}
 			}
@@ -106,7 +106,7 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 		Time:        operation.Payload.Args.Time,
 		Bitworkc:    operation.Payload.Args.Bitworkc,
 		Bitworkr:    operation.Payload.Args.Bitworkr,
-		Amount:      int64(vout[common.VOUT_EXPECT_OUTPUT_INDEX].Value * common.Satoshi),
+		Amount:      int64(vout[utils.VOUT_EXPECT_OUTPUT_INDEX].Value * utils.Satoshi),
 		AtomicalsID: locationID,
 		LocationID:  locationID,
 	}
@@ -123,18 +123,18 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 func isTxidValidForPerpetualBitwork(txid string, bitwork_vec string, actual_mints, max_mints int64, mintBitworkrInc string, mintBitworkcStart int64, allow_higher bool) (bool, string) {
 	starting_target := mintBitworkcStart
 	target_increment, _ := strconv.Atoi(mintBitworkrInc) // never return err
-	expected_minimum_bitwork := common.Calculate_expected_bitwork(bitwork_vec, actual_mints, max_mints, int64(target_increment), starting_target)
-	if common.Is_mint_pow_valid(txid, expected_minimum_bitwork) {
+	expected_minimum_bitwork := utils.Calculate_expected_bitwork(bitwork_vec, actual_mints, max_mints, int64(target_increment), starting_target)
+	if utils.Is_mint_pow_valid(txid, expected_minimum_bitwork) {
 		return true, expected_minimum_bitwork
 	}
 	if allow_higher {
-		parts := common.ParseBitwork(expected_minimum_bitwork)
+		parts := utils.ParseBitwork(expected_minimum_bitwork)
 		if parts == nil {
 			return false, ""
 		}
 		prefix := parts.Prefix
-		next_full_bitwork_prefix := common.Get_next_bitwork_full_str(bitwork_vec, len(prefix))
-		if common.Is_mint_pow_valid(txid, next_full_bitwork_prefix) {
+		next_full_bitwork_prefix := utils.Get_next_bitwork_full_str(bitwork_vec, len(prefix))
+		if utils.Is_mint_pow_valid(txid, next_full_bitwork_prefix) {
 			return true, next_full_bitwork_prefix
 		}
 	}

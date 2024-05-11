@@ -1,11 +1,11 @@
 package atomicals
 
 import (
-	"github.com/atomicals-go/atomicals-core/common"
-	"github.com/atomicals-go/atomicals-core/repo/postsql"
 	"github.com/atomicals-go/atomicals-core/witness"
 	"github.com/atomicals-go/pkg/errors"
 	"github.com/atomicals-go/pkg/log"
+	"github.com/atomicals-go/repo/postsql"
+	"github.com/atomicals-go/utils"
 )
 
 func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk string, height int64) error {
@@ -23,7 +23,7 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 	if err != nil {
 		panic(err)
 	}
-	if operation.CommitHeight < common.ATOMICALS_ACTIVATION_HEIGHT {
+	if operation.CommitHeight < utils.ATOMICALS_ACTIVATION_HEIGHT {
 		return errors.ErrInvalidCommitHeight
 	}
 	if !operation.IsWithinAcceptableBlocksForGeneralReveal() {
@@ -32,12 +32,12 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 	if !operation.IsWithinAcceptableBlocksForNameReveal() {
 		return errors.ErrInvalidCommitHeight
 	}
-	if operation.RevealLocationHeight >= common.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && operation.CommitVoutIndex != common.VOUT_EXPECT_OUTPUT_INDEX {
+	if operation.RevealLocationHeight >= utils.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && operation.CommitVoutIndex != utils.VOUT_EXPECT_OUTPUT_INDEX {
 		return errors.ErrInvalidVinIndex
 	}
 	atomicalsID := operation.AtomicalsID
 	if operation.Payload.Args.RequestRealm != "" {
-		if !common.IsValidRealm(operation.Payload.Args.RequestRealm) {
+		if !utils.IsValidRealm(operation.Payload.Args.RequestRealm) {
 			return errors.ErrInvalidRealm
 		}
 		isExist, err := m.NftRealmByNameHasExist(operation.Payload.Args.RequestRealm)
@@ -70,7 +70,7 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 			log.Log.Panicf("InsertNftUTXO err:%v", err)
 		}
 	} else if operation.Payload.Args.RequestSubRealm != "" {
-		if !common.IsValidSubRealm(operation.Payload.Args.RequestSubRealm) {
+		if !utils.IsValidSubRealm(operation.Payload.Args.RequestSubRealm) {
 			return errors.ErrInvalidContainer
 		}
 		if operation.Payload.Args.ClaimType != witness.Direct && operation.Payload.Args.ClaimType != witness.Rule {
@@ -110,7 +110,7 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 			log.Log.Panicf("InsertNftUTXO err:%v", err)
 		}
 	} else if operation.Payload.Args.RequestContainer != "" {
-		if !common.IsValidContainer(operation.Payload.Args.RequestContainer) {
+		if !utils.IsValidContainer(operation.Payload.Args.RequestContainer) {
 			return errors.ErrInvalidContainer
 		}
 		isExist, err := m.NftContainerByNameHasExist(operation.Payload.Args.RequestContainer)
@@ -143,7 +143,7 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 			log.Log.Panicf("InsertNftUTXO err:%v", err)
 		}
 	} else if operation.Payload.Args.RequestDmitem != "" {
-		if !common.IsDmintActivated(operation.RevealLocationHeight) {
+		if !utils.IsDmintActivated(operation.RevealLocationHeight) {
 			return errors.ErrDmintNotStart
 		}
 		parentContainer, err := m.ParentContainerHasExist(operation.Payload.Args.ParentContainer)
@@ -153,7 +153,7 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 		if parentContainer == nil {
 			return errors.ErrContainerNotExist
 		}
-		if !common.IsValidDmitem(operation.Payload.Args.RequestDmitem) {
+		if !utils.IsValidDmitem(operation.Payload.Args.RequestDmitem) {
 			return errors.ErrInvalidContainerDmitem
 		}
 		isExist, err := m.ContainerItemByNameHasExist(parentContainer.ContainerName, operation.Payload.Args.RequestDmitem)
@@ -163,7 +163,7 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 		if isExist {
 			return errors.ErrSubRealmHasExist
 		}
-		if height >= common.ATOMICALS_ACTIVATION_HEIGHT_DMINT {
+		if height >= utils.ATOMICALS_ACTIVATION_HEIGHT_DMINT {
 			if !verifyRuleAndMerkle(operation, height) {
 				return errors.ErrInvalidMerkleVerify
 			}

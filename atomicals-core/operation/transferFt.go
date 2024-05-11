@@ -4,10 +4,10 @@ import (
 	"encoding/hex"
 	"sort"
 
-	"github.com/atomicals-go/atomicals-core/common"
-	"github.com/atomicals-go/atomicals-core/repo/postsql"
 	"github.com/atomicals-go/atomicals-core/witness"
 	"github.com/atomicals-go/pkg/log"
+	"github.com/atomicals-go/repo/postsql"
+	"github.com/atomicals-go/utils"
 	"github.com/btcsuite/btcd/btcjson"
 )
 
@@ -15,7 +15,7 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 	if operation.IsSplitOperation() { // color_ft_atomicals_split
 		ftAtomicals := make([]*postsql.UTXOFtInfo, 0)
 		for _, vin := range tx.Vin {
-			preLocationID := common.AtomicalsID(vin.Txid, int64(vin.Vout))
+			preLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
 			preFts, err := m.FtUTXOsByLocationID(preLocationID)
 			if err != nil {
 				log.Log.Panicf("FtUTXOsByLocationID err:%v", err)
@@ -40,14 +40,14 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 			remaining_value := ft.Amount
 			for outputIndex, vout := range tx.Vout {
 				if 0 < total_amount_to_skip_potential {
-					total_amount_to_skip_potential -= int64(vout.Value * common.Satoshi)
+					total_amount_to_skip_potential -= int64(vout.Value * utils.Satoshi)
 					continue
 				}
-				if remaining_value < int64(vout.Value*common.Satoshi) { // burn rest ft
+				if remaining_value < int64(vout.Value*utils.Satoshi) { // burn rest ft
 					break
 				}
-				remaining_value -= int64(vout.Value * common.Satoshi)
-				locationID := common.AtomicalsID(operation.RevealLocationTxID, int64(outputIndex))
+				remaining_value -= int64(vout.Value * utils.Satoshi)
+				locationID := utils.AtomicalsID(operation.RevealLocationTxID, int64(outputIndex))
 				if err := m.InsertFtUTXO(&postsql.UTXOFtInfo{
 					UserPk:          vout.ScriptPubKey.Address,
 					AtomicalsID:     ft.AtomicalsID,
@@ -60,7 +60,7 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 					MintBitworkVec:  ft.MintBitworkVec,
 					MintBitworkcInc: ft.MintBitworkcInc,
 					MintBitworkrInc: ft.MintBitworkrInc,
-					Amount:          int64(vout.Value * common.Satoshi),
+					Amount:          int64(vout.Value * utils.Satoshi),
 				}); err != nil {
 					log.Log.Panicf("InsertFtUTXO err:%v", err)
 				}
@@ -71,10 +71,10 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 		// color exactly the same amount of vout
 		// burn the rest ft
 		atomicalsFts := make([]*postsql.UTXOFtInfo, 0)
-		if common.IsDmintActivated(operation.RevealLocationHeight) {
+		if utils.IsDmintActivated(operation.RevealLocationHeight) {
 			atomicalsFtsVinIndexMap := make(map[int64][]*postsql.UTXOFtInfo, 0) // key: vinIndex
 			for vinIndex, vin := range tx.Vin {
-				preLocationID := common.AtomicalsID(vin.Txid, int64(vin.Vout))
+				preLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
 				preFts, err := m.FtUTXOsByLocationID(preLocationID)
 				if err != nil {
 					log.Log.Panicf("FtUTXOsByLocationID err:%v", err)
@@ -105,7 +105,7 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 			}
 		} else {
 			for _, vin := range tx.Vin {
-				preLocationID := common.AtomicalsID(vin.Txid, int64(vin.Vout))
+				preLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
 				preFts, err := m.FtUTXOsByLocationID(preLocationID)
 				if err != nil {
 					log.Log.Panicf("FtUTXOsByLocationID err:%v", err)
@@ -176,15 +176,15 @@ func assign_expected_outputs_basic(ft *postsql.UTXOFtInfo, operation *witness.Wi
 		if err != nil {
 			panic(err)
 		}
-		if common.IsUnspendableGenesis(scriptPubKeyBytes) ||
-			common.IsUnspendableLegacy(scriptPubKeyBytes) {
+		if utils.IsUnspendableGenesis(scriptPubKeyBytes) ||
+			utils.IsUnspendableLegacy(scriptPubKeyBytes) {
 			continue
 		}
-		if int64(vout.Value*common.Satoshi) > remaining_value { // burn rest ft
+		if int64(vout.Value*utils.Satoshi) > remaining_value { // burn rest ft
 			return false, assignedVoutIndex, nil
 		}
-		remaining_value -= int64(vout.Value * common.Satoshi)
-		locationID := common.AtomicalsID(operation.RevealLocationTxID, int64(outputIndex))
+		remaining_value -= int64(vout.Value * utils.Satoshi)
+		locationID := utils.AtomicalsID(operation.RevealLocationTxID, int64(outputIndex))
 		newFts = append(newFts, &postsql.UTXOFtInfo{
 			UserPk:          vout.ScriptPubKey.Address,
 			AtomicalsID:     ft.AtomicalsID,
@@ -197,7 +197,7 @@ func assign_expected_outputs_basic(ft *postsql.UTXOFtInfo, operation *witness.Wi
 			MintBitworkVec:  ft.MintBitworkVec,
 			MintBitworkcInc: ft.MintBitworkcInc,
 			MintBitworkrInc: ft.MintBitworkrInc,
-			Amount:          int64(vout.Value * common.Satoshi),
+			Amount:          int64(vout.Value * utils.Satoshi),
 		})
 		if remaining_value == 0 {
 			return true, assignedVoutIndex, newFts

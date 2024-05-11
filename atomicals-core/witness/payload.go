@@ -1,8 +1,8 @@
 package witness
 
 import (
-	"github.com/atomicals-go/atomicals-core/common"
 	"github.com/atomicals-go/pkg/errors"
+	"github.com/atomicals-go/utils"
 )
 
 type PayLoad struct {
@@ -35,10 +35,10 @@ func parseAtomicalsData(script []byte, startIndex int64) ([]byte, error) {
 					dlen = int64(script[startIndex])
 					startIndex++
 				} else if op == OP_PUSHDATA2 {
-					dlen = int64(common.UnpackLeUint16From(script[startIndex : startIndex+2]))
+					dlen = int64(utils.UnpackLeUint16From(script[startIndex : startIndex+2]))
 					startIndex += 2
 				} else if op == OP_PUSHDATA4 {
-					dlen = int64(common.UnpackLeUint32From(script[startIndex : startIndex+4]))
+					dlen = int64(utils.UnpackLeUint32From(script[startIndex : startIndex+4]))
 					startIndex += 4
 				}
 				if int64(startIndex+dlen) > int64(len(script)) {
@@ -107,7 +107,7 @@ func (m *PayLoad) CheckRequest() bool {
 }
 
 type Args struct {
-	// common
+	// utils
 	Nonce int64 `cbor:"nonce"`
 	Time  int64 `cbor:"time"`
 

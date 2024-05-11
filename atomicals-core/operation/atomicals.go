@@ -1,9 +1,9 @@
 package atomicals
 
 import (
-	"github.com/atomicals-go/atomicals-core/repo"
 	"github.com/atomicals-go/pkg/btcsync"
 	"github.com/atomicals-go/pkg/conf"
+	"github.com/atomicals-go/repo"
 )
 
 type Atomicals struct {

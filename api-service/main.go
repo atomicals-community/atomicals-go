@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/atomicals-go/apiService/logic"
+	"github.com/atomicals-go/api-service/logic"
 	"github.com/atomicals-go/pkg/conf"
 	"github.com/beego/beego/v2/server/web"
-	webContext "github.com/beego/beego/v2/server/web/context"
+	"github.com/beego/beego/v2/server/web/context"
 )
 
 func EnableCORS() web.FilterFunc {
-	return func(ctx *webContext.Context) {
+	return func(ctx *context.Context) {
 		origin := ctx.Input.Header("Origin")
 		if origin != "" {
 			ctx.Output.Header("Access-Control-Allow-Origin", origin)

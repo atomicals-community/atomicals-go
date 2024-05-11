@@ -1,17 +1,17 @@
 package logic
 
 import (
-	db "github.com/atomicals-go/atomicals-core/repo"
 	"github.com/atomicals-go/pkg/conf"
 	"github.com/atomicals-go/pkg/errors"
+	"github.com/atomicals-go/repo"
 	"github.com/beego/beego/v2/server/web"
 )
 
-var DB db.DB
+var DB repo.DB
 
 type Controller struct {
 	web.Controller
-	db.DB
+	repo.DB
 }
 
 func (c *Controller) Prepare() {
@@ -22,7 +22,7 @@ func (c *Controller) Prepare() {
 }
 
 func InitController(conf *conf.Config) {
-	DB = db.NewSqlDB(conf.SqlDNS)
+	DB = repo.NewSqlDB(conf.SqlDNS)
 }
 
 type Resp struct {

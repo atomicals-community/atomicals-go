@@ -3,8 +3,8 @@ package witness
 import (
 	"encoding/hex"
 
-	"github.com/atomicals-go/atomicals-core/common"
 	"github.com/atomicals-go/pkg/errors"
+	"github.com/atomicals-go/utils"
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/fxamacker/cbor/v2"
 )
@@ -27,17 +27,17 @@ type WitnessAtomicalsOperation struct {
 
 // is_dft_bitwork_rollover_activated
 func (m *WitnessAtomicalsOperation) IsDftBitworkRolloverActivated() bool {
-	return m.RevealLocationHeight >= common.ATOMICALS_ACTIVATION_HEIGHT_DFT_BITWORK_ROLLOVER
+	return m.RevealLocationHeight >= utils.ATOMICALS_ACTIVATION_HEIGHT_DFT_BITWORK_ROLLOVER
 }
 
 // is_within_acceptable_blocks_for_name_reveal
 func (m *WitnessAtomicalsOperation) IsWithinAcceptableBlocksForNameReveal() bool {
-	return m.CommitHeight >= m.RevealLocationHeight-common.MINT_REALM_CONTAINER_TICKER_COMMIT_REVEAL_DELAY_BLOCKS
+	return m.CommitHeight >= m.RevealLocationHeight-utils.MINT_REALM_CONTAINER_TICKER_COMMIT_REVEAL_DELAY_BLOCKS
 }
 
 // is_within_acceptable_blocks_for_general_reveal
 func (m *WitnessAtomicalsOperation) IsWithinAcceptableBlocksForGeneralReveal() bool {
-	return m.CommitHeight >= m.RevealLocationHeight-common.MINT_GENERAL_COMMIT_REVEAL_DELAY_BLOCKS
+	return m.CommitHeight >= m.RevealLocationHeight-utils.MINT_GENERAL_COMMIT_REVEAL_DELAY_BLOCKS
 }
 
 // is_immutable
@@ -51,31 +51,31 @@ func (m *WitnessAtomicalsOperation) IsImmutable() bool {
 	return m.Payload.Args.I
 }
 
-func (m *WitnessAtomicalsOperation) IsValidBitwork() (*common.Bitwork, *common.Bitwork, error) {
+func (m *WitnessAtomicalsOperation) IsValidBitwork() (*utils.Bitwork, *utils.Bitwork, error) {
 	if m.Payload == nil {
 		return nil, nil, nil
 	}
 	if m.Payload.Args == nil {
 		return nil, nil, nil
 	}
-	bitworkc := common.ParseBitwork(m.Payload.Args.Bitworkc)
+	bitworkc := utils.ParseBitwork(m.Payload.Args.Bitworkc)
 	if bitworkc != nil {
-		if !common.IsProofOfWorkPrefixMatch(m.CommitTxID, bitworkc.Prefix, bitworkc.Ext) {
+		if !utils.IsProofOfWorkPrefixMatch(m.CommitTxID, bitworkc.Prefix, bitworkc.Ext) {
 			return nil, nil, errors.ErrInvalidBitWork
 		}
 	}
-	bitworkr := common.ParseBitwork(m.Payload.Args.Bitworkr)
+	bitworkr := utils.ParseBitwork(m.Payload.Args.Bitworkr)
 	if bitworkr != nil {
-		if !common.IsProofOfWorkPrefixMatch(m.CommitTxID, bitworkr.Prefix, bitworkr.Ext) {
+		if !utils.IsProofOfWorkPrefixMatch(m.CommitTxID, bitworkr.Prefix, bitworkr.Ext) {
 			return nil, nil, errors.ErrInvalidBitWork
 		}
 	}
 	return bitworkc, bitworkr, nil
 }
 
-func ParseMintBitwork(commitTxID, mintBitworkc, mintBitworkr string) (*common.Bitwork, *common.Bitwork, error) {
-	bitworkc := common.ParseBitwork(mintBitworkc)
-	bitworkr := common.ParseBitwork(mintBitworkr)
+func ParseMintBitwork(commitTxID, mintBitworkc, mintBitworkr string) (*utils.Bitwork, *utils.Bitwork, error) {
+	bitworkc := utils.ParseBitwork(mintBitworkc)
+	bitworkr := utils.ParseBitwork(mintBitworkr)
 	return bitworkc, bitworkr, nil
 }
 
@@ -107,10 +107,10 @@ func ParseWitness(tx btcjson.TxRawResult, height int64) *WitnessAtomicalsOperati
 				Script:                  script,
 				CommitTxID:              vin.Txid,
 				CommitVoutIndex:         int64(vin.Vout),
-				AtomicalsID:             common.AtomicalsID(vin.Txid, int64(vin.Vout)),
+				AtomicalsID:             utils.AtomicalsID(vin.Txid, int64(vin.Vout)),
 				RevealLocationTxID:      tx.Txid,
 				RevealInputIndex:        int64(vinIndex),
-				RevealLocationVoutIndex: common.VOUT_EXPECT_OUTPUT_INDEX,
+				RevealLocationVoutIndex: utils.VOUT_EXPECT_OUTPUT_INDEX,
 				RevealLocationHeight:    height,
 			}
 		}
@@ -119,7 +119,7 @@ func ParseWitness(tx btcjson.TxRawResult, height int64) *WitnessAtomicalsOperati
 	return &WitnessAtomicalsOperation{
 		RevealLocationTxID:      tx.Txid,
 		RevealInputIndex:        -1,
-		RevealLocationVoutIndex: common.VOUT_EXPECT_OUTPUT_INDEX,
+		RevealLocationVoutIndex: utils.VOUT_EXPECT_OUTPUT_INDEX,
 		RevealLocationHeight:    height,
 	}
 }
@@ -143,7 +143,7 @@ func ParseOperationAndPayLoad(script string) (string, *PayLoad, error) {
 		if opFlag != OP_IF {
 			continue
 		}
-		if hex.EncodeToString(scriptBytes[index+1:index+6]) != common.ATOMICALS_ENVELOPE_MARKER_BYTES {
+		if hex.EncodeToString(scriptBytes[index+1:index+6]) != utils.ATOMICALS_ENVELOPE_MARKER_BYTES {
 			continue
 		}
 		operation, startIndex := parseAtomicalsOperation(scriptBytes, index+6)

@@ -1,11 +1,11 @@
 package atomicals
 
 import (
-	"github.com/atomicals-go/atomicals-core/common"
-	"github.com/atomicals-go/atomicals-core/repo/postsql"
 	"github.com/atomicals-go/atomicals-core/witness"
 	"github.com/atomicals-go/pkg/errors"
 	"github.com/atomicals-go/pkg/log"
+	"github.com/atomicals-go/repo/postsql"
+	"github.com/atomicals-go/utils"
 	"github.com/btcsuite/btcd/btcjson"
 )
 
@@ -17,7 +17,7 @@ func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, v
 	if !operation.Payload.CheckRequest() {
 		return errors.ErrCheckRequest
 	}
-	if !common.IsValidTicker(operation.Payload.Args.RequestTicker) {
+	if !utils.IsValidTicker(operation.Payload.Args.RequestTicker) {
 		return errors.ErrInvalidTicker
 	}
 	if operation.IsImmutable() {
@@ -34,7 +34,7 @@ func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, v
 	if err != nil {
 		panic(err)
 	}
-	if operation.CommitHeight < common.ATOMICALS_ACTIVATION_HEIGHT {
+	if operation.CommitHeight < utils.ATOMICALS_ACTIVATION_HEIGHT {
 		return errors.ErrInvalidCommitHeight
 	}
 	if !operation.IsWithinAcceptableBlocksForGeneralReveal() {
@@ -43,10 +43,10 @@ func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, v
 	if !operation.IsWithinAcceptableBlocksForNameReveal() {
 		return errors.ErrInvalidCommitHeight
 	}
-	if operation.RevealLocationHeight > common.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && operation.CommitVoutIndex != common.VOUT_EXPECT_OUTPUT_INDEX {
+	if operation.RevealLocationHeight > utils.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && operation.CommitVoutIndex != utils.VOUT_EXPECT_OUTPUT_INDEX {
 		return errors.ErrInvalidVinIndex
 	}
-	if operation.CommitVoutIndex != common.VOUT_EXPECT_OUTPUT_INDEX {
+	if operation.CommitVoutIndex != utils.VOUT_EXPECT_OUTPUT_INDEX {
 		return errors.ErrInvalidVinIndex
 	}
 
@@ -61,7 +61,7 @@ func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, v
 		// Meta:          operation.Payload.Meta,
 		Bitworkc:  operation.Payload.Args.Bitworkc,
 		Bitworkr:  operation.Payload.Args.Bitworkr,
-		MaxSupply: int64(vout[common.VOUT_EXPECT_OUTPUT_INDEX].Value * common.Satoshi),
+		MaxSupply: int64(vout[utils.VOUT_EXPECT_OUTPUT_INDEX].Value * utils.Satoshi),
 	}
 	if err := m.InsertFtUTXO(atomicalsFtInfo); err != nil {
 		log.Log.Panicf("InsertFtUTXO err:%v", err)

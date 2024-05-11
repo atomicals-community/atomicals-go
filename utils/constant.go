@@ -1,4 +1,4 @@
-package common
+package utils
 
 const (
 	Satoshi = float64(100000000) //1BTC

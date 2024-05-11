@@ -1,8 +1,8 @@
 package repo
 
 import (
-	"github.com/atomicals-go/atomicals-core/common"
-	"github.com/atomicals-go/atomicals-core/repo/postsql"
+	"github.com/atomicals-go/repo/postsql"
+	"github.com/atomicals-go/utils"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -54,7 +54,7 @@ func NewSqlDB(sqlDNS string) DB {
 	_, err = m.CurrentHeitht()
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			if err := m.UpdateCurrentHeightAndExecAllSql(common.ATOMICALS_ACTIVATION_HEIGHT - 1); err != nil {
+			if err := m.UpdateCurrentHeightAndExecAllSql(utils.ATOMICALS_ACTIVATION_HEIGHT - 1); err != nil {
 				panic(err)
 			}
 		} else {

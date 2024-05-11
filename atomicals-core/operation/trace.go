@@ -4,10 +4,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/atomicals-go/atomicals-core/common"
-	"github.com/atomicals-go/atomicals-core/repo/postsql"
 	"github.com/atomicals-go/atomicals-core/witness"
 	"github.com/atomicals-go/pkg/log"
+	"github.com/atomicals-go/repo/postsql"
+	"github.com/atomicals-go/utils"
 	"github.com/btcsuite/btcd/btcjson"
 )
 
@@ -50,14 +50,14 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) error {
 	operation := witness.ParseWitness(tx, height)
 	// step 1: transfer nft, transfer ft
 	// m.transferNft(operation, tx)
-	if height < common.AtOMICALS_FT_PARTIAL_SPLITING_HEIGHT {
+	if height < utils.AtOMICALS_FT_PARTIAL_SPLITING_HEIGHT {
 		m.transferFt(operation, tx)
 	} else {
 		m.transferFtPartialSpliting(operation, tx)
 	}
 
 	// step 2: process operation
-	userPk := tx.Vout[common.VOUT_EXPECT_OUTPUT_INDEX].ScriptPubKey.Address
+	userPk := tx.Vout[utils.VOUT_EXPECT_OUTPUT_INDEX].ScriptPubKey.Address
 	if operation.Op == "dmt" {
 		m.mintDistributedFt(operation, tx.Vout, userPk)
 	} else {

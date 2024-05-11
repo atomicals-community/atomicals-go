@@ -3,8 +3,8 @@ package repo
 import (
 	"strings"
 
-	"github.com/atomicals-go/atomicals-core/repo/postsql"
 	"github.com/atomicals-go/pkg/log"
+	"github.com/atomicals-go/repo/postsql"
 	"gorm.io/gorm"
 )
 

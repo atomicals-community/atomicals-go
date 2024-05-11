@@ -1,4 +1,4 @@
-package common
+package utils
 
 const (
 	ATOMICALS_ACTIVATION_HEIGHT                      = 808080

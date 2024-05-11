@@ -4,10 +4,10 @@ import (
 	"encoding/hex"
 	"sort"
 
-	"github.com/atomicals-go/atomicals-core/common"
-	"github.com/atomicals-go/atomicals-core/repo/postsql"
 	"github.com/atomicals-go/atomicals-core/witness"
 	"github.com/atomicals-go/pkg/log"
+	"github.com/atomicals-go/repo/postsql"
+	"github.com/atomicals-go/utils"
 	"github.com/btcsuite/btcd/btcjson"
 )
 
@@ -15,7 +15,7 @@ func (m *Atomicals) transferFtPartialSpliting(operation *witness.WitnessAtomical
 	if operation.IsSplitOperation() { // color_ft_atomicals_split
 		ftAtomicals := make([]*postsql.UTXOFtInfo, 0)
 		for _, vin := range tx.Vin {
-			preLocationID := common.AtomicalsID(vin.Txid, int64(vin.Vout))
+			preLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
 			preFts, err := m.FtUTXOsByLocationID(preLocationID)
 			if err != nil {
 				log.Log.Panicf("FtUTXOsByLocationID err:%v", err)
@@ -39,7 +39,7 @@ func (m *Atomicals) transferFtPartialSpliting(operation *witness.WitnessAtomical
 			total_amount_to_skip_potential := operation.Payload.TotalAmountToSkipPotential[ft.LocationID]
 			remainingValue := ft.Amount
 			for outputIndex, vout := range tx.Vout {
-				toBeColoredAmount := int64(vout.Value * common.Satoshi)
+				toBeColoredAmount := int64(vout.Value * utils.Satoshi)
 				if 0 < total_amount_to_skip_potential {
 					total_amount_to_skip_potential -= toBeColoredAmount
 					continue
@@ -51,7 +51,7 @@ func (m *Atomicals) transferFtPartialSpliting(operation *witness.WitnessAtomical
 					toBeColoredAmount = remainingValue
 					remainingValue -= toBeColoredAmount
 				}
-				locationID := common.AtomicalsID(operation.RevealLocationTxID, int64(outputIndex))
+				locationID := utils.AtomicalsID(operation.RevealLocationTxID, int64(outputIndex))
 				if err := m.InsertFtUTXO(&postsql.UTXOFtInfo{
 					UserPk:          vout.ScriptPubKey.Address,
 					AtomicalsID:     ft.AtomicalsID,
@@ -75,10 +75,10 @@ func (m *Atomicals) transferFtPartialSpliting(operation *witness.WitnessAtomical
 		// color exactly the same amount of vout
 		// burn the rest ft
 		atomicalsFts := make([]*postsql.UTXOFtInfo, 0)
-		if common.IsDmintActivated(operation.RevealLocationHeight) {
+		if utils.IsDmintActivated(operation.RevealLocationHeight) {
 			atomicalsFtsVinIndexMap := make(map[int64][]*postsql.UTXOFtInfo, 0) // key: vinIndex
 			for vinIndex, vin := range tx.Vin {
-				preLocationID := common.AtomicalsID(vin.Txid, int64(vin.Vout))
+				preLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
 				preFts, err := m.FtUTXOsByLocationID(preLocationID)
 				if err != nil {
 					log.Log.Panicf("FtUTXOsByLocationID err:%v", err)
@@ -109,7 +109,7 @@ func (m *Atomicals) transferFtPartialSpliting(operation *witness.WitnessAtomical
 			}
 		} else {
 			for _, vin := range tx.Vin {
-				preLocationID := common.AtomicalsID(vin.Txid, int64(vin.Vout))
+				preLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
 				preFts, err := m.FtUTXOsByLocationID(preLocationID)
 				if err != nil {
 					log.Log.Panicf("FtUTXOsByLocationID err:%v", err)
@@ -141,7 +141,7 @@ func (m *Atomicals) transferFtPartialSpliting(operation *witness.WitnessAtomical
 				if int64(outputIndex) < nextStartOutIndex {
 					continue
 				}
-				toBeColoredAmount := int64(vout.Value * common.Satoshi)
+				toBeColoredAmount := int64(vout.Value * utils.Satoshi)
 				if remainingValue >= toBeColoredAmount {
 					remainingValue -= toBeColoredAmount
 				} else {
@@ -154,11 +154,11 @@ func (m *Atomicals) transferFtPartialSpliting(operation *witness.WitnessAtomical
 				if err != nil {
 					panic(err)
 				}
-				if common.IsUnspendableGenesis(scriptPubKeyBytes) ||
-					common.IsUnspendableLegacy(scriptPubKeyBytes) {
+				if utils.IsUnspendableGenesis(scriptPubKeyBytes) ||
+					utils.IsUnspendableLegacy(scriptPubKeyBytes) {
 					continue
 				}
-				newLocationID := common.AtomicalsID(operation.RevealLocationTxID, int64(outputIndex))
+				newLocationID := utils.AtomicalsID(operation.RevealLocationTxID, int64(outputIndex))
 				newFts = append(newFts, &postsql.UTXOFtInfo{
 					UserPk:          vout.ScriptPubKey.Address,
 					AtomicalsID:     ft.AtomicalsID,
@@ -171,7 +171,7 @@ func (m *Atomicals) transferFtPartialSpliting(operation *witness.WitnessAtomical
 					MintBitworkVec:  ft.MintBitworkVec,
 					MintBitworkcInc: ft.MintBitworkcInc,
 					MintBitworkrInc: ft.MintBitworkrInc,
-					Amount:          int64(vout.Value * common.Satoshi),
+					Amount:          int64(vout.Value * utils.Satoshi),
 				})
 			}
 			// # If the output slots did not fit cleanly, then default to just assigning everything from the 0'th output index
@@ -189,7 +189,7 @@ func (m *Atomicals) transferFtPartialSpliting(operation *witness.WitnessAtomical
 		for _, ft := range atomicalsFts {
 			remainingValue := ft.Amount
 			for outputIndex, vout := range tx.Vout {
-				toBeColoredAmount := int64(vout.Value * common.Satoshi)
+				toBeColoredAmount := int64(vout.Value * utils.Satoshi)
 				if remainingValue >= toBeColoredAmount {
 					remainingValue -= toBeColoredAmount
 				} else {
@@ -201,11 +201,11 @@ func (m *Atomicals) transferFtPartialSpliting(operation *witness.WitnessAtomical
 				if err != nil {
 					panic(err)
 				}
-				if common.IsUnspendableGenesis(scriptPubKeyBytes) ||
-					common.IsUnspendableLegacy(scriptPubKeyBytes) {
+				if utils.IsUnspendableGenesis(scriptPubKeyBytes) ||
+					utils.IsUnspendableLegacy(scriptPubKeyBytes) {
 					continue
 				}
-				newLocationID := common.AtomicalsID(operation.RevealLocationTxID, int64(outputIndex))
+				newLocationID := utils.AtomicalsID(operation.RevealLocationTxID, int64(outputIndex))
 				newFts = append(newFts, &postsql.UTXOFtInfo{
 					UserPk:          vout.ScriptPubKey.Address,
 					AtomicalsID:     ft.AtomicalsID,
@@ -218,7 +218,7 @@ func (m *Atomicals) transferFtPartialSpliting(operation *witness.WitnessAtomical
 					MintBitworkVec:  ft.MintBitworkVec,
 					MintBitworkcInc: ft.MintBitworkcInc,
 					MintBitworkrInc: ft.MintBitworkrInc,
-					Amount:          int64(vout.Value * common.Satoshi),
+					Amount:          int64(vout.Value * utils.Satoshi),
 				})
 			}
 			// # If the output slots did not fit cleanly, then default to just assigning everything from the 0'th output index

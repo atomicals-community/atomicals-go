@@ -6,14 +6,14 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/atomicals-go/atomicals-core/common"
 	"github.com/atomicals-go/atomicals-core/witness"
 	"github.com/atomicals-go/pkg/merkle"
+	"github.com/atomicals-go/utils"
 )
 
 // get_dmitem_parent_container_info
 func verifyRuleAndMerkle(operation *witness.WitnessAtomicalsOperation, height int64) bool {
-	matched_price_point := get_applicable_rule_by_height(operation.Payload.Args.ParentContainer, operation.Payload.Args.RequestDmitem, operation.CommitHeight-common.MINT_SUBNAME_RULES_BECOME_EFFECTIVE_IN_BLOCKS)
+	matched_price_point := get_applicable_rule_by_height(operation.Payload.Args.ParentContainer, operation.Payload.Args.RequestDmitem, operation.CommitHeight-utils.MINT_SUBNAME_RULES_BECOME_EFFECTIVE_IN_BLOCKS)
 	dmint_validated_status := make_container_dmint_status_by_atomical_id_at_height(operation.Payload.Args.ParentContainer, height)
 	if dmint_validated_status.status != "valid" {
 		return false
@@ -75,13 +75,13 @@ func get_applicable_rule_by_height(parent_atomical_id string, proposed_subnameid
 
 func validate_rules_data(namespace_data *current_object_stateInfo_dmint) []*rule {
 	rules := namespace_data.rules
-	if len(rules) <= 0 || len(rules) > common.MAX_SUBNAME_RULE_ENTRIES {
+	if len(rules) <= 0 || len(rules) > utils.MAX_SUBNAME_RULE_ENTRIES {
 		return nil
 	}
 	validated_rules_list := make([]*rule, 0)
 	for _, rule_set_entry := range rules {
 		regex_pattern := rule_set_entry.p
-		if len(regex_pattern) > common.MAX_SUBNAME_RULE_SIZE_LEN || len(regex_pattern) < 1 {
+		if len(regex_pattern) > utils.MAX_SUBNAME_RULE_SIZE_LEN || len(regex_pattern) < 1 {
 			return nil
 		}
 		outputs := rule_set_entry.o
@@ -99,7 +99,7 @@ func validate_rules_data(namespace_data *current_object_stateInfo_dmint) []*rule
 			return nil
 		}
 		if bitworkc != "" {
-			res := common.ParseBitwork(bitworkc)
+			res := utils.ParseBitwork(bitworkc)
 			if res != nil {
 				price_point.bitworkc = bitworkc
 			} else if bitworkc == "any" {
@@ -109,7 +109,7 @@ func validate_rules_data(namespace_data *current_object_stateInfo_dmint) []*rule
 			}
 		}
 		if bitworkr != "" {
-			res := common.ParseBitwork(bitworkr)
+			res := utils.ParseBitwork(bitworkr)
 			if res != nil {
 				price_point.bitworkr = bitworkr
 			} else if bitworkr == "any" {
@@ -137,17 +137,17 @@ func validate_subrealm_rules_outputs_format(outputs map[string]*output) bool {
 	for expected_output_script, expected_output_value := range outputs {
 		expected_output_id := expected_output_value.id
 		expected_output_qty := expected_output_value.v
-		if expected_output_qty < common.SUBNAME_MIN_PAYMENT_DUST_LIMIT {
+		if expected_output_qty < utils.SUBNAME_MIN_PAYMENT_DUST_LIMIT {
 			return false // # Reject if one of the entries expects less than the minimum payment amount
 		}
 		// # If there is a type restriction on the payment type then ensure it is a valid atomical id
 		if expected_output_id != "" {
-			if common.IsCompactAtomicalID(expected_output_id) {
+			if utils.IsCompactAtomicalID(expected_output_id) {
 				return false
 			}
 		}
 		// # script must be paid to mint a subrealm
-		if !common.IsHexString(expected_output_script) {
+		if !utils.IsHexString(expected_output_script) {
 			return false // # Reject if one of the payment output script is not a valid hex
 		}
 	}
@@ -221,7 +221,7 @@ func validate_dmitem_mint_args_with_container_dmint(args *witness.Args, payload 
 	merkle := dmint.merkle
 	main := args.Main
 	main_data := payload.Main
-	main_hash := common.DoubleSha256(main_data)
+	main_hash := utils.DoubleSha256(main_data)
 	bitworkc := args.Bitworkc
 	bitworkr := args.Bitworkr
 	is_proof_valid, err := validate_merkle_proof_dmint(merkle, request_dmitem, bitworkc, bitworkr, main, main_hash, args.Proof)
@@ -243,7 +243,7 @@ func validate_merkle_proof_dmint(merkleStr string, item_name string, possible_bi
 	if err != nil {
 		return false, err
 	}
-	target_hash := common.Sha256(concat_str1Hex)
+	target_hash := utils.Sha256(concat_str1Hex)
 	if merkle.CheckValidateProof(expected_root_hash, target_hash, proof) {
 		return true, nil
 	}
@@ -254,7 +254,7 @@ func validate_merkle_proof_dmint(merkleStr string, item_name string, possible_bi
 		if err != nil {
 			return false, err
 		}
-		target_hash := common.Sha256(concat_str2Hex)
+		target_hash := utils.Sha256(concat_str2Hex)
 		if merkle.CheckValidateProof(expected_root_hash, target_hash, proof) {
 			return true, nil
 		}
@@ -266,7 +266,7 @@ func validate_merkle_proof_dmint(merkleStr string, item_name string, possible_bi
 		if err != nil {
 			return false, err
 		}
-		target_hash := common.Sha256(concat_str3Hex)
+		target_hash := utils.Sha256(concat_str3Hex)
 		if merkle.CheckValidateProof(expected_root_hash, target_hash, proof) {
 			return true, nil
 		}
@@ -277,7 +277,7 @@ func validate_merkle_proof_dmint(merkleStr string, item_name string, possible_bi
 		if err != nil {
 			return false, err
 		}
-		target_hash := common.Sha256(concat_str4Hex)
+		target_hash := utils.Sha256(concat_str4Hex)
 
 		if merkle.CheckValidateProof(expected_root_hash, target_hash, proof) {
 			return true, nil

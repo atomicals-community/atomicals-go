@@ -3,11 +3,11 @@ package atomicals
 import (
 	"strconv"
 
-	"github.com/atomicals-go/atomicals-core/common"
-	"github.com/atomicals-go/atomicals-core/repo/postsql"
 	"github.com/atomicals-go/atomicals-core/witness"
 	"github.com/atomicals-go/pkg/errors"
 	"github.com/atomicals-go/pkg/log"
+	"github.com/atomicals-go/repo/postsql"
+	"github.com/atomicals-go/utils"
 )
 
 // deployDistributedFt: operation dft
@@ -18,7 +18,7 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 	if !operation.Payload.CheckRequest() {
 		return errors.ErrCheckRequest
 	}
-	if !common.IsValidTicker(operation.Payload.Args.RequestTicker) {
+	if !utils.IsValidTicker(operation.Payload.Args.RequestTicker) {
 		return errors.ErrInvalidTicker
 	}
 	ft, err := m.DistributedFtByName(operation.Payload.Args.RequestTicker)
@@ -35,21 +35,21 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 	if err != nil {
 		return err
 	}
-	if operation.Payload.Args.MintHeight < common.DFT_MINT_HEIGHT_MIN || common.DFT_MINT_HEIGHT_MAX < operation.Payload.Args.MintHeight {
+	if operation.Payload.Args.MintHeight < utils.DFT_MINT_HEIGHT_MIN || utils.DFT_MINT_HEIGHT_MAX < operation.Payload.Args.MintHeight {
 		return errors.ErrInvalidMintHeight
 	}
-	if operation.Payload.Args.MintAmount < common.DFT_MINT_AMOUNT_MIN || common.DFT_MINT_AMOUNT_MAX < operation.Payload.Args.MintAmount {
+	if operation.Payload.Args.MintAmount < utils.DFT_MINT_AMOUNT_MIN || utils.DFT_MINT_AMOUNT_MAX < operation.Payload.Args.MintAmount {
 		return errors.ErrInvalidMintHeight
 	}
-	if operation.Payload.Args.MaxMints < common.DFT_MINT_MAX_MIN_COUNT {
+	if operation.Payload.Args.MaxMints < utils.DFT_MINT_MAX_MIN_COUNT {
 		return errors.ErrInvalidMaxMints
 	}
-	if operation.RevealLocationHeight < common.ATOMICALS_ACTIVATION_HEIGHT_DENSITY {
-		if operation.Payload.Args.MaxMints > common.DFT_MINT_MAX_MAX_COUNT_LEGACY {
+	if operation.RevealLocationHeight < utils.ATOMICALS_ACTIVATION_HEIGHT_DENSITY {
+		if operation.Payload.Args.MaxMints > utils.DFT_MINT_MAX_MAX_COUNT_LEGACY {
 			return errors.ErrInvalidMaxMints
 		}
 	} else {
-		if operation.Payload.Args.MaxMints > common.DFT_MINT_MAX_MAX_COUNT_DENSITY {
+		if operation.Payload.Args.MaxMints > utils.DFT_MINT_MAX_MAX_COUNT_DENSITY {
 			return errors.ErrInvalidMaxMints
 		}
 	}
@@ -71,7 +71,7 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 	if err != nil {
 		panic(err)
 	}
-	if operation.CommitHeight < common.ATOMICALS_ACTIVATION_HEIGHT {
+	if operation.CommitHeight < utils.ATOMICALS_ACTIVATION_HEIGHT {
 		return errors.ErrInvalidCommitHeight
 	}
 	if !operation.IsWithinAcceptableBlocksForGeneralReveal() {
@@ -80,7 +80,7 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 	if !operation.IsWithinAcceptableBlocksForNameReveal() {
 		return errors.ErrInvalidCommitHeight
 	}
-	if operation.RevealLocationHeight > common.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && operation.CommitVoutIndex != common.VOUT_EXPECT_OUTPUT_INDEX {
+	if operation.RevealLocationHeight > utils.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && operation.CommitVoutIndex != utils.VOUT_EXPECT_OUTPUT_INDEX {
 		return errors.ErrInvalidVinIndex
 	}
 	atomicalsID := operation.AtomicalsID
@@ -108,8 +108,8 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 		CommitHeight: operation.CommitHeight,
 	}
 
-	if common.ATOMICALS_ACTIVATION_HEIGHT_DENSITY <= operation.RevealLocationHeight && entity.Md == "1" {
-		if !common.IsHexStringRegex(operation.Payload.Args.Bv) || len(operation.Payload.Args.Bv) < 4 {
+	if utils.ATOMICALS_ACTIVATION_HEIGHT_DENSITY <= operation.RevealLocationHeight && entity.Md == "1" {
+		if !utils.IsHexStringRegex(operation.Payload.Args.Bv) || len(operation.Payload.Args.Bv) < 4 {
 			return errors.ErrInvalidDftBv
 		}
 		if operation.Payload.Args.MintBitworkc != "" || operation.Payload.Args.MintBitworkr != "" {
@@ -140,7 +140,7 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 		if 100000 < operation.Payload.Args.MaxMints {
 			return errors.ErrInvalidMaxMints
 		}
-		if operation.Payload.Args.Maxg < common.DFT_MINT_MAX_MIN_COUNT || common.DFT_MINT_MAX_MAX_COUNT_DENSITY < operation.Payload.Args.Maxg {
+		if operation.Payload.Args.Maxg < utils.DFT_MINT_MAX_MIN_COUNT || utils.DFT_MINT_MAX_MAX_COUNT_DENSITY < operation.Payload.Args.Maxg {
 			return errors.ErrInvalidDftMaxg
 		}
 		entity.MaxMintsGlobal = operation.Payload.Args.Maxg

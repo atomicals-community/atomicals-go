@@ -13,7 +13,6 @@ type BtcSync struct {
 	CurrentHeight      int64
 	blockHeightChannel chan int64
 	blockCache         sync.Map
-	*TxHeightCache
 }
 
 func NewBtcSync(rpcURL, rpcUser, rpcPassword string) (*BtcSync, error) {
@@ -30,7 +29,6 @@ func NewBtcSync(rpcURL, rpcUser, rpcPassword string) (*BtcSync, error) {
 	m := &BtcSync{
 		Client:             client,
 		blockHeightChannel: make(chan int64, BlockCacheNum),
-		TxHeightCache:      &TxHeightCache{},
 	}
 	go m.FetchBlocks()
 	return m, nil

@@ -1,6 +1,6 @@
 package logic
 
-import "github.com/atomicals-go/atomicals-core/repo/postsql"
+import "github.com/atomicals-go/repo/postsql"
 
 type ReqAssetByAtomicalsID struct {
 	AtomicalsID string `json:"atomicals_id"`
