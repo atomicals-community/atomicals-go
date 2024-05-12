@@ -16,13 +16,12 @@ type WitnessAtomicalsOperation struct {
 
 	CommitTxID      string // vin's txID
 	CommitVoutIndex int64  // vin's index as vout in last tx
-	AtomicalsID     string
 	CommitHeight    int64
 
-	RevealLocationTxID      string
-	RevealInputIndex        int64
-	RevealLocationVoutIndex int64 // always is expect VOUT_EXPECT_OUTPUT_INDEX
-	RevealLocationHeight    int64
+	AtomicalsID          string
+	RevealLocationTxID   string
+	RevealInputIndex     int64
+	RevealLocationHeight int64
 }
 
 // is_dft_bitwork_rollover_activated
@@ -102,25 +101,23 @@ func ParseWitness(tx btcjson.TxRawResult, height int64) *WitnessAtomicalsOperati
 				continue
 			}
 			return &WitnessAtomicalsOperation{
-				Op:                      op,
-				Payload:                 payload,
-				Script:                  script,
-				CommitTxID:              vin.Txid,
-				CommitVoutIndex:         int64(vin.Vout),
-				AtomicalsID:             utils.AtomicalsID(vin.Txid, int64(vin.Vout)),
-				RevealLocationTxID:      tx.Txid,
-				RevealInputIndex:        int64(vinIndex),
-				RevealLocationVoutIndex: utils.VOUT_EXPECT_OUTPUT_INDEX,
-				RevealLocationHeight:    height,
+				Op:                   op,
+				Payload:              payload,
+				Script:               script,
+				CommitTxID:           vin.Txid,
+				CommitVoutIndex:      int64(vin.Vout),
+				AtomicalsID:          utils.AtomicalsID(tx.Txid, int64(vinIndex)),
+				RevealLocationTxID:   tx.Txid,
+				RevealInputIndex:     int64(vinIndex),
+				RevealLocationHeight: height,
 			}
 		}
 		break
 	}
 	return &WitnessAtomicalsOperation{
-		RevealLocationTxID:      tx.Txid,
-		RevealInputIndex:        -1,
-		RevealLocationVoutIndex: utils.VOUT_EXPECT_OUTPUT_INDEX,
-		RevealLocationHeight:    height,
+		RevealLocationTxID:   tx.Txid,
+		RevealInputIndex:     -1,
+		RevealLocationHeight: height,
 	}
 }
 

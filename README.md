@@ -86,7 +86,7 @@ nohup go run ./ > log.txt 2>&1 &
 
 1. ft 资产部署和转账 测试 (yimingWoW 正在做测试；我已经跑到blockHeight=838408，实际上这个工作早就应该完成了，但是我还有我自己的工作，只能在闲暇时间搞这些，时间比较琐碎,我预计下周完成它)
 2. nft-realm及subrealm部署 逻辑完善+测试
-    - 这部份非常复杂，merkleverify部分比较复杂，我写了个大概，还没有写完：atomicals-core/operation/merkleVerify.go
+    - merkleverify部分比较复杂，我写了个大概，还没有写完：atomicals-core/operation/merkleVerify.go； 也可能是最近动力不足了，这部份重构让我觉得很痛苦。如果有人愿意把这个逻辑完善，我非常乐意
 3. nft-container及item部署 逻辑完善+测试
 4. nft 部署 逻辑完善+测试
     - PayLoad中有一个存储nft图片信息的字段：image.png，但是在golang中解析为cbor结构体时有问题，我还没有解决它

@@ -2,15 +2,14 @@ package repo
 
 import (
 	"github.com/atomicals-go/repo/postsql"
-	"github.com/atomicals-go/utils"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 type DB interface {
 	// atomicals-core current location
-	CurrentHeitht() (int64, error)
-	UpdateCurrentHeightAndExecAllSql(int64) error
+	CurrentLocation() (*postsql.Location, error)
+	UpdateCurrentHeightAndExecAllSql(int64, int64) error
 
 	// nft read
 	NftUTXOsByLocationID(locationID string) ([]*postsql.UTXONftInfo, error)
@@ -44,22 +43,8 @@ func NewSqlDB(sqlDNS string) DB {
 	if err != nil {
 		panic(err)
 	}
-	m := &Postgres{
-		DB:             DB,
-		SQLRaw:         "",
-		RealmCache:     make(map[string]map[string]bool),
-		ContainerCache: make(map[string]map[string]bool),
+	return &Postgres{
+		DB:     DB,
+		SQLRaw: "",
 	}
-	m.initDBCache()
-	_, err = m.CurrentHeitht()
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			if err := m.UpdateCurrentHeightAndExecAllSql(utils.ATOMICALS_ACTIVATION_HEIGHT - 1); err != nil {
-				panic(err)
-			}
-		} else {
-			panic(err)
-		}
-	}
-	return m
 }

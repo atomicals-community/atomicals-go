@@ -11,7 +11,6 @@ func main() {
 		panic(err)
 	}
 
-	// Run atomicals indexer
 	a := atomicals.NewAtomicalsWithSQL(conf)
 	for {
 		a.TraceBlock()

@@ -1,49 +1,45 @@
 package atomicals
 
 import (
-	"strings"
 	"time"
 
 	"github.com/atomicals-go/atomicals-core/witness"
 	"github.com/atomicals-go/pkg/log"
 	"github.com/atomicals-go/repo/postsql"
 	"github.com/atomicals-go/utils"
+
 	"github.com/btcsuite/btcd/btcjson"
 )
 
 func (m *Atomicals) TraceBlock() {
 	startTime := time.Now()
-	height, err := m.CurrentHeitht()
+	location, err := m.CurrentLocation()
 	if err != nil {
-		log.Log.Panicf("CurrentHeitht err:%v", err)
+		log.Log.Panicf("CurrentLocation err:%v", err)
 	}
-	blockInfo, err := m.GetBlockByHeight(height + 1)
+	blockInfo, err := m.GetBlockByHeight(location.Height)
 	if err != nil {
-		log.Log.Panicf("GetBlockByHeight err:%v height:%v", err, height+1)
+		log.Log.Panicf("GetBlockByHeight err:%v height:%v", err, location.Height+1)
 	}
-	getBlockByHeightTime := time.Since(startTime)
-	startTime = time.Now()
-	for _, tx := range blockInfo.Tx {
+	if location.TxIndex+1 == int64(len(blockInfo.Tx)) {
+		blockInfo, err = m.GetBlockByHeight(location.Height + 1)
+		if err != nil {
+			log.Log.Panicf("GetBlockByHeight err:%v height:%v", err, location.Height+1)
+		}
+	}
+	for index, tx := range blockInfo.Tx {
+		if location.Height == blockInfo.Height && index <= int(location.TxIndex) {
+			continue
+		}
 		if err := m.InsertBtcTx(&postsql.BtcTx{TxID: tx.Txid, BlockHeight: blockInfo.Height}); err != nil {
 			log.Log.Panicf("InsertBtcTx err:%v", err)
 		}
-	}
-	if err := m.UpdateCurrentHeightAndExecAllSql(height); err != nil {
-		if !strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+		m.TraceTx(tx, blockInfo.Height)
+		if err := m.UpdateCurrentHeightAndExecAllSql(blockInfo.Height, int64(index)); err != nil {
 			log.Log.Panicf("UpdateCurrentHeight err:%v", err)
 		}
 	}
-	for _, tx := range blockInfo.Tx {
-		// skip this tx, it's from miner
-		if tx.Vin[0].Txid == "" {
-			continue
-		}
-		m.TraceTx(tx, blockInfo.Height)
-	}
-	if err := m.UpdateCurrentHeightAndExecAllSql(blockInfo.Height); err != nil {
-		log.Log.Panicf("UpdateCurrentHeight err:%v", err)
-	}
-	log.Log.Infof("height:%v, getBlockByHeight take time:%v, TraceTx take time:%v", blockInfo.Height, getBlockByHeightTime, time.Since(startTime))
+	log.Log.Infof("height:%v, TraceBlock take time:%v", blockInfo.Height, time.Since(startTime))
 }
 
 func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) error {

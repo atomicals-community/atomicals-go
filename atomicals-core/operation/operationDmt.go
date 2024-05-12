@@ -98,7 +98,6 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 	if err != nil {
 		return err
 	}
-	locationID := operation.AtomicalsID
 	entity := &postsql.UTXOFtInfo{
 		UserPk:      userPk,
 		MintTicker:  ticker,
@@ -107,8 +106,8 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 		Bitworkc:    operation.Payload.Args.Bitworkc,
 		Bitworkr:    operation.Payload.Args.Bitworkr,
 		Amount:      int64(vout[utils.VOUT_EXPECT_OUTPUT_INDEX].Value * utils.Satoshi),
-		AtomicalsID: locationID,
-		LocationID:  locationID,
+		AtomicalsID: operation.AtomicalsID,
+		LocationID:  operation.AtomicalsID,
 	}
 	if err := m.InsertFtUTXO(entity); err != nil {
 		log.Log.Panicf("InsertFtUTXO err:%v", err)

@@ -4,16 +4,16 @@ import (
 	"strings"
 
 	"github.com/atomicals-go/repo/postsql"
-	"gorm.io/gorm"
 )
 
 func (m *Postgres) InsertBtcTx(btcTx *postsql.BtcTx) error {
-	m.SQLRaw += m.ToSQL(func(tx *gorm.DB) *gorm.DB {
-		return tx.Save(&postsql.BtcTx{
-			TxID:        btcTx.TxID,
-			BlockHeight: btcTx.BlockHeight,
-		})
-	}) + ";"
+	dbTx := m.Save(&postsql.BtcTx{
+		TxID:        btcTx.TxID,
+		BlockHeight: btcTx.BlockHeight,
+	})
+	if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "duplicate key value violates unique constraint") {
+		return dbTx.Error
+	}
 	return nil
 }
 
