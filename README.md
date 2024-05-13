@@ -10,7 +10,7 @@ Atomicals-go: 是atomicals索引器atomicals-electrumx的golang版本，并以�
 
 - 请注意，如果Arthur想要对atomicals-electrumx进行协议升级或更新，Atomicals-go 是滞后的
 - 在未来一段时间内[yiming](https://twitter.com/isyiming)仍然会维护该项目（及时同步atomicals-electrumx的更新）
-
+- 如果您想加入，可以通过twitter联系我：[yiming](https://twitter.com/isyiming)
 感谢Arthur巧妙的构思，为我们带来了atomicals协议。我们需要对atomicals协议有更加清晰的认知，并在人们脑海中凝聚牢固的共识。
 atomicals-core将致力于提供规范的atomicals协议文本和简洁高效的atomicals协议索引器。欢迎任何对此感兴趣的人参与建设。您的参与会让atomicals更加去中心化！
 
