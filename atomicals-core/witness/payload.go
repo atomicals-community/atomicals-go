@@ -6,7 +6,11 @@ import (
 )
 
 type PayLoad struct {
-	// ImagePng map[string]string `cbor:"image.png"` // Todo: there are some err when unmarshal ImagePng
+	// Image struct {
+	// 	Ct string `cbor:"$ct"`
+	// 	B  []byte `cbor:"$b"`
+	// } `cbor:"*.jpg"`
+	Image                      []byte           `cbor:"image.png"` // for nft-dmint
 	Args                       *Args            `cbor:"args"`
 	Meta                       *Meta            `cbor:"meta"`
 	TotalAmountToSkipPotential map[string]int64 // key: locationID
@@ -115,10 +119,10 @@ type Args struct {
 	Bitworkc string `cbor:"bitworkc"`
 	Bitworkr string `cbor:"bitworkr"`
 
-	I       bool             `cbor:"i"`
-	Main    string           `cbor:"main"`
-	Proof   []Proof          `cbor:"proof"`
-	Parents map[string]int64 `cbor:"parents"` // key: parent_atomical_id, value: , haven't catch this param, used in operation:nft
+	I     bool    `cbor:"i"`
+	Main  string  `cbor:"main"`
+	Proof []Proof `cbor:"proof"`
+	// Parents map[string]int64 `cbor:"parents"` // key: parent_atomical_id, value: , haven't catch this param, used in operation:nft
 
 	// dft & ft
 	RequestTicker string `cbor:"request_ticker"`
@@ -154,7 +158,6 @@ type Args struct {
 	// nft: dmitem
 	RequestDmitem   string `cbor:"request_dmitem"`   // item num in ParentContainer
 	ParentContainer string `cbor:"parent_container"` // ParentContainer atomicalsID
-
 }
 
 type NftSubrealmClaimType string
@@ -180,7 +183,7 @@ type ImagePng struct {
 }
 
 type Proof struct {
-	D []byte `cbor:"d"`
+	D string `cbor:"d"`
 	P bool   `cbor:"p"`
 }
 

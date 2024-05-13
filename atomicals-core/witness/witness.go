@@ -5,6 +5,7 @@ import (
 
 	"github.com/atomicals-go/pkg/errors"
 	"github.com/atomicals-go/utils"
+
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/fxamacker/cbor/v2"
 )
@@ -19,6 +20,7 @@ type WitnessAtomicalsOperation struct {
 	CommitHeight    int64
 
 	AtomicalsID          string
+	LocationID           string
 	RevealLocationTxID   string
 	RevealInputIndex     int64
 	RevealLocationHeight int64
@@ -106,7 +108,8 @@ func ParseWitness(tx btcjson.TxRawResult, height int64) *WitnessAtomicalsOperati
 				Script:               script,
 				CommitTxID:           vin.Txid,
 				CommitVoutIndex:      int64(vin.Vout),
-				AtomicalsID:          utils.AtomicalsID(tx.Txid, int64(vinIndex)),
+				AtomicalsID:          utils.AtomicalsID(vin.Txid, int64(vin.Vout)),
+				LocationID:           utils.AtomicalsID(tx.Txid, int64(vinIndex)),
 				RevealLocationTxID:   tx.Txid,
 				RevealInputIndex:     int64(vinIndex),
 				RevealLocationHeight: height,
@@ -161,18 +164,14 @@ func ParseOperationAndPayLoad(script string) (string, *PayLoad, error) {
 		if !payload.check() {
 			return "", nil, errors.ErrInvalidPayLoad
 		}
-		// log.Log.Panicf("script:%+v", script)
-		// payloadstr, _ := json.Marshal(payload)
-		// if operation == "dft" {
-		// 	log.Log.Panicf("script:%+v", script)
-		// }
 		// if payload.Args.RequestContainer != "" {
 		// 	log.Log.Panicf("script:%+v", script)
-		// 	log.Log.Panicf("payload:%+v", string(payloadstr))
 		// }
 		// if payload.Args.RequestDmitem != "" {
-		// 	log.Log.Panicf("script:%+v", script)
-		// 	log.Log.Panicf("payload:%+v", string(payloadstr))
+		// log.Log.Panicf("script:%+v", script)
+		// payloadstr, _ := json.Marshal(payload)
+		// log.Log.Infof("payload:%+v", string(payloadstr))
+		// pythonparse.ParseAtomicalsOperation(script)
 		// }
 		// if payload.Args.RequestSubRealm != "" {
 		// 	log.Log.Panicf("script:%+v", script)

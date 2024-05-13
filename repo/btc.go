@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/atomicals-go/repo/postsql"
+	"gorm.io/gorm"
 )
 
 func (m *Postgres) InsertBtcTx(btcTx *postsql.BtcTx) error {
@@ -35,7 +36,7 @@ func (m *Postgres) BtcTxHeight(txID string) (int64, error) {
 		return -1, dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		return -1, nil
+		return -1, gorm.ErrRecordNotFound
 	}
 	return entity.BlockHeight, nil
 }

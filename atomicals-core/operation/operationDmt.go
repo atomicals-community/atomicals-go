@@ -107,7 +107,7 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 		Bitworkr:    operation.Payload.Args.Bitworkr,
 		Amount:      int64(vout[utils.VOUT_EXPECT_OUTPUT_INDEX].Value * utils.Satoshi),
 		AtomicalsID: operation.AtomicalsID,
-		LocationID:  operation.AtomicalsID,
+		LocationID:  operation.LocationID,
 	}
 	if err := m.InsertFtUTXO(entity); err != nil {
 		log.Log.Panicf("InsertFtUTXO err:%v", err)

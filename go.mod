@@ -7,6 +7,7 @@ require (
 	github.com/btcsuite/btcd v0.24.0
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0
 	github.com/fxamacker/cbor/v2 v2.6.0
+	github.com/sbinet/go-python v0.1.0
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/zap v1.27.0
 	gorm.io/driver/postgres v1.5.7

@@ -35,7 +35,6 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 	if operation.RevealLocationHeight >= utils.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && operation.CommitVoutIndex != utils.VOUT_EXPECT_OUTPUT_INDEX {
 		return errors.ErrInvalidVinIndex
 	}
-	atomicalsID := operation.AtomicalsID
 	if operation.Payload.Args.RequestRealm != "" {
 		if !utils.IsValidRealm(operation.Payload.Args.RequestRealm) {
 			return errors.ErrInvalidRealm
@@ -60,8 +59,8 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 			Time:        operation.Payload.Args.Time,
 			Bitworkc:    operation.Payload.Args.Bitworkc,
 			Bitworkr:    operation.Payload.Args.Bitworkr,
-			AtomicalsID: atomicalsID,
-			LocationID:  atomicalsID,
+			AtomicalsID: operation.AtomicalsID,
+			LocationID:  operation.LocationID,
 		}
 		if bitworkc != nil && len(bitworkc.Prefix) < 4 {
 			return errors.ErrInvalidBitworkcPrefix
@@ -77,6 +76,7 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 			return errors.ErrInvalidClaimType
 		}
 		parentRealmName, err := m.ParentRealmHasExist(operation.Payload.Args.ParentRealm)
+
 		if err != nil {
 			log.Log.Panicf("ParentRealmHasExist err:%v", err)
 		}
@@ -103,8 +103,8 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 			Time:                   operation.Payload.Args.Time,
 			Bitworkc:               operation.Payload.Args.Bitworkc,
 			Bitworkr:               operation.Payload.Args.Bitworkr,
-			AtomicalsID:            atomicalsID,
-			LocationID:             atomicalsID,
+			AtomicalsID:            operation.AtomicalsID,
+			LocationID:             operation.LocationID,
 		}
 		if err := m.InsertNftUTXO(entity); err != nil {
 			log.Log.Panicf("InsertNftUTXO err:%v", err)
@@ -133,8 +133,8 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 			Time:          operation.Payload.Args.Time,
 			Bitworkc:      operation.Payload.Args.Bitworkc,
 			Bitworkr:      operation.Payload.Args.Bitworkr,
-			AtomicalsID:   atomicalsID,
-			LocationID:    atomicalsID,
+			AtomicalsID:   operation.AtomicalsID,
+			LocationID:    operation.LocationID,
 		}
 		if bitworkc != nil && len(bitworkc.Prefix) < 4 {
 			return errors.ErrInvalidBitworkcPrefix
@@ -167,6 +167,7 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 			if !verifyRuleAndMerkle(operation, height) {
 				return errors.ErrInvalidMerkleVerify
 			}
+			panic("~~")
 		}
 		entity := &postsql.UTXONftInfo{
 			UserPk:                     userPk,
@@ -177,8 +178,8 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 			Time:                       operation.Payload.Args.Time,
 			Bitworkc:                   operation.Payload.Args.Bitworkc,
 			Bitworkr:                   operation.Payload.Args.Bitworkr,
-			AtomicalsID:                atomicalsID,
-			LocationID:                 atomicalsID,
+			AtomicalsID:                operation.AtomicalsID,
+			LocationID:                 operation.LocationID,
 		}
 		if err := m.InsertNftUTXO(entity); err != nil {
 			log.Log.Panicf("InsertNftUTXO err:%v", err)

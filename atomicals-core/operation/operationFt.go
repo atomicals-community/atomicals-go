@@ -49,12 +49,10 @@ func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, v
 	if operation.CommitVoutIndex != utils.VOUT_EXPECT_OUTPUT_INDEX {
 		return errors.ErrInvalidVinIndex
 	}
-
-	locationID := operation.AtomicalsID
 	atomicalsFtInfo := &postsql.UTXOFtInfo{
 		UserPk:        userPk,
-		AtomicalsID:   locationID,
-		LocationID:    locationID,
+		AtomicalsID:   operation.AtomicalsID,
+		LocationID:    operation.LocationID,
 		Type:          "FT",
 		Subtype:       "direct",
 		RequestTicker: operation.Payload.Args.RequestTicker,

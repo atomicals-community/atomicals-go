@@ -83,9 +83,8 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 	if operation.RevealLocationHeight > utils.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && operation.CommitVoutIndex != utils.VOUT_EXPECT_OUTPUT_INDEX {
 		return errors.ErrInvalidVinIndex
 	}
-	atomicalsID := operation.AtomicalsID
 	entity := &postsql.GlobalDistributedFt{
-		AtomicalsID:  atomicalsID,
+		AtomicalsID:  operation.AtomicalsID,
 		TickerName:   operation.Payload.Args.RequestTicker,
 		Type:         "FT",
 		Subtype:      "decentralized",
