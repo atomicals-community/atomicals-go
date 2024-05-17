@@ -60,7 +60,7 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 	if mintBitworkc != nil && len(mintBitworkc.Prefix) < 4 {
 		return errors.ErrInvalidBitworkcPrefix
 	}
-	if operation.IsImmutable() {
+	if operation.Payload.IsImmutable() {
 		return errors.ErrCannotBeImmutable
 	}
 	if operation.Payload.Args.Md != "" && operation.Payload.Args.Md != "0" && operation.Payload.Args.Md != "1" {

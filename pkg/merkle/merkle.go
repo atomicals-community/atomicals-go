@@ -15,13 +15,17 @@ type MerkleNode struct {
 func CheckValidateProof(expected_root_hash, target_hash []byte, proof []witness.Proof) bool {
 	formatted_proof := make([]*MerkleNode, 0)
 	for _, item := range proof {
+		d, err := hex.DecodeString(item.D)
+		if err != nil {
+			return false
+		}
 		if item.P {
 			formatted_proof = append(formatted_proof, &MerkleNode{
-				Right: item.D,
+				Right: d,
 			})
 		} else {
 			formatted_proof = append(formatted_proof, &MerkleNode{
-				Left: item.D,
+				Left: d,
 			})
 		}
 	}

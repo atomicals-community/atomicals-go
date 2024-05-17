@@ -9,6 +9,9 @@ import (
 )
 
 func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk string, height int64) error {
+	// if operation.Payload.Args.RequestContainer == "" && operation.Payload.Args.RequestDmitem == "" {
+	// 	return nil
+	// }
 	if operation.RevealInputIndex != 0 {
 		return errors.ErrInvalidRevealInputIndex
 	}
@@ -46,7 +49,7 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 		if isExist {
 			return errors.ErrRealmHasExist
 		}
-		if operation.IsImmutable() {
+		if operation.Payload.IsImmutable() {
 			return errors.ErrCannotBeImmutable
 		}
 		if operation.Payload.Args.Bitworkc == "" {
@@ -90,7 +93,7 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 		if isExist {
 			return errors.ErrSubRealmHasExist
 		}
-		if operation.IsImmutable() {
+		if operation.Payload.IsImmutable() {
 			return errors.ErrCannotBeImmutable
 		}
 		entity := &postsql.UTXONftInfo{
@@ -120,7 +123,7 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 		if isExist {
 			return errors.ErrContainerHasExist
 		}
-		if operation.IsImmutable() {
+		if operation.Payload.IsImmutable() {
 			return errors.ErrCannotBeImmutable
 		}
 		if operation.Payload.Args.Bitworkc == "" {
@@ -164,10 +167,9 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 			return errors.ErrSubRealmHasExist
 		}
 		if height >= utils.ATOMICALS_ACTIVATION_HEIGHT_DMINT {
-			if !verifyRuleAndMerkle(operation, height) {
+			if !m.verifyRuleAndMerkle(operation, height) {
 				return errors.ErrInvalidMerkleVerify
 			}
-			panic("~~")
 		}
 		entity := &postsql.UTXONftInfo{
 			UserPk:                     userPk,

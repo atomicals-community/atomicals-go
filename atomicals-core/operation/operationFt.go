@@ -20,7 +20,7 @@ func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, v
 	if !utils.IsValidTicker(operation.Payload.Args.RequestTicker) {
 		return errors.ErrInvalidTicker
 	}
-	if operation.IsImmutable() {
+	if operation.Payload.IsImmutable() {
 		return errors.ErrCannotBeImmutable
 	}
 	if operation.Payload.Args.Bitworkc == "" {

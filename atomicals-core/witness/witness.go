@@ -11,9 +11,9 @@ import (
 )
 
 type WitnessAtomicalsOperation struct {
+	Script  string
 	Op      string
 	Payload *PayLoad
-	Script  string
 
 	CommitTxID      string // vin's txID
 	CommitVoutIndex int64  // vin's index as vout in last tx
@@ -24,6 +24,58 @@ type WitnessAtomicalsOperation struct {
 	RevealLocationTxID   string
 	RevealInputIndex     int64
 	RevealLocationHeight int64
+}
+
+// # Parses and detects valid Atomicals protocol operations in a witness script
+// # Stops when it finds the first operation in the first input
+func ParseWitness(tx btcjson.TxRawResult, height int64) *WitnessAtomicalsOperation {
+	for vinIndex, vin := range tx.Vin {
+		if !vin.HasWitness() {
+			continue
+		}
+		for _, script := range vin.Witness {
+			op, payload, err := ParseOperationAndPayLoad(script)
+			if err != nil {
+				continue
+			}
+			// if op == "mod" {
+			// 	pythonparse.ParseAtomicalsOperation(script)
+			// 	log.Log.Infof("AtomicalsID:%v", utils.AtomicalsID(vin.Txid, int64(vin.Vout)))
+			// 	log.Log.Infof("LocationID:%v", utils.AtomicalsID(tx.Txid, int64(vinIndex)))
+			// } else if op == "evt" {
+			// 	pythonparse.ParseAtomicalsOperation(script)
+			// } else if op == "dat" {
+			// 	pythonparse.ParseAtomicalsOperation(script)
+			// } else if op == "sl" {
+			// 	pythonparse.ParseAtomicalsOperation(script)
+			// } else if op == "nft" {
+			// 	pythonparse.ParseAtomicalsOperation(script)
+			// 	log.Log.Infof("AtomicalsID:%v", utils.AtomicalsID(vin.Txid, int64(vin.Vout)))
+			// 	log.Log.Infof("LocationID:%v", utils.AtomicalsID(tx.Txid, int64(vinIndex)))
+			// 	panic("#")
+			// }
+			return &WitnessAtomicalsOperation{
+				Op:              op,
+				Payload:         payload,
+				Script:          script,
+				CommitTxID:      vin.Txid,
+				CommitVoutIndex: int64(vin.Vout),
+				CommitHeight:    -1,
+
+				AtomicalsID:          utils.AtomicalsID(vin.Txid, int64(vin.Vout)),
+				LocationID:           utils.AtomicalsID(tx.Txid, int64(vinIndex)),
+				RevealLocationTxID:   tx.Txid,
+				RevealInputIndex:     int64(vinIndex),
+				RevealLocationHeight: height,
+			}
+		}
+		break
+	}
+	return &WitnessAtomicalsOperation{
+		RevealLocationTxID:   tx.Txid,
+		RevealInputIndex:     -1,
+		RevealLocationHeight: height,
+	}
 }
 
 // is_dft_bitwork_rollover_activated
@@ -39,17 +91,6 @@ func (m *WitnessAtomicalsOperation) IsWithinAcceptableBlocksForNameReveal() bool
 // is_within_acceptable_blocks_for_general_reveal
 func (m *WitnessAtomicalsOperation) IsWithinAcceptableBlocksForGeneralReveal() bool {
 	return m.CommitHeight >= m.RevealLocationHeight-utils.MINT_GENERAL_COMMIT_REVEAL_DELAY_BLOCKS
-}
-
-// is_immutable
-func (m *WitnessAtomicalsOperation) IsImmutable() bool {
-	if m.Payload == nil {
-		return false
-	}
-	if m.Payload.Args == nil {
-		return false
-	}
-	return m.Payload.Args.I
 }
 
 func (m *WitnessAtomicalsOperation) IsValidBitwork() (*utils.Bitwork, *utils.Bitwork, error) {
@@ -74,12 +115,6 @@ func (m *WitnessAtomicalsOperation) IsValidBitwork() (*utils.Bitwork, *utils.Bit
 	return bitworkc, bitworkr, nil
 }
 
-func ParseMintBitwork(commitTxID, mintBitworkc, mintBitworkr string) (*utils.Bitwork, *utils.Bitwork, error) {
-	bitworkc := utils.ParseBitwork(mintBitworkc)
-	bitworkr := utils.ParseBitwork(mintBitworkr)
-	return bitworkc, bitworkr, nil
-}
-
 // is_splat_operation
 func (m *WitnessAtomicalsOperation) IsSplatOperation() bool {
 	return m != nil && m.Op == "x" && m.RevealInputIndex == 0
@@ -90,38 +125,20 @@ func (m *WitnessAtomicalsOperation) IsSplitOperation() bool {
 	return m != nil && m.Op == "y" && m.RevealInputIndex == 0
 }
 
-// # Parses and detects valid Atomicals protocol operations in a witness script
-// # Stops when it finds the first operation in the first input
-func ParseWitness(tx btcjson.TxRawResult, height int64) *WitnessAtomicalsOperation {
-	for vinIndex, vin := range tx.Vin {
-		if !vin.HasWitness() {
-			continue
-		}
-		for _, script := range vin.Witness {
-			op, payload, err := ParseOperationAndPayLoad(script)
-			if err != nil {
-				continue
-			}
-			return &WitnessAtomicalsOperation{
-				Op:                   op,
-				Payload:              payload,
-				Script:               script,
-				CommitTxID:           vin.Txid,
-				CommitVoutIndex:      int64(vin.Vout),
-				AtomicalsID:          utils.AtomicalsID(vin.Txid, int64(vin.Vout)),
-				LocationID:           utils.AtomicalsID(tx.Txid, int64(vinIndex)),
-				RevealLocationTxID:   tx.Txid,
-				RevealInputIndex:     int64(vinIndex),
-				RevealLocationHeight: height,
-			}
-		}
-		break
-	}
-	return &WitnessAtomicalsOperation{
-		RevealLocationTxID:   tx.Txid,
-		RevealInputIndex:     -1,
-		RevealLocationHeight: height,
-	}
+// is_seal_operation
+func (m *WitnessAtomicalsOperation) Is_seal_operation() bool {
+	return m != nil && m.Op == "sl" && m.RevealInputIndex == 0
+}
+
+// is_event_operation
+func (m *WitnessAtomicalsOperation) Is_event_operation() bool {
+	return m != nil && m.Op == "evt" && m.RevealInputIndex == 0
+}
+
+func ParseMintBitwork(commitTxID, mintBitworkc, mintBitworkr string) (*utils.Bitwork, *utils.Bitwork, error) {
+	bitworkc := utils.ParseBitwork(mintBitworkc)
+	bitworkr := utils.ParseBitwork(mintBitworkr)
+	return bitworkc, bitworkr, nil
 }
 
 func ParseOperationAndPayLoad(script string) (string, *PayLoad, error) {
@@ -164,22 +181,10 @@ func ParseOperationAndPayLoad(script string) (string, *PayLoad, error) {
 		if !payload.check() {
 			return "", nil, errors.ErrInvalidPayLoad
 		}
-		// if payload.Args.RequestContainer != "" {
-		// 	log.Log.Panicf("script:%+v", script)
-		// }
-		// if payload.Args.RequestDmitem != "" {
-		// log.Log.Panicf("script:%+v", script)
-		// payloadstr, _ := json.Marshal(payload)
-		// log.Log.Infof("payload:%+v", string(payloadstr))
-		// pythonparse.ParseAtomicalsOperation(script)
-		// }
-		// if payload.Args.RequestSubRealm != "" {
-		// 	log.Log.Panicf("script:%+v", script)
-		// 	log.Log.Panicf("payload:%+v", string(payloadstr))
-		// }
-		// if payload.Args.RequestRealm != "" {
-		// 	log.Log.Panicf("script:%+v", script)
-		// 	log.Log.Panicf("payload:%+v", string(payloadstr))
+		// if operation == "nft" {
+		// 	if payload.Args.RequestDmitem != "" {
+		// 		pythonparse.ParseAtomicalsOperation(script)
+		// 	}
 		// }
 		return operation, payload, nil
 	}

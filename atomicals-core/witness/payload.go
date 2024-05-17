@@ -10,11 +10,48 @@ type PayLoad struct {
 	// 	Ct string `cbor:"$ct"`
 	// 	B  []byte `cbor:"$b"`
 	// } `cbor:"*.jpg"`
-	Image                      []byte           `cbor:"image.png"` // for nft-dmint
-	Args                       *Args            `cbor:"args"`
+	Args *Args `cbor:"args"`
+
+	// for mod
+	A         int    `cbor:"$a"`
+	Dmint     *Dmint `cbor:"dmint"`     // for mod
+	Subrealms *Dmint `cbor:"subrealms"` // for mod
+
 	Meta                       *Meta            `cbor:"meta"`
 	TotalAmountToSkipPotential map[string]int64 // key: locationID
-	Main                       []byte
+	Main                       []byte           // for nft-dmint
+	Image                      []byte           `cbor:"image.png"` // for nft-dmint
+}
+
+type Dmint struct {
+	A          int64       `cbor:"a"`
+	V          string      `cbor:"v"`
+	Items      int64       `cbor:"items"`
+	Rules      []*RuleInfo `cbor:"rules"`
+	Merkle     string      `cbor:"merkle"`
+	Immutable  bool        `cbor:"immutable"`
+	MintHeight int64       `cbor:"mint_height"`
+}
+type Subrealms struct {
+	Rules []*RuleInfo `cbor:"rules"`
+
+	// A          int64       `cbor:"a"`
+	// V          string      `cbor:"v"`
+	// Items      int64       `cbor:"items"`
+	// Merkle     string      `cbor:"merkle"`
+	// Immutable  bool        `cbor:"immutable"`
+	// MintHeight int64       `cbor:"mint_height"`
+}
+
+// is_immutable
+func (m *PayLoad) IsImmutable() bool {
+	if m == nil {
+		return false
+	}
+	if m.Args == nil {
+		return false
+	}
+	return m.Args.I
 }
 
 // parse_atomicals_data_definition_operation
@@ -119,9 +156,10 @@ type Args struct {
 	Bitworkc string `cbor:"bitworkc"`
 	Bitworkr string `cbor:"bitworkr"`
 
-	I     bool    `cbor:"i"`
-	Main  string  `cbor:"main"`
-	Proof []Proof `cbor:"proof"`
+	Immutable bool    `cbor:"$immutable"`
+	I         bool    `cbor:"i"`
+	Main      string  `cbor:"main"`
+	Proof     []Proof `cbor:"proof"`
 	// Parents map[string]int64 `cbor:"parents"` // key: parent_atomical_id, value: , haven't catch this param, used in operation:nft
 
 	// dft & ft
@@ -158,6 +196,18 @@ type Args struct {
 	// nft: dmitem
 	RequestDmitem   string `cbor:"request_dmitem"`   // item num in ParentContainer
 	ParentContainer string `cbor:"parent_container"` // ParentContainer atomicalsID
+}
+
+type RuleInfo struct {
+	P        string             `cbor:"p"`
+	O        map[string]*Output `cbor:"o"` // key:
+	Bitworkc string             `cbor:"bitworkc"`
+	Bitworkr string             `cbor:"bitworkr"`
+}
+
+type Output struct {
+	ID string `cbor:"id"`
+	V  int64  `cbor:"v"`
 }
 
 type NftSubrealmClaimType string

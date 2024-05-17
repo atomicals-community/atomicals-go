@@ -18,9 +18,9 @@ func (m *BtcSync) GetBlockByHeight(blockHeight int64) (*btcjson.GetBlockVerboseT
 		block, ok := m.blockCache.Load(blockHeight)
 		if ok {
 			b, _ = block.(*btcjson.GetBlockVerboseTxResult)
+			m.blockCache.Delete(blockHeight - BlockCacheNum)
 			break
 		}
-		m.blockCache.Load(blockHeight - BlockCacheNum)
 		time.Sleep(1 * time.Second)
 	}
 	return b, nil
@@ -34,7 +34,6 @@ func (m *BtcSync) FetchBlocks() error {
 			continue
 		}
 		m.blockCache.Store(height, block)
-		time.Sleep(1 * time.Second)
 	}
 	return nil
 }

@@ -32,6 +32,10 @@ type DB interface {
 	InsertDistributedFt(ft *postsql.GlobalDistributedFt) error
 	UpdateDistributedFtAmount(tickerName string, mintTimes int64) error
 
+	// mod
+	InsertMod(mod *postsql.ModInfo) error
+	Mod(atomicalsID string) (*postsql.ModInfo, error)
+
 	// btc
 	InsertBtcTx(btcTx *postsql.BtcTx) error
 	BtcTx(txID string) (*postsql.BtcTx, error)
