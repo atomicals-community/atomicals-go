@@ -5,15 +5,15 @@ Atomicals: 是一个使用染色方法在BTC链上发行资产的协议，作者
 - 目前Arthur 并未以文档或protocal形式披露atomicals的具体内容。但是提供了一个python版本的实现，包括：
     - atomicals索引器[atomicals-electrumx](https://github.com/atomicals/atomicals-electrumx)
     - atomicals交易发送工具[atomicals-js](https://github.com/atomicals/atomicals-js)命令工具
-
-Atomicals-go: 是atomicals索引器atomicals-electrumx的golang版本，并以文本方式提供了atomicals协议的详细内容（在本仓库的doc目录下）
+- Atomicals-go: 是atomicals索引器atomicals-electrumx的golang版本，并以文本方式提供了atomicals协议的详细内容（在本仓库的doc目录下）
 
 - 请注意，如果Arthur想要对atomicals-electrumx进行协议升级或更新，Atomicals-go 是滞后的
 - 在未来一段时间内[yiming](https://twitter.com/isyiming)仍然会维护该项目（及时同步atomicals-electrumx的更新）
 - 如果您想加入，可以通过twitter联系我：[yiming](https://twitter.com/isyiming)
-感谢Arthur巧妙的构思，为我们带来了atomicals协议。我们需要对atomicals协议有更加清晰的认知，并在人们脑海中凝聚牢固的共识。
-atomicals-core将致力于提供规范的atomicals协议文本和简洁高效的atomicals协议索引器。欢迎任何对此感兴趣的人参与建设。您的参与会让atomicals更加去中心化！
 
+我需要一个aws服务器运行btc全节点和atomicals-electrumx索引器，用来对比atomicals-go和atomicals-electrumx的结果是否有差异，有人愿意帮助我吗？麻烦通过推特和我联系。
+
+或者为我捐款：bc1p2ty4uj7g9l7w4dmu0qrmm2z35jm22t2r8qa5uwfde5vz3r3mhtgsdhcs4u 接受任何类型的资产
 ## How to run atomicals-go
 1. run a local btc node
 ```
