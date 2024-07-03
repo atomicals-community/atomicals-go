@@ -46,6 +46,9 @@ func parseAtomicalsOperation(scriptBytes []byte, startIndex int64) (string, int6
 		operationType = "x" //# extract - move atomical to 0'th output
 	case "0179":
 		operationType = "y" //# split -
+	case "017a":
+		operationType = "z" //# partical colored
+
 	}
 	if operationType != "" {
 		return operationType, startIndex + one_letter_op_len

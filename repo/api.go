@@ -2,20 +2,21 @@ package repo
 
 import (
 	"github.com/atomicals-go/repo/postsql"
+	"github.com/bits-and-blooms/bloom/v3"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 type DB interface {
-	// atomicals-core current location
+	// location
 	CurrentLocation() (*postsql.Location, error)
-	UpdateCurrentHeightAndExecAllSql(int64, int64) error
+	ExecAllSql(location *postsql.Location) error
 
 	// nft read
 	NftUTXOsByLocationID(locationID string) ([]*postsql.UTXONftInfo, error)
 	ParentRealmHasExist(parentRealmAtomicalsID string) (string, error)
 	NftRealmByNameHasExist(realmName string) (bool, error)
-	NftSubRealmByNameHasExist(realmName, subRealm string) (bool, error)
+	NftSubRealmByNameHasExist(parentRealmAtomicalsID, subRealm string) (bool, error)
 	ParentContainerHasExist(parentContainerAtomicalsID string) (*postsql.UTXONftInfo, error)
 	NftContainerByNameHasExist(containerName string) (bool, error)
 	ContainerItemByNameHasExist(container, item string) (bool, error)
@@ -31,6 +32,7 @@ type DB interface {
 	DeleteFtUTXO(locationID string) error
 	InsertDistributedFt(ft *postsql.GlobalDistributedFt) error
 	UpdateDistributedFtAmount(tickerName string, mintTimes int64) error
+	InsertDirectFtUTXO(entity *postsql.GlobalDirectFt) error
 
 	// mod
 	InsertMod(mod *postsql.ModInfo) error
@@ -40,6 +42,11 @@ type DB interface {
 	InsertBtcTx(btcTx *postsql.BtcTx) error
 	BtcTx(txID string) (*postsql.BtcTx, error)
 	BtcTxHeight(txID string) (int64, error)
+
+	// bitmap
+	InsertBloomFilter(name string, filter *bloom.BloomFilter) error
+	UpdateBloomFilter(name string, filter *bloom.BloomFilter) error
+	BloomFilter() (map[string]*bloom.BloomFilter, error)
 }
 
 func NewSqlDB(sqlDNS string) DB {
@@ -48,7 +55,6 @@ func NewSqlDB(sqlDNS string) DB {
 		panic(err)
 	}
 	return &Postgres{
-		DB:     DB,
-		SQLRaw: "",
+		DB: DB,
 	}
 }

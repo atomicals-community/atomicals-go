@@ -1,30 +1,97 @@
 package witness
 
 import (
+	"encoding/hex"
+
 	"github.com/atomicals-go/pkg/errors"
 	"github.com/atomicals-go/utils"
+	"github.com/fxamacker/cbor/v2"
 )
 
 type PayLoad struct {
-	// Image struct {
-	// 	Ct string `cbor:"$ct"`
-	// 	B  []byte `cbor:"$b"`
-	// } `cbor:"*.jpg"`
-	Args *Args `cbor:"args"`
-
-	// for mod
-	A         int    `cbor:"$a"`
+	Args      *Args  `cbor:"args"`
+	A         int    `cbor:"$a"`        // for mod
 	Dmint     *Dmint `cbor:"dmint"`     // for mod
 	Subrealms *Dmint `cbor:"subrealms"` // for mod
+	Meta      *Meta  `cbor:"meta"`
+}
 
-	Meta                       *Meta            `cbor:"meta"`
+type Args struct {
+	Nonce int64 `cbor:"nonce"`
+	Time  int64 `cbor:"time"`
+
+	// optional
+	Bitworkc string `cbor:"bitworkc"`
+	Bitworkr string `cbor:"bitworkr"`
+
+	Immutable     bool              `cbor:"$immutable"`
+	I             bool              `cbor:"i"`
+	Main          string            `cbor:"main"`
+	DynamicFields map[string][]byte `cbor:"-"` // use for Main, sometimes, Main is "image.png" or unsure name... so bad a rule
+	Proof         []Proof           `cbor:"proof"`
+	Parents       map[string]int64  `cbor:"$parents"` // key: parent_atomical_id, value: , haven't catch this param, used in operation:nft
+
+	// for dft & ft
+	RequestTicker string `cbor:"request_ticker"`
+
+	// for dft
+	MintAmount   int64  `cbor:"mint_amount"`
+	MintHeight   int64  `cbor:"mint_height"`
+	MaxMints     int64  `cbor:"max_mints"`
+	MintBitworkc string `cbor:"mint_bitworkc"`
+	MintBitworkr string `cbor:"mint_bitworkr"`
+	Md           string `cbor:"md"` // emu:"", "0", "1"
+	Bv           string `cbor:"bv"`
+	Bci          string `cbor:"bci"`
+	Bri          string `cbor:"bri"`
+	Bcs          int64  `cbor:"bcs"`
+	Brs          int64  `cbor:"brs"`
+	Maxg         int64  `cbor:"maxg"`
+
+	// for dmt
+	MintTicker string `cbor:"mint_ticker"` // mint ft name
+
+	// for nft: realm
+	RequestRealm string `cbor:"request_realm"`
+
+	// for nft: subrealm
+	RequestSubRealm string               `cbor:"request_subrealm"`
+	ClaimType       NftSubrealmClaimType `cbor:"claim_type"`   // enum: "direct" "rule"
+	ParentRealm     string               `cbor:"parent_realm"` // ParentRealm atomicalsID
+
+	// for nft: container
+	RequestContainer string `cbor:"request_container"`
+
+	// for nft: dmitem
+	RequestDmitem   string `cbor:"request_dmitem"`   // item num in ParentContainer
+	ParentContainer string `cbor:"parent_container"` // ParentContainer atomicalsID
+
+	// for y
 	TotalAmountToSkipPotential map[string]int64 // key: locationID
-	Main                       []byte           // for nft-dmint
-	Image                      []byte           `cbor:"image.png"` // for nft-dmint
+}
+
+type NftSubrealmClaimType string
+
+const (
+	Direct NftSubrealmClaimType = "direct"
+	Rule   NftSubrealmClaimType = "rule"
+)
+
+type Meta struct {
+	Name        string `cbor:"name"`
+	Description string `cbor:"description"`
+	Legal       struct {
+		Terms string `cbor:"terms"`
+	} `cbor:"legal"`
+}
+
+type Proof struct {
+	D string `cbor:"d"`
+	P bool   `cbor:"p"`
 }
 
 type Dmint struct {
-	A          int64       `cbor:"a"`
+	A          int64       `cbor:"$a"`
 	V          string      `cbor:"v"`
 	Items      int64       `cbor:"items"`
 	Rules      []*RuleInfo `cbor:"rules"`
@@ -32,26 +99,81 @@ type Dmint struct {
 	Immutable  bool        `cbor:"immutable"`
 	MintHeight int64       `cbor:"mint_height"`
 }
-type Subrealms struct {
-	Rules []*RuleInfo `cbor:"rules"`
 
-	// A          int64       `cbor:"a"`
-	// V          string      `cbor:"v"`
-	// Items      int64       `cbor:"items"`
-	// Merkle     string      `cbor:"merkle"`
-	// Immutable  bool        `cbor:"immutable"`
-	// MintHeight int64       `cbor:"mint_height"`
+type RuleInfo struct {
+	P        string             `cbor:"p"`
+	O        map[string]*Output `cbor:"o"` // key:
+	Bitworkc string             `cbor:"bitworkc"`
+	Bitworkr string             `cbor:"bitworkr"`
+}
+type Output struct {
+	ID string `cbor:"id"`
+	V  int64  `cbor:"v"`
 }
 
-// is_immutable
-func (m *PayLoad) IsImmutable() bool {
-	if m == nil {
-		return false
+type Subrealms struct {
+	Rules []*RuleInfo `cbor:"rules"`
+}
+
+func parseOperationAndPayLoad(script string) (string, *PayLoad, error) {
+	scriptBytes, err := hex.DecodeString(script)
+	if err != nil {
+		return "", nil, err
 	}
-	if m.Args == nil {
-		return false
+	scriptEntryLen := int64(len(scriptBytes))
+	if scriptEntryLen < 39 || scriptBytes[0] != 0x20 {
+		return "", nil, errors.ErrInvalidWitnessScriptLength
 	}
-	return m.Args.I
+	pkFlag := scriptBytes[0]
+	if pkFlag != 0x20 {
+		return "", nil, errors.ErrInvalidWitnessScriptPkFlag
+	}
+	// TODO: the loop below is so confused. procotal should give specific index range
+	for index := int64(33); index < scriptEntryLen-6; index++ {
+		opFlag := scriptBytes[index]
+		if opFlag != OP_IF {
+			continue
+		}
+		if hex.EncodeToString(scriptBytes[index+1:index+6]) != utils.ATOMICALS_ENVELOPE_MARKER_BYTES {
+			continue
+		}
+		operation, startIndex := parseAtomicalsOperation(scriptBytes, index+6)
+		if operation == "" {
+			continue
+		}
+		payloadBytes, err := parseAtomicalsData(scriptBytes, startIndex)
+		if err != nil {
+			return "", nil, err
+		}
+		if payloadBytes == nil {
+			continue
+		}
+		// get DynamicFields[main]
+		payload := &PayLoad{
+			Args: &Args{
+				DynamicFields:              map[string][]byte{},
+				TotalAmountToSkipPotential: make(map[string]int64, 0),
+			},
+		}
+		if err := cbor.Unmarshal(payloadBytes, payload); err != nil {
+			return "", nil, err
+		}
+		tempMap := map[string]interface{}{}
+		if err := cbor.Unmarshal(payloadBytes, &tempMap); err != nil {
+			return "", nil, err
+		}
+		if _, ok := tempMap[payload.Args.Main]; ok {
+			payload.Args.DynamicFields[payload.Args.Main] = tempMap[payload.Args.Main].([]byte)
+		}
+		// get TotalAmountToSkipPotential
+		if operation == "y" {
+			if err := cbor.Unmarshal(payloadBytes, &payload.Args.TotalAmountToSkipPotential); err != nil {
+				return "", nil, err
+			}
+		}
+		return operation, payload, nil
+	}
+	return "", nil, errors.ErrOptionNotFound
 }
 
 // parse_atomicals_data_definition_operation
@@ -92,149 +214,6 @@ func parseAtomicalsData(script []byte, startIndex int64) ([]byte, error) {
 		}
 	}
 	return payloadBytes, nil
-}
-
-func (m *PayLoad) check() bool {
-	if m.Args == nil {
-		return false
-	} else {
-		request_counter := 0 // # Ensure that only one of the following may be requested || fail
-		if m.Args.RequestRealm != "" {
-			request_counter += 1
-		}
-		if m.Args.RequestSubRealm != "" {
-			request_counter += 1
-		}
-		if m.Args.RequestContainer != "" {
-			request_counter += 1
-		}
-		if m.Args.RequestTicker != "" {
-			request_counter += 1
-		}
-		if m.Args.RequestDmitem != "" {
-			request_counter += 1
-		}
-		if request_counter > 1 {
-			return false
-		}
-	}
-	return true
-}
-func (m *PayLoad) CheckRequest() bool {
-	if m.Args == nil {
-		return false
-	} else {
-		request_counter := 0 // # Ensure that only one of the following may be requested || fail
-		if m.Args.RequestRealm != "" {
-			request_counter += 1
-		}
-		if m.Args.RequestSubRealm != "" {
-			request_counter += 1
-		}
-		if m.Args.RequestContainer != "" {
-			request_counter += 1
-		}
-		if m.Args.RequestTicker != "" {
-			request_counter += 1
-		}
-		if m.Args.RequestDmitem != "" {
-			request_counter += 1
-		}
-		if request_counter > 1 {
-			return false
-		}
-	}
-	return true
-}
-
-type Args struct {
-	// utils
-	Nonce int64 `cbor:"nonce"`
-	Time  int64 `cbor:"time"`
-
-	// optional
-	Bitworkc string `cbor:"bitworkc"`
-	Bitworkr string `cbor:"bitworkr"`
-
-	Immutable bool    `cbor:"$immutable"`
-	I         bool    `cbor:"i"`
-	Main      string  `cbor:"main"`
-	Proof     []Proof `cbor:"proof"`
-	// Parents map[string]int64 `cbor:"parents"` // key: parent_atomical_id, value: , haven't catch this param, used in operation:nft
-
-	// dft & ft
-	RequestTicker string `cbor:"request_ticker"`
-
-	// dft
-	MintAmount   int64  `cbor:"mint_amount"`
-	MintHeight   int64  `cbor:"mint_height"`
-	MaxMints     int64  `cbor:"max_mints"`
-	MintBitworkc string `cbor:"mint_bitworkc"`
-	MintBitworkr string `cbor:"mint_bitworkr"`
-	Md           string `cbor:"md"` // emu:"", "0", "1"
-	Bv           string `cbor:"bv"`
-	Bci          string `cbor:"bci"`
-	Bri          string `cbor:"bri"`
-	Bcs          int64  `cbor:"bcs"`
-	Brs          int64  `cbor:"brs"`
-	Maxg         int64  `cbor:"maxg"`
-
-	// dmt
-	MintTicker string `cbor:"mint_ticker"` // mint ft name
-
-	// nft: realm
-	RequestRealm string `cbor:"request_realm"`
-
-	// nft: subrealm
-	RequestSubRealm string               `cbor:"request_subrealm"`
-	ClaimType       NftSubrealmClaimType `cbor:"claim_type"`   // enum: "direct" "rule"
-	ParentRealm     string               `cbor:"parent_realm"` // ParentRealm atomicalsID
-
-	// nft: container
-	RequestContainer string `cbor:"request_container"`
-
-	// nft: dmitem
-	RequestDmitem   string `cbor:"request_dmitem"`   // item num in ParentContainer
-	ParentContainer string `cbor:"parent_container"` // ParentContainer atomicalsID
-}
-
-type RuleInfo struct {
-	P        string             `cbor:"p"`
-	O        map[string]*Output `cbor:"o"` // key:
-	Bitworkc string             `cbor:"bitworkc"`
-	Bitworkr string             `cbor:"bitworkr"`
-}
-
-type Output struct {
-	ID string `cbor:"id"`
-	V  int64  `cbor:"v"`
-}
-
-type NftSubrealmClaimType string
-
-const (
-	Direct NftSubrealmClaimType = "direct"
-	Rule   NftSubrealmClaimType = "rule"
-)
-
-type Meta struct {
-	Name        string `cbor:"name"`
-	Description string `cbor:"description"`
-	Legal       *Legal `cbor:"legal"`
-}
-
-type Legal struct {
-	Terms string `cbor:"terms"`
-}
-
-type ImagePng struct {
-	CT string `cbor:"$ct"`
-	B  string `cbor:"$b"`
-}
-
-type Proof struct {
-	D string `cbor:"d"`
-	P bool   `cbor:"p"`
 }
 
 const (

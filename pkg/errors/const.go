@@ -13,7 +13,7 @@ var (
 
 	// error in atomicals package
 	ErrInvalidCommitHeight          = New(20000, "ErrInvalidCommitHeight")
-	ErrInvalidRevealLocationHeight  = New(20000, "ErrInvalidRevealLocationHeight")
+	ErrInvalidLocation              = New(20000, "ErrInvalidLocation")
 	ErrInvalidCommitVoutIndex       = New(20000, "ErrInvalidCommitVoutIndex")
 	ErrInvalidFtCurrentHeight       = New(20001, "ErrInvalidFtCurrentHeight")
 	ErrInvalidTicker                = New(20002, "ErrInvalidTicker")

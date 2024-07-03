@@ -21,17 +21,19 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 	if !utils.IsValidTicker(operation.Payload.Args.RequestTicker) {
 		return errors.ErrInvalidTicker
 	}
-	ft, err := m.DistributedFtByName(operation.Payload.Args.RequestTicker)
-	if err != nil {
-		log.Log.Panicf("DistributedFtByName err:%v", err)
-	}
-	if ft != nil {
-		return errors.ErrTickerHasExist
+	if m.bloomFilter.TestDistributedFt(operation.Payload.Args.RequestTicker) {
+		ft, err := m.DistributedFtByName(operation.Payload.Args.RequestTicker)
+		if err != nil {
+			log.Log.Panicf("DistributedFtByName err:%v", err)
+		}
+		if ft != nil {
+			return errors.ErrTickerHasExist
+		}
 	}
 	if operation.Payload.Args.Bitworkc == "" {
 		return errors.ErrBitworkcNeeded
 	}
-	_, _, err = operation.IsValidBitwork()
+	_, _, err := operation.IsValidBitwork()
 	if err != nil {
 		return err
 	}
@@ -53,7 +55,7 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 			return errors.ErrInvalidMaxMints
 		}
 	}
-	mintBitworkc, _, err := witness.ParseMintBitwork(operation.CommitTxID, operation.Payload.Args.MintBitworkc, operation.Payload.Args.MintBitworkr)
+	mintBitworkc, _, err := utils.ParseMintBitwork(operation.CommitTxID, operation.Payload.Args.MintBitworkc, operation.Payload.Args.MintBitworkr)
 	if err != nil {
 		return err
 	}
@@ -69,7 +71,10 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 
 	operation.CommitHeight, err = m.BtcTxHeight(operation.CommitTxID)
 	if err != nil {
-		panic(err)
+		operation.CommitHeight, err = m.GetTxHeightByTxID(operation.CommitTxID)
+		if err != nil {
+			panic(err)
+		}
 	}
 	if operation.CommitHeight < utils.ATOMICALS_ACTIVATION_HEIGHT {
 		return errors.ErrInvalidCommitHeight
@@ -153,6 +158,7 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 		entity.MintMode = "fixed"
 		entity.MaxSupply = entity.MintAmount * entity.MaxMints
 	}
+	m.bloomFilter.AddDistributedFt(entity.TickerName)
 	if err := m.InsertDistributedFt(entity); err != nil {
 		log.Log.Panicf("InsertDistributedFt err:%v", err)
 	}

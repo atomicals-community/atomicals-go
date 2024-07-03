@@ -6,27 +6,28 @@ import (
 	"gorm.io/gorm"
 )
 
-const locationTableName = "atomicals_location"
+const LocationTableName = "location"
 
 type Location struct {
 	gorm.Model
-	Owner   string `gorm:"uniqueindex" json:"owner"`
-	Height  int64
-	TxIndex int64
+	Name        string
+	BlockHeight int64
+	TxIndex     int64
+	Txid        string
 }
 
 func (*Location) TableName() string {
-	return locationTableName
+	return LocationTableName
 }
 
 func (*Location) Init(db *gorm.DB) {
 	var err error
-	dmodel := newDefaultModel(locationTableName, db)
+	dmodel := newDefaultModel(LocationTableName, db)
 	err = dmodel.DropTable()
 	assert.Nil(nil, err)
 	err = dmodel.CreateTable(&Location{})
 	assert.Nil(nil, err)
-	dbTx := db.Save(&Location{Owner: "atomicals", Height: utils.ATOMICALS_ACTIVATION_HEIGHT, TxIndex: -1})
+	dbTx := db.Save(&Location{Name: "atomicals", BlockHeight: utils.ATOMICALS_ACTIVATION_HEIGHT, TxIndex: -1})
 	assert.Nil(nil, dbTx.Error)
 }
 

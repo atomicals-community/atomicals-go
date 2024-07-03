@@ -11,7 +11,7 @@ import (
 	"github.com/btcsuite/btcd/btcjson"
 )
 
-func (m *Atomicals) transferFtPartialSpliting(operation *witness.WitnessAtomicalsOperation, tx btcjson.TxRawResult) error {
+func (m *Atomicals) transferFtPartialColour(operation *witness.WitnessAtomicalsOperation, tx *btcjson.TxRawResult) error {
 	if operation.IsSplitOperation() { // color_ft_atomicals_split
 		ftAtomicals := make([]*postsql.UTXOFtInfo, 0)
 		for _, vin := range tx.Vin {
@@ -36,7 +36,7 @@ func (m *Atomicals) transferFtPartialSpliting(operation *witness.WitnessAtomical
 		})
 		// Todo: haven't catched this param from operation
 		for _, ft := range ftAtomicals {
-			total_amount_to_skip_potential := operation.Payload.TotalAmountToSkipPotential[ft.LocationID]
+			total_amount_to_skip_potential := operation.Payload.Args.TotalAmountToSkipPotential[ft.LocationID]
 			remainingValue := ft.Amount
 			for outputIndex, vout := range tx.Vout {
 				toBeColoredAmount := int64(vout.Value * utils.Satoshi)

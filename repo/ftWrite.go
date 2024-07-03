@@ -32,3 +32,10 @@ func (m *Postgres) InsertDistributedFt(entity *postsql.GlobalDistributedFt) erro
 	}) + ";"
 	return nil
 }
+
+func (m *Postgres) InsertDirectFtUTXO(entity *postsql.GlobalDirectFt) error {
+	m.SQLRaw += m.ToSQL(func(tx *gorm.DB) *gorm.DB {
+		return tx.Save(entity)
+	}) + ";"
+	return nil
+}

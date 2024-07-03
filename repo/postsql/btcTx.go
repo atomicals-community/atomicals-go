@@ -9,8 +9,11 @@ const btcTxTableName = "btc_tx"
 
 type BtcTx struct {
 	gorm.Model
-	TxID        string `gorm:"uniqueindex"`
 	BlockHeight int64
+	TxIndex     int64
+	TxID        string `gorm:"uniqueindex"`
+	Operation   string
+	Description string
 }
 
 func (*BtcTx) TableName() string {

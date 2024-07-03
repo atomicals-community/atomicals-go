@@ -57,9 +57,9 @@ func (m *Postgres) NftRealmByNameHasExist(realmName string) (bool, error) {
 	return true, nil
 }
 
-func (m *Postgres) NftSubRealmByNameHasExist(realmName, subRealm string) (bool, error) {
+func (m *Postgres) NftSubRealmByNameHasExist(parentRealmAtomicalsID, subRealm string) (bool, error) {
 	var entities []*postsql.UTXONftInfo
-	dbTx := m.Model(postsql.UTXONftInfo{}).Where("realm_name = ? and sub_realm_name = ?", realmName, subRealm).First(&entities)
+	dbTx := m.Model(postsql.UTXONftInfo{}).Where("parent_realm_atomicals_id = ? and sub_realm_name = ?", parentRealmAtomicalsID, subRealm).First(&entities)
 	if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {
 		return false, dbTx.Error
 	}

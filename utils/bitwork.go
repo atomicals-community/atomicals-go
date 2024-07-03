@@ -8,6 +8,12 @@ import (
 	"strings"
 )
 
+func ParseMintBitwork(commitTxID, mintBitworkc, mintBitworkr string) (*Bitwork, *Bitwork, error) {
+	bitworkc := ParseBitwork(mintBitworkc)
+	bitworkr := ParseBitwork(mintBitworkr)
+	return bitworkc, bitworkr, nil
+}
+
 // is_proof_of_work_prefix_match
 func IsProofOfWorkPrefixMatch(txID string, powPrefix string, powPrefixExt int) bool {
 	if powPrefixExt < 0 {
@@ -74,7 +80,7 @@ func ParseBitwork(bitwork string) *Bitwork {
 	if !regexp.MustCompile("^[a-f0-9]{1,64}$").MatchString(prefix) {
 		return nil
 	}
-	if ext < 0 || ext > 15 {
+	if ext > 15 {
 		return nil
 	}
 	return &Bitwork{

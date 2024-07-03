@@ -5,11 +5,23 @@ import (
 	"gorm.io/gorm"
 )
 
-const globalDirectFtTableName = "atomicals_global_direct_tf"
+const globalDirectFtTableName = "atomicals_global_direct_ft"
 
 type GlobalDirectFt struct {
 	gorm.Model
-	TickerName string `gorm:"uniqueindex"`
+	UserPk      string
+	AtomicalsID string `gorm:"index"` // (txID,VOUT_EXPECT_OUTPUT_INDEX) init when be minted
+	LocationID  string `gorm:"index"` // (txID,voutIndex)updated after being transfered
+	Bitworkc    string
+	Bitworkr    string
+
+	Type       string
+	Subtype    string
+	TickerName string
+	MaxSupply  int64
+	MintAmount int64
+	MintHeight int64
+	MaxMints   int64
 }
 
 func (*GlobalDirectFt) TableName() string {

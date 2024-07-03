@@ -7,6 +7,13 @@ import (
 
 const UserFtInfoTableName = "atomicals_utxo_ft"
 
+type FtType string
+
+const (
+	TypeDistributedFt FtType = "distributedFt"
+	TypeDirectFt      FtType = "directFt"
+)
+
 type UTXOFtInfo struct {
 	gorm.Model
 	UserPk      string
@@ -25,14 +32,13 @@ type UTXOFtInfo struct {
 	Amount          int64
 
 	// DirectFt
-	Type          string
-	Subtype       string
-	RequestTicker string
-	MaxSupply     int64
-	MintAmount    int64
-	MintHeight    int64
-	MaxMints      int64
-	// Meta          *witness.Meta
+	Type       string
+	Subtype    string
+	TickerName string
+	MaxSupply  int64
+	MintAmount int64
+	MintHeight int64
+	MaxMints   int64
 }
 
 func (*UTXOFtInfo) TableName() string {

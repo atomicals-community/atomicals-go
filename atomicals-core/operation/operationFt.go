@@ -32,7 +32,10 @@ func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, v
 	}
 	operation.CommitHeight, err = m.BtcTxHeight(operation.CommitTxID)
 	if err != nil {
-		panic(err)
+		operation.CommitHeight, err = m.GetTxHeightByTxID(operation.CommitTxID)
+		if err != nil {
+			panic(err)
+		}
 	}
 	if operation.CommitHeight < utils.ATOMICALS_ACTIVATION_HEIGHT {
 		return errors.ErrInvalidCommitHeight
@@ -49,20 +52,20 @@ func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, v
 	if operation.CommitVoutIndex != utils.VOUT_EXPECT_OUTPUT_INDEX {
 		return errors.ErrInvalidVinIndex
 	}
-	atomicalsFtInfo := &postsql.UTXOFtInfo{
-		UserPk:        userPk,
-		AtomicalsID:   operation.AtomicalsID,
-		LocationID:    operation.LocationID,
-		Type:          "FT",
-		Subtype:       "direct",
-		RequestTicker: operation.Payload.Args.RequestTicker,
+	entity := &postsql.GlobalDirectFt{
+		UserPk:      userPk,
+		AtomicalsID: operation.AtomicalsID,
+		LocationID:  operation.LocationID,
+		Type:        "FT",
+		Subtype:     "direct",
+		TickerName:  operation.Payload.Args.RequestTicker,
 		// Meta:          operation.Payload.Meta,
 		Bitworkc:  operation.Payload.Args.Bitworkc,
 		Bitworkr:  operation.Payload.Args.Bitworkr,
 		MaxSupply: int64(vout[utils.VOUT_EXPECT_OUTPUT_INDEX].Value * utils.Satoshi),
 	}
-	if err := m.InsertFtUTXO(atomicalsFtInfo); err != nil {
-		log.Log.Panicf("InsertFtUTXO err:%v", err)
+	if err := m.InsertDirectFtUTXO(entity); err != nil {
+		log.Log.Panicf("InsertDirectFtUTXO err:%v", err)
 	}
 	return nil
 }

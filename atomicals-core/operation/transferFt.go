@@ -11,17 +11,17 @@ import (
 	"github.com/btcsuite/btcd/btcjson"
 )
 
-func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx btcjson.TxRawResult) error {
+func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx *btcjson.TxRawResult) error {
 	if operation.IsSplitOperation() { // color_ft_atomicals_split
 		ftAtomicals := make([]*postsql.UTXOFtInfo, 0)
 		for _, vin := range tx.Vin {
 			preLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
+			if !m.bloomFilter.TestFtLocationID(preLocationID) {
+				continue
+			}
 			preFts, err := m.FtUTXOsByLocationID(preLocationID)
 			if err != nil {
 				log.Log.Panicf("FtUTXOsByLocationID err:%v", err)
-			}
-			if preFts == nil {
-				continue
 			}
 			if len(preFts) == 0 {
 				continue
@@ -36,7 +36,7 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 		})
 		// Todo: haven't catched this param from operation
 		for _, ft := range ftAtomicals {
-			total_amount_to_skip_potential := operation.Payload.TotalAmountToSkipPotential[ft.LocationID]
+			total_amount_to_skip_potential := operation.Payload.Args.TotalAmountToSkipPotential[ft.LocationID]
 			remaining_value := ft.Amount
 			for outputIndex, vout := range tx.Vout {
 				if 0 < total_amount_to_skip_potential {
@@ -48,6 +48,8 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 				}
 				remaining_value -= int64(vout.Value * utils.Satoshi)
 				locationID := utils.AtomicalsID(operation.RevealLocationTxID, int64(outputIndex))
+				m.bloomFilter.AddFtLocationID(locationID)
+				m.UpdateBloomFilter(postsql.FtLocationFilter, m.bloomFilter.Filter[postsql.FtLocationFilter])
 				if err := m.InsertFtUTXO(&postsql.UTXOFtInfo{
 					UserPk:          vout.ScriptPubKey.Address,
 					AtomicalsID:     ft.AtomicalsID,
@@ -75,12 +77,12 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 			atomicalsFtsVinIndexMap := make(map[int64][]*postsql.UTXOFtInfo, 0) // key: vinIndex
 			for vinIndex, vin := range tx.Vin {
 				preLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
+				if !m.bloomFilter.TestFtLocationID(preLocationID) {
+					continue
+				}
 				preFts, err := m.FtUTXOsByLocationID(preLocationID)
 				if err != nil {
 					log.Log.Panicf("FtUTXOsByLocationID err:%v", err)
-				}
-				if preFts == nil {
-					continue
 				}
 				if len(preFts) == 0 {
 					continue
@@ -106,12 +108,12 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 		} else {
 			for _, vin := range tx.Vin {
 				preLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
+				if !m.bloomFilter.TestFtLocationID(preLocationID) {
+					continue
+				}
 				preFts, err := m.FtUTXOsByLocationID(preLocationID)
 				if err != nil {
 					log.Log.Panicf("FtUTXOsByLocationID err:%v", err)
-				}
-				if preFts == nil {
-					continue
 				}
 				if len(preFts) == 0 {
 					continue
@@ -150,6 +152,8 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 			}
 		}
 		for _, ft := range newFts {
+			m.bloomFilter.AddFtLocationID(ft.LocationID)
+			m.UpdateBloomFilter(postsql.FtLocationFilter, m.bloomFilter.Filter[postsql.FtLocationFilter])
 			if err := m.InsertFtUTXO(ft); err != nil {
 				log.Log.Panicf("InsertFtUTXO err:%v", err)
 			}
@@ -160,7 +164,7 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 }
 
 // assign_expected_outputs_basic
-func assign_expected_outputs_basic(ft *postsql.UTXOFtInfo, operation *witness.WitnessAtomicalsOperation, tx btcjson.TxRawResult, start_out_idx int64) (bool, int64, []*postsql.UTXOFtInfo) {
+func assign_expected_outputs_basic(ft *postsql.UTXOFtInfo, operation *witness.WitnessAtomicalsOperation, tx *btcjson.TxRawResult, start_out_idx int64) (bool, int64, []*postsql.UTXOFtInfo) {
 	newFts := make([]*postsql.UTXOFtInfo, 0)
 	remaining_value := ft.Amount
 	if start_out_idx >= int64(len(tx.Vout)) {

@@ -2,6 +2,7 @@ package atomicals
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -9,7 +10,6 @@ import (
 	"github.com/atomicals-go/atomicals-core/witness"
 	"github.com/atomicals-go/pkg/merkle"
 	"github.com/atomicals-go/utils"
-	"github.com/fxamacker/cbor/v2"
 )
 
 // get_dmitem_parent_container_info
@@ -32,26 +32,29 @@ func (m *Atomicals) verifyRuleAndMerkle(operation *witness.WitnessAtomicalsOpera
 	bitworkr_actual := operation.Payload.Args.Bitworkr
 	if bitworkc == "any" {
 		return true
-	} else if bitworkc != "any" {
+	} else {
 		if bitworkc_actual != bitworkc {
 			return false
 		}
 	}
 	if bitworkr == "any" {
 		return true
-	} else if bitworkr != "any" {
+	} else {
 		if bitworkr_actual != bitworkr {
 			return false
 		}
 	}
-	if matched_price_point.o != nil {
+	if matched_price_point.O != nil {
+		return true
+	}
+	if bitworkc != "" || bitworkr != "" {
 		return true
 	}
 	// todo: put_pay_record
 	return false
 }
 
-func (m *Atomicals) get_applicable_rule_by_height(parent_atomical_id string, proposed_subnameid string) *regex_price_point {
+func (m *Atomicals) get_applicable_rule_by_height(parent_atomical_id string, proposed_subnameid string) *witness.RuleInfo {
 	rule_mint_mod_history, err := m.get_mod_history(parent_atomical_id)
 	if err != nil {
 		panic(err)
@@ -59,7 +62,7 @@ func (m *Atomicals) get_applicable_rule_by_height(parent_atomical_id string, pro
 	latest_state := calculate_latest_state_from_mod_history(rule_mint_mod_history)
 	regex_price_point_list := validate_rules_data(latest_state)
 	for _, regex_price_point := range regex_price_point_list {
-		valid_pattern := regexp.MustCompile(regex_price_point.p)
+		valid_pattern := regexp.MustCompile(regex_price_point.P)
 		if !valid_pattern.MatchString(proposed_subnameid) {
 			continue
 		}
@@ -90,11 +93,11 @@ func (m *Atomicals) get_container_dmint_status_for_atomical_id(atomical_id strin
 	return latest_state
 }
 
-func validate_rules_data(namespace_data *witness.Dmint) []*regex_price_point {
+func validate_rules_data(namespace_data *witness.Dmint) []*witness.RuleInfo {
 	if len(namespace_data.Rules) <= 0 || len(namespace_data.Rules) > utils.MAX_SUBNAME_RULE_ENTRIES {
 		return nil
 	}
-	validated_rules_list := []*regex_price_point{}
+	validated_rules_list := []*witness.RuleInfo{}
 	for _, rule := range namespace_data.Rules {
 		regex_pattern := rule.P
 		if len(regex_pattern) > utils.MAX_SUBNAME_RULE_SIZE_LEN || len(regex_pattern) < 1 {
@@ -116,8 +119,8 @@ func validate_rules_data(namespace_data *witness.Dmint) []*regex_price_point {
 		if strings.Contains(regex_pattern, "(") || strings.Contains(regex_pattern, ")") {
 			return nil
 		}
-		price_point := &regex_price_point{
-			p: regex_pattern,
+		price_point := &witness.RuleInfo{
+			P: regex_pattern,
 		}
 		if bitworkc != "" {
 			res := utils.ParseBitwork(bitworkc)
@@ -143,7 +146,7 @@ func validate_rules_data(namespace_data *witness.Dmint) []*regex_price_point {
 			if !validate_subrealm_rules_outputs_format(rule.O) {
 				return nil
 			}
-			price_point.o = rule.O
+			price_point.O = rule.O
 			validated_rules_list = append(validated_rules_list, price_point)
 		} else if bitworkc != "" || bitworkr != "" {
 			validated_rules_list = append(validated_rules_list, price_point)
@@ -187,7 +190,8 @@ func validate_dmitem_mint_args_with_container_dmint(payload *witness.PayLoad, dm
 			return false
 		}
 	}
-	is_proof_valid, err := validate_merkle_proof_dmint(dmint.Merkle, payload.Args.RequestDmitem, payload.Args.Bitworkc, payload.Args.Bitworkr, payload.Args.Main, utils.DoubleSha256(payload.Image), payload.Args.Proof)
+	image := payload.Args.DynamicFields[payload.Args.Main]
+	is_proof_valid, err := validate_merkle_proof_dmint(dmint.Merkle, payload.Args.RequestDmitem, payload.Args.Bitworkc, payload.Args.Bitworkr, payload.Args.Main, utils.DoubleSha256(image), payload.Args.Proof)
 	if err != nil {
 		return false
 	}
@@ -199,25 +203,18 @@ func validate_merkle_proof_dmint(merkleStr string, item_name string, possible_bi
 	if err != nil {
 		return false, err
 	}
-
 	// # Case 1: any/any
 	concat_str1 := item_name + ":any" + ":any:" + main + ":" + hex.EncodeToString(main_hash)
-	concat_str1Hex, err := hex.DecodeString(concat_str1)
-	if err != nil {
-		return false, err
-	}
-	target_hash := utils.Sha256(concat_str1Hex)
+	target_hash := utils.Sha256([]byte(concat_str1))
+	// log.Log.Panicf("UpdateCurrentHeight err:%v", expected_root_hash1)
+
 	if merkle.CheckValidateProof(expected_root_hash, target_hash, proof) {
 		return true, nil
 	}
 	// # Case 2: specific_bitworkc/any
 	if possible_bitworkc != "" {
 		concat_str2 := item_name + ":" + possible_bitworkc + ":any:" + main + ":" + hex.EncodeToString(main_hash)
-		concat_str2Hex, err := hex.DecodeString(concat_str2)
-		if err != nil {
-			return false, err
-		}
-		target_hash := utils.Sha256(concat_str2Hex)
+		target_hash := utils.Sha256([]byte(concat_str2))
 		if merkle.CheckValidateProof(expected_root_hash, target_hash, proof) {
 			return true, nil
 		}
@@ -225,23 +222,15 @@ func validate_merkle_proof_dmint(merkleStr string, item_name string, possible_bi
 	// # Case 3: any/specific_bitworkr
 	if possible_bitworkr != "" {
 		concat_str3 := item_name + ":any" + ":" + possible_bitworkr + ":" + main + ":" + hex.EncodeToString(main_hash)
-		concat_str3Hex, err := hex.DecodeString(concat_str3)
-		if err != nil {
-			return false, err
-		}
-		target_hash := utils.Sha256(concat_str3Hex)
+		target_hash := utils.Sha256([]byte(concat_str3))
 		if merkle.CheckValidateProof(expected_root_hash, target_hash, proof) {
 			return true, nil
 		}
 	}
+	// # Case 4:
 	if possible_bitworkc != "" && possible_bitworkr != "" {
 		concat_str4 := item_name + ":" + possible_bitworkc + ":" + possible_bitworkr + ":" + main + ":" + hex.EncodeToString(main_hash)
-		concat_str4Hex, err := hex.DecodeString(concat_str4)
-		if err != nil {
-			return false, err
-		}
-		target_hash := utils.Sha256(concat_str4Hex)
-
+		target_hash := utils.Sha256([]byte(concat_str4))
 		if merkle.CheckValidateProof(expected_root_hash, target_hash, proof) {
 			return true, nil
 		}
@@ -252,15 +241,14 @@ func validate_merkle_proof_dmint(merkleStr string, item_name string, possible_bi
 func calculate_latest_state_from_mod_history(mod_history []*witness.Dmint) *witness.Dmint {
 	// Ensure it is sorted in ascending order
 	// sort.Slice(mod_history, func(i, j int) bool {
-	// 	return mod_history[i].TxNum < mod_history[j].TxNum
+	// 	return mod_history[i].ID < mod_history[j].ID
 	// })
 	current_object_state := &witness.Dmint{}
 	for _, element := range mod_history {
 		if element.A == 1 {
-			current_object_state = element
-			// current_object_state = applySetStateMutation(element, true) // 如果有a，就把payload中的值都更新为element
-		} else {
 			current_object_state = nil
+		} else {
+			current_object_state = element
 		}
 	}
 	return current_object_state
@@ -282,7 +270,7 @@ func (m *Atomicals) get_mod_history(parentContainerAtomicalsID string) ([]*witne
 		return nil, nil
 	}
 	dmint := &witness.Dmint{}
-	if err := cbor.Unmarshal([]byte(mod.Mod), dmint); err != nil {
+	if err := json.Unmarshal([]byte(mod.Mod), dmint); err != nil {
 		return nil, err
 	}
 	dmints := make([]*witness.Dmint, 0)

@@ -9,9 +9,11 @@ const ModTableName = "atomicals_mod"
 
 type ModInfo struct {
 	gorm.Model
+	Height      int64
 	AtomicalsID string `gorm:"index"` // txID _ VOUT_EXPECT_OUTPUT_INDEX when be minted
 	LocationID  string `gorm:"index"` // txID_voutIndex updated after being transfered
 	Mod         string
+	ModStr      string
 }
 
 func (*ModInfo) TableName() string {

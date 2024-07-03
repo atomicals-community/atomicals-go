@@ -21,7 +21,6 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 	if err != nil {
 		log.Log.Panicf("DistributedFtByName err:%v", err)
 	}
-
 	if ftEntity == nil {
 		return errors.ErrNotDeployFt
 	}
@@ -30,7 +29,10 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 	}
 	operation.CommitHeight, err = m.BtcTxHeight(operation.CommitTxID)
 	if err != nil {
-		panic(err)
+		operation.CommitHeight, err = m.GetTxHeightByTxID(operation.CommitTxID)
+		if err != nil {
+			panic(err)
+		}
 	}
 	if operation.CommitHeight < ftEntity.MintHeight {
 		return errors.ErrInvalidCommitHeight
@@ -78,7 +80,7 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 		if ftEntity.MintedTimes > ftEntity.MaxMints {
 			return errors.ErrInvalidMintedTimes
 		} else if ftEntity.MintedTimes < ftEntity.MaxMints {
-			bitworkc, bitworkr, err := witness.ParseMintBitwork(operation.CommitTxID, operation.Payload.Args.MintBitworkc, operation.Payload.Args.MintBitworkr)
+			bitworkc, bitworkr, err := utils.ParseMintBitwork(operation.CommitTxID, operation.Payload.Args.MintBitworkc, operation.Payload.Args.MintBitworkr)
 			if err != nil {
 				return err
 			}
@@ -109,6 +111,8 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 		AtomicalsID: operation.AtomicalsID,
 		LocationID:  operation.LocationID,
 	}
+	m.bloomFilter.AddFtLocationID(entity.LocationID)
+	m.UpdateBloomFilter(postsql.FtLocationFilter, m.bloomFilter.Filter[postsql.FtLocationFilter])
 	if err := m.InsertFtUTXO(entity); err != nil {
 		log.Log.Panicf("InsertFtUTXO err:%v", err)
 	}

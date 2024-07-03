@@ -12,6 +12,7 @@ type MerkleNode struct {
 	Left  []byte
 }
 
+// check_validate_proof
 func CheckValidateProof(expected_root_hash, target_hash []byte, proof []witness.Proof) bool {
 	formatted_proof := make([]*MerkleNode, 0)
 	for _, item := range proof {
@@ -32,8 +33,7 @@ func CheckValidateProof(expected_root_hash, target_hash []byte, proof []witness.
 	return ValidateProof(formatted_proof, target_hash, expected_root_hash)
 }
 
-func ValidateProof(proof []*MerkleNode, targetHash, expectedRootHash []byte) bool {
-	computedHash := targetHash
+func ValidateProof(proof []*MerkleNode, computedHash, expectedRootHash []byte) bool {
 	for _, node := range proof {
 		if node.Left != nil && node.Right != nil {
 			return false // Both left and right hashes are provided, which is invalid

@@ -10,9 +10,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
 	a := atomicals.NewAtomicalsWithSQL(conf)
 	for {
-		a.TraceBlock()
+		a.Run()
 	}
+
+	// a.TraceSpecificTx()
 }

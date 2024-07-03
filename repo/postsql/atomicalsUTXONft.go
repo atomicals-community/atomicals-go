@@ -8,11 +8,13 @@ import (
 
 const UserNftInfoTableName = "atomicals_utxo_nft"
 
+type NftType string
+
 const (
-	TypeNftRealm     = "Realm"
-	TypeNftSubRealm  = "SubRealm"
-	TypeNftContainer = "NftContainer"
-	TypeNftItem      = "Item"
+	TypeNftRealm     NftType = "Realm"
+	TypeNftSubRealm  NftType = "SubRealm"
+	TypeNftContainer NftType = "NftContainer"
+	TypeNftItem      NftType = "NftItem"
 )
 
 type UTXONftInfo struct {
