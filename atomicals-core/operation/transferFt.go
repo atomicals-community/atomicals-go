@@ -16,9 +16,6 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 		ftAtomicals := make([]*postsql.UTXOFtInfo, 0)
 		for _, vin := range tx.Vin {
 			preLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
-			if !m.bloomFilter.TestFtLocationID(preLocationID) {
-				continue
-			}
 			preFts, err := m.FtUTXOsByLocationID(preLocationID)
 			if err != nil {
 				log.Log.Panicf("FtUTXOsByLocationID err:%v", err)
@@ -34,22 +31,20 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 		sort.Slice(ftAtomicals, func(i, j int) bool {
 			return ftAtomicals[i].AtomicalsID < ftAtomicals[j].AtomicalsID
 		})
-		// Todo: haven't catched this param from operation
 		for _, ft := range ftAtomicals {
-			total_amount_to_skip_potential := operation.Payload.Args.TotalAmountToSkipPotential[ft.LocationID]
-			remaining_value := ft.Amount
+			totalAmountToSkipPotential := operation.Payload.Args.TotalAmountToSkipPotential[ft.LocationID]
+			remainingValue := ft.Amount
 			for outputIndex, vout := range tx.Vout {
-				if 0 < total_amount_to_skip_potential {
-					total_amount_to_skip_potential -= int64(vout.Value * utils.Satoshi)
+				if 0 < totalAmountToSkipPotential {
+					totalAmountToSkipPotential -= int64(vout.Value * utils.Satoshi)
 					continue
 				}
-				if remaining_value < int64(vout.Value*utils.Satoshi) { // burn rest ft
+				if remainingValue < int64(vout.Value*utils.Satoshi) { // burn rest ft
 					break
 				}
-				remaining_value -= int64(vout.Value * utils.Satoshi)
+				remainingValue -= int64(vout.Value * utils.Satoshi)
 				locationID := utils.AtomicalsID(operation.RevealLocationTxID, int64(outputIndex))
-				m.bloomFilter.AddFtLocationID(locationID)
-				m.UpdateBloomFilter(postsql.FtLocationFilter, m.bloomFilter.Filter[postsql.FtLocationFilter])
+				panic("locationID")
 				if err := m.InsertFtUTXO(&postsql.UTXOFtInfo{
 					UserPk:          vout.ScriptPubKey.Address,
 					AtomicalsID:     ft.AtomicalsID,
@@ -77,9 +72,6 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 			atomicalsFtsVinIndexMap := make(map[int64][]*postsql.UTXOFtInfo, 0) // key: vinIndex
 			for vinIndex, vin := range tx.Vin {
 				preLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
-				if !m.bloomFilter.TestFtLocationID(preLocationID) {
-					continue
-				}
 				preFts, err := m.FtUTXOsByLocationID(preLocationID)
 				if err != nil {
 					log.Log.Panicf("FtUTXOsByLocationID err:%v", err)
@@ -108,9 +100,6 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 		} else {
 			for _, vin := range tx.Vin {
 				preLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
-				if !m.bloomFilter.TestFtLocationID(preLocationID) {
-					continue
-				}
 				preFts, err := m.FtUTXOsByLocationID(preLocationID)
 				if err != nil {
 					log.Log.Panicf("FtUTXOsByLocationID err:%v", err)
@@ -130,30 +119,28 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 
 		// calculate_outputs_to_color_for_ft_atomical_ids
 		newFts := make([]*postsql.UTXOFtInfo, 0)
-		next_start_out_idx := int64(0)
-		non_clean_output_slots := false
+		nextStartOutIdx := int64(0)
+		nonCleanOutputSlots := false
 		for _, ft := range atomicalsFts {
-			cleanly_assigned, assignedVoutIndex, fts := assign_expected_outputs_basic(ft, operation, tx, next_start_out_idx)
+			cleanly_assigned, assignedVoutIndex, fts := assignExpectedOutputsBasic(ft, operation, tx, nextStartOutIdx)
 			if cleanly_assigned {
-				next_start_out_idx = assignedVoutIndex + 1
+				nextStartOutIdx = assignedVoutIndex + 1
 				newFts = append(newFts, fts...)
 			} else {
-				non_clean_output_slots = true
+				nonCleanOutputSlots = true
 				newFts = make([]*postsql.UTXOFtInfo, 0)
 				break
 			}
 		}
 		// # If the output slots did not fit cleanly, then default to just assigning everything from the 0'th output index
-		if non_clean_output_slots {
+		if nonCleanOutputSlots {
 			newFts = make([]*postsql.UTXOFtInfo, 0)
 			for _, ft := range atomicalsFts {
-				_, _, fts := assign_expected_outputs_basic(ft, operation, tx, 0) //always is 0'th
+				_, _, fts := assignExpectedOutputsBasic(ft, operation, tx, 0) //always is 0'th
 				newFts = append(newFts, fts...)
 			}
 		}
 		for _, ft := range newFts {
-			m.bloomFilter.AddFtLocationID(ft.LocationID)
-			m.UpdateBloomFilter(postsql.FtLocationFilter, m.bloomFilter.Filter[postsql.FtLocationFilter])
 			if err := m.InsertFtUTXO(ft); err != nil {
 				log.Log.Panicf("InsertFtUTXO err:%v", err)
 			}
@@ -164,15 +151,15 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 }
 
 // assign_expected_outputs_basic
-func assign_expected_outputs_basic(ft *postsql.UTXOFtInfo, operation *witness.WitnessAtomicalsOperation, tx *btcjson.TxRawResult, start_out_idx int64) (bool, int64, []*postsql.UTXOFtInfo) {
+func assignExpectedOutputsBasic(ft *postsql.UTXOFtInfo, operation *witness.WitnessAtomicalsOperation, tx *btcjson.TxRawResult, startOutIdx int64) (bool, int64, []*postsql.UTXOFtInfo) {
 	newFts := make([]*postsql.UTXOFtInfo, 0)
-	remaining_value := ft.Amount
-	if start_out_idx >= int64(len(tx.Vout)) {
-		return false, start_out_idx, nil
+	remainingValue := ft.Amount
+	if startOutIdx >= int64(len(tx.Vout)) {
+		return false, startOutIdx, nil
 	}
 	assignedVoutIndex := int64(0)
 	for outputIndex, vout := range tx.Vout {
-		if int64(outputIndex) < start_out_idx {
+		if int64(outputIndex) < startOutIdx {
 			continue
 		}
 		assignedVoutIndex = int64(outputIndex)
@@ -184,10 +171,10 @@ func assign_expected_outputs_basic(ft *postsql.UTXOFtInfo, operation *witness.Wi
 			utils.IsUnspendableLegacy(scriptPubKeyBytes) {
 			continue
 		}
-		if int64(vout.Value*utils.Satoshi) > remaining_value { // burn rest ft
+		if int64(vout.Value*utils.Satoshi) > remainingValue { // burn rest ft
 			return false, assignedVoutIndex, nil
 		}
-		remaining_value -= int64(vout.Value * utils.Satoshi)
+		remainingValue -= int64(vout.Value * utils.Satoshi)
 		locationID := utils.AtomicalsID(operation.RevealLocationTxID, int64(outputIndex))
 		newFts = append(newFts, &postsql.UTXOFtInfo{
 			UserPk:          vout.ScriptPubKey.Address,
@@ -203,7 +190,7 @@ func assign_expected_outputs_basic(ft *postsql.UTXOFtInfo, operation *witness.Wi
 			MintBitworkrInc: ft.MintBitworkrInc,
 			Amount:          int64(vout.Value * utils.Satoshi),
 		})
-		if remaining_value == 0 {
+		if remainingValue == 0 {
 			return true, assignedVoutIndex, newFts
 		}
 	}

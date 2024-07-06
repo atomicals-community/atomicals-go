@@ -10,6 +10,7 @@ const globalDistributedFtTableName = "atomicals_global_distributed_ft"
 type GlobalDistributedFt struct {
 	gorm.Model
 	AtomicalsID    string
+	LocationID     string
 	TickerName     string `gorm:"uniqueindex"`
 	Type           string
 	Subtype        string

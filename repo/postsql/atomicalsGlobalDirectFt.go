@@ -17,7 +17,7 @@ type GlobalDirectFt struct {
 
 	Type       string
 	Subtype    string
-	TickerName string
+	TickerName string `gorm:"uniqueindex"`
 	MaxSupply  int64
 	MintAmount int64
 	MintHeight int64

@@ -1,0 +1,39 @@
+type (
+	ReqAssetByLocationID {
+		LocationID string `json:"location_id"`
+	}
+	RespAssetByLocationID {
+		Assets []*UTXONftInfo `json:"assets"`
+	}
+	ReqAssetByUserPK {
+		UserPK string `json:"user_pk"`
+	}
+	RespAssetByUserPK {
+		Assets []*UTXONftInfo `json:"assets"`
+	}
+)
+
+service main-api {
+	@handler getAssetByLocationIDHandler
+	get /api/v1/getAssetByLocationID (ReqAssetByLocationID) returns (RespAssetByLocationID)
+
+	@handler getAssetByUserPkHandler
+	get /api/v1/getAssetByUserPk (ReqAssetByUserPK) returns (RespAssetByUserPK)
+}
+
+type UTXONftInfo {
+	UserPk                     string
+	AtomicalsID                string `json:"atomicals_id"`
+	LocationID                 string `json:"location_id"`
+	RealmName                  string `json:"realm_name"`
+	SubRealmName               string `json:"subrealm_name"`
+	ParentRealmAtomicalsID     string `json:"parent_realm_atomicals_id"`
+	ContainerName              string `json:"container_name"`
+	Dmitem                     string `json:"dmitem"`
+	ParentContainerAtomicalsID string `json:"parent_container_atomicals_id"`
+	Nonce                      int64  `json:"nonce"`
+	Time                       int64  `json:"time"`
+	Bitworkc                   string `json:"bitworkc"`
+	Bitworkr                   string `json:"bitworkr"`
+}
+

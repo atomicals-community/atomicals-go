@@ -27,10 +27,9 @@ func (m *Atomicals) Run() {
 }
 
 func (m *Atomicals) traceTx(tx *btcjson.TxRawResult, location *postsql.Location) error {
-	// step 1: parse witness
 	operation := witness.ParseWitness(tx, location.BlockHeight)
 
-	// step 2: insert mod data
+	// step 1: insert mod
 	if operation.Op == "mod" && len(tx.Vin) != 0 {
 		vin := tx.Vin[0]
 		preNftLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
@@ -39,7 +38,10 @@ func (m *Atomicals) traceTx(tx *btcjson.TxRawResult, location *postsql.Location)
 			log.Log.Panicf("NftUTXOsByLocationID err:%v", err)
 		}
 		if len(preNfts) != 0 {
-			r, _ := json.Marshal(operation.Payload.Dmint)
+			r, err := json.Marshal(operation.Payload.Dmint)
+			if err != nil {
+				log.Log.Panicf("Marshal err:%v", err)
+			}
 			m.InsertMod(&postsql.ModInfo{
 				Height:      location.BlockHeight,
 				AtomicalsID: preNfts[0].AtomicalsID,
@@ -50,7 +52,7 @@ func (m *Atomicals) traceTx(tx *btcjson.TxRawResult, location *postsql.Location)
 		}
 	}
 
-	// step 3: transfer nft, transfer ft
+	// step 2: transfer nft, transfer ft
 	if location.BlockHeight < utils.AtOMICALS_FT_PARTIAL_SPLITING_HEIGHT {
 		m.transferFt(operation, tx)
 	} else {
@@ -58,7 +60,7 @@ func (m *Atomicals) traceTx(tx *btcjson.TxRawResult, location *postsql.Location)
 	}
 	m.transferNft(operation, tx)
 
-	// step 4: process operation
+	// step 3: process operation
 	userPk := tx.Vout[utils.VOUT_EXPECT_OUTPUT_INDEX].ScriptPubKey.Address
 	if operation.Op == "dmt" {
 		m.mintDistributedFt(operation, tx.Vout, userPk)
@@ -77,9 +79,13 @@ func (m *Atomicals) traceTx(tx *btcjson.TxRawResult, location *postsql.Location)
 		}
 	}
 
-	// step 5 check payment
+	// step 4 check payment
 
-	// step 6: exec sql
+	// step 5: exec sql
+	// delete useless btctx
+	if location.TxIndex == 0 {
+		m.DeleteBtcTxUntil(location.BlockHeight - utils.MINT_GENERAL_COMMIT_REVEAL_DELAY_BLOCKS)
+	}
 	if err := m.ExecAllSql(&postsql.Location{
 		BlockHeight: location.BlockHeight,
 		TxIndex:     location.TxIndex,

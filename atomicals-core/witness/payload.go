@@ -128,8 +128,7 @@ func parseOperationAndPayLoad(script string) (string, *PayLoad, error) {
 	if pkFlag != 0x20 {
 		return "", nil, errors.ErrInvalidWitnessScriptPkFlag
 	}
-	// TODO: the loop below is so confused. procotal should give specific index range
-	for index := int64(33); index < scriptEntryLen-6; index++ {
+	for index := int64(35); index < scriptEntryLen-6; index++ {
 		opFlag := scriptBytes[index]
 		if opFlag != OP_IF {
 			continue

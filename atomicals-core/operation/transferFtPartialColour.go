@@ -34,14 +34,13 @@ func (m *Atomicals) transferFtPartialColour(operation *witness.WitnessAtomicalsO
 		sort.Slice(ftAtomicals, func(i, j int) bool {
 			return ftAtomicals[i].AtomicalsID < ftAtomicals[j].AtomicalsID
 		})
-		// Todo: haven't catched this param from operation
 		for _, ft := range ftAtomicals {
-			total_amount_to_skip_potential := operation.Payload.Args.TotalAmountToSkipPotential[ft.LocationID]
+			totalAmountToSkipPotential := operation.Payload.Args.TotalAmountToSkipPotential[ft.LocationID]
 			remainingValue := ft.Amount
 			for outputIndex, vout := range tx.Vout {
 				toBeColoredAmount := int64(vout.Value * utils.Satoshi)
-				if 0 < total_amount_to_skip_potential {
-					total_amount_to_skip_potential -= toBeColoredAmount
+				if 0 < totalAmountToSkipPotential {
+					totalAmountToSkipPotential -= toBeColoredAmount
 					continue
 				}
 				if remainingValue >= toBeColoredAmount {

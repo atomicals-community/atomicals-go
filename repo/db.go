@@ -4,13 +4,13 @@ import (
 	"strings"
 
 	"github.com/atomicals-go/repo/postsql"
-	"github.com/bits-and-blooms/bloom/v3"
 	"gorm.io/gorm"
 )
 
 type Postgres struct {
 	*gorm.DB
-	SQLRaw string
+	bloomFilter map[string]*bloomFilterInfo
+	SQLRaw      string
 }
 
 func (m *Postgres) ExecAllSql(location *postsql.Location) error {
@@ -20,6 +20,12 @@ func (m *Postgres) ExecAllSql(location *postsql.Location) error {
 		TxID:        location.Txid,
 	})
 
+	for name, v := range m.bloomFilter {
+		if v.needUpdate {
+			m.UpdateBloomFilter(name, v.filter)
+		}
+	}
+
 	sql := m.ToSQL(func(tx *gorm.DB) *gorm.DB {
 		return tx.Model(postsql.Location{}).Where("name = ?", "atomicals").Updates(map[string]interface{}{"block_height": location.BlockHeight, "tx_index": location.TxIndex})
 	})
@@ -28,6 +34,9 @@ func (m *Postgres) ExecAllSql(location *postsql.Location) error {
 	m.SQLRaw = ""
 	if dbTx.Error != nil {
 		return dbTx.Error
+	}
+	for _, v := range m.bloomFilter {
+		v.needUpdate = false
 	}
 	return nil
 }
@@ -50,6 +59,13 @@ func (m *Postgres) InsertBtcTx(btcTx *postsql.BtcTx) error {
 		return tx.Save(btcTx)
 	})
 	m.SQLRaw = m.SQLRaw + sql + ";"
+	return nil
+}
+
+func (m *Postgres) DeleteBtcTxUntil(blockHeight int64) error {
+	m.SQLRaw += m.ToSQL(func(tx *gorm.DB) *gorm.DB {
+		return tx.Model(postsql.BtcTx{}).Unscoped().Where("block_height < ?", blockHeight).Delete(&postsql.UTXOFtInfo{})
+	}) + ";"
 	return nil
 }
 
@@ -94,48 +110,4 @@ func (m *Postgres) Mod(atomicalsID string) (*postsql.ModInfo, error) {
 		return nil, nil
 	}
 	return entity, nil
-}
-
-func (m *Postgres) InsertBloomFilter(name string, filter *bloom.BloomFilter) error {
-	data, err := filter.MarshalJSON()
-	if err != nil {
-		return err
-	}
-	m.SQLRaw += m.ToSQL(func(tx *gorm.DB) *gorm.DB {
-		return m.Save(&postsql.BloomFilter{
-			Name: name,
-			Data: data,
-		})
-	}) + ";"
-	return nil
-}
-
-func (m *Postgres) UpdateBloomFilter(name string, filter *bloom.BloomFilter) error {
-	data, err := filter.MarshalJSON()
-	if err != nil {
-		return err
-	}
-	m.SQLRaw += m.ToSQL(func(tx *gorm.DB) *gorm.DB {
-		return tx.Model(postsql.BloomFilter{}).Where("name = ?", name).Update("data", data)
-	}) + ";"
-	return nil
-}
-
-func (m *Postgres) BloomFilter() (map[string]*bloom.BloomFilter, error) {
-	entities := make([]*postsql.BloomFilter, 0)
-	dbTx := m.Order("id desc").Find(&entities)
-	if dbTx.Error != nil {
-		return nil, dbTx.Error
-	}
-	if dbTx.RowsAffected == 0 {
-		return nil, gorm.ErrRecordNotFound
-	}
-
-	filterMap := make(map[string]*bloom.BloomFilter, 0)
-	for _, v := range entities {
-		filter := bloom.NewWithEstimates(10000, 0.01)
-		filter.UnmarshalJSON(v.Data)
-		filterMap[v.Name] = filter
-	}
-	return filterMap, nil
 }

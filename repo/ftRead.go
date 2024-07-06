@@ -7,6 +7,9 @@ import (
 )
 
 func (m *Postgres) FtUTXOsByLocationID(locationID string) ([]*postsql.UTXOFtInfo, error) {
+	if !m.testFtLocationID(locationID) {
+		return nil, nil
+	}
 	var entity []*postsql.UTXOFtInfo
 	dbTx := m.Model(postsql.UTXOFtInfo{}).Where("location_id = ?", locationID).Find(&entity)
 	if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {
@@ -16,6 +19,9 @@ func (m *Postgres) FtUTXOsByLocationID(locationID string) ([]*postsql.UTXOFtInfo
 }
 
 func (m *Postgres) DistributedFtByName(tickerName string) (*postsql.GlobalDistributedFt, error) {
+	if !m.testDistributedFt(tickerName) {
+		return nil, nil
+	}
 	var entity *postsql.GlobalDistributedFt
 	dbTx := m.Model(postsql.GlobalDistributedFt{}).Where("ticker_name = ?", tickerName).Find(&entity)
 	if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {

@@ -28,7 +28,7 @@ type UTXONftInfo struct {
 	// subRealm
 	SubRealmName           string `gorm:"index"`
 	ClaimType              witness.NftSubrealmClaimType
-	ParentRealmAtomicalsID string // ParentRealm atomicalsID
+	ParentRealmAtomicalsID string
 
 	// container
 	ContainerName string `gorm:"index"`

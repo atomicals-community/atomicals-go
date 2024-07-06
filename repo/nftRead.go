@@ -6,15 +6,30 @@ import (
 	"github.com/atomicals-go/repo/postsql"
 )
 
+func (m *Postgres) NftUTXOsByUserPK(UserPK string) ([]*postsql.UTXONftInfo, error) {
+	var entity []*postsql.UTXONftInfo
+	dbTx := m.Model(postsql.UTXONftInfo{}).Where("user_pk = ?", UserPK).Find(&entity)
+	if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {
+		return nil, dbTx.Error
+	}
+	// if dbTx.RowsAffected == 0 {
+	// 	return nil, nil
+	// }
+	return entity, nil
+}
+
 func (m *Postgres) NftUTXOsByLocationID(locationID string) ([]*postsql.UTXONftInfo, error) {
+	if !m.testNftLocationID(locationID) {
+		return nil, nil
+	}
 	var entity []*postsql.UTXONftInfo
 	dbTx := m.Model(postsql.UTXONftInfo{}).Where("location_id = ?", locationID).Find(&entity)
 	if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {
 		return nil, dbTx.Error
 	}
-	if dbTx.RowsAffected == 0 {
-		return nil, nil
-	}
+	// if dbTx.RowsAffected == 0 {
+	// 	return nil, nil
+	// }
 	return entity, nil
 }
 
@@ -43,6 +58,9 @@ func (m *Postgres) ParentContainerHasExist(parentContainerAtomicalsID string) (*
 }
 
 func (m *Postgres) NftRealmByNameHasExist(realmName string) (bool, error) {
+	if !m.testRealm(realmName) {
+		return false, nil
+	}
 	var entities []*postsql.UTXONftInfo
 	dbTx := m.Model(postsql.UTXONftInfo{}).Where("realm_name = ?", realmName).First(&entities)
 	if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {
@@ -70,6 +88,9 @@ func (m *Postgres) NftSubRealmByNameHasExist(parentRealmAtomicalsID, subRealm st
 }
 
 func (m *Postgres) NftContainerByNameHasExist(containerName string) (bool, error) {
+	if !m.testContainer(containerName) {
+		return false, nil
+	}
 	var entities []*postsql.UTXONftInfo
 	dbTx := m.Model(postsql.UTXONftInfo{}).Where("container_name = ?", containerName).First(&entities)
 	if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {

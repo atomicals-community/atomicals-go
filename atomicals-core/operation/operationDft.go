@@ -21,19 +21,17 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 	if !utils.IsValidTicker(operation.Payload.Args.RequestTicker) {
 		return errors.ErrInvalidTicker
 	}
-	if m.bloomFilter.TestDistributedFt(operation.Payload.Args.RequestTicker) {
-		ft, err := m.DistributedFtByName(operation.Payload.Args.RequestTicker)
-		if err != nil {
-			log.Log.Panicf("DistributedFtByName err:%v", err)
-		}
-		if ft != nil {
-			return errors.ErrTickerHasExist
-		}
+	ft, err := m.DistributedFtByName(operation.Payload.Args.RequestTicker)
+	if err != nil {
+		log.Log.Panicf("DistributedFtByName err:%v", err)
+	}
+	if ft != nil {
+		return errors.ErrTickerHasExist
 	}
 	if operation.Payload.Args.Bitworkc == "" {
 		return errors.ErrBitworkcNeeded
 	}
-	_, _, err := operation.IsValidBitwork()
+	_, _, err = operation.IsValidBitwork()
 	if err != nil {
 		return err
 	}
@@ -90,6 +88,7 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 	}
 	entity := &postsql.GlobalDistributedFt{
 		AtomicalsID:  operation.AtomicalsID,
+		LocationID:   operation.LocationID,
 		TickerName:   operation.Payload.Args.RequestTicker,
 		Type:         "FT",
 		Subtype:      "decentralized",
@@ -158,7 +157,6 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 		entity.MintMode = "fixed"
 		entity.MaxSupply = entity.MintAmount * entity.MaxMints
 	}
-	m.bloomFilter.AddDistributedFt(entity.TickerName)
 	if err := m.InsertDistributedFt(entity); err != nil {
 		log.Log.Panicf("InsertDistributedFt err:%v", err)
 	}

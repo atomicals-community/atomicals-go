@@ -40,14 +40,12 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 		if !utils.IsValidRealm(operation.Payload.Args.RequestRealm) {
 			return errors.ErrInvalidRealm
 		}
-		if m.bloomFilter.TestRealm(operation.Payload.Args.RequestRealm) {
-			isExist, err := m.NftRealmByNameHasExist(operation.Payload.Args.RequestRealm)
-			if err != nil {
-				log.Log.Panicf("NftRealmByNameHasExist err:%v", err)
-			}
-			if isExist {
-				return errors.ErrRealmHasExist
-			}
+		isExist, err := m.NftRealmByNameHasExist(operation.Payload.Args.RequestRealm)
+		if err != nil {
+			log.Log.Panicf("NftRealmByNameHasExist err:%v", err)
+		}
+		if isExist {
+			return errors.ErrRealmHasExist
 		}
 		if operation.Payload.IsImmutable() {
 			return errors.ErrCannotBeImmutable
@@ -72,10 +70,6 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 		if bitworkc != nil && len(bitworkc.Prefix) < 4 {
 			return errors.ErrInvalidBitworkcPrefix
 		}
-		m.bloomFilter.AddRealm(entity.RealmName)
-		m.UpdateBloomFilter(postsql.NftFilter, m.bloomFilter.Filter[postsql.NftFilter])
-		m.bloomFilter.AddNftLocationID(entity.LocationID)
-		m.UpdateBloomFilter(postsql.NftLocationFilter, m.bloomFilter.Filter[postsql.NftLocationFilter])
 		if err := m.InsertNftUTXO(entity); err != nil {
 			log.Log.Panicf("InsertNftUTXO err:%v", err)
 		}
@@ -116,8 +110,6 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 			AtomicalsID:            operation.AtomicalsID,
 			LocationID:             operation.LocationID,
 		}
-		m.bloomFilter.AddNftLocationID(entity.LocationID)
-		m.UpdateBloomFilter(postsql.NftLocationFilter, m.bloomFilter.Filter[postsql.NftLocationFilter])
 		if err := m.InsertNftUTXO(entity); err != nil {
 			log.Log.Panicf("InsertNftUTXO err:%v", err)
 		}
@@ -125,14 +117,12 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 		if !utils.IsValidContainer(operation.Payload.Args.RequestContainer) {
 			return errors.ErrInvalidContainer
 		}
-		if m.bloomFilter.TestContainer(operation.Payload.Args.RequestContainer) {
-			isExist, err := m.NftContainerByNameHasExist(operation.Payload.Args.RequestContainer)
-			if err != nil {
-				log.Log.Panicf("NftContainerByName err:%v", err)
-			}
-			if isExist {
-				return errors.ErrContainerHasExist
-			}
+		isExist, err := m.NftContainerByNameHasExist(operation.Payload.Args.RequestContainer)
+		if err != nil {
+			log.Log.Panicf("NftContainerByName err:%v", err)
+		}
+		if isExist {
+			return errors.ErrContainerHasExist
 		}
 		if operation.Payload.IsImmutable() {
 			return errors.ErrCannotBeImmutable
@@ -157,10 +147,6 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 		if bitworkc != nil && len(bitworkc.Prefix) < 4 {
 			return errors.ErrInvalidBitworkcPrefix
 		}
-		m.bloomFilter.AddContainer(entity.ContainerName)
-		m.UpdateBloomFilter(postsql.NftFilter, m.bloomFilter.Filter[postsql.NftFilter])
-		m.bloomFilter.AddNftLocationID(entity.LocationID)
-		m.UpdateBloomFilter(postsql.NftLocationFilter, m.bloomFilter.Filter[postsql.NftLocationFilter])
 		if err := m.InsertNftUTXO(entity); err != nil {
 			log.Log.Panicf("InsertNftUTXO err:%v", err)
 		}
@@ -201,8 +187,6 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 			AtomicalsID:                operation.AtomicalsID,
 			LocationID:                 operation.LocationID,
 		}
-		m.bloomFilter.AddNftLocationID(entity.LocationID)
-		m.UpdateBloomFilter(postsql.NftLocationFilter, m.bloomFilter.Filter[postsql.NftLocationFilter])
 		if err := m.InsertNftUTXO(entity); err != nil {
 			log.Log.Panicf("InsertNftUTXO err:%v", err)
 		}

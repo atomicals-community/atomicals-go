@@ -12,22 +12,64 @@ import (
 	"github.com/atomicals-go/utils"
 )
 
-// get_dmitem_parent_container_info
 func (m *Atomicals) verifyRuleAndMerkle(operation *witness.WitnessAtomicalsOperation, height int64) bool {
-	dmint_validated_status := m.get_container_dmint_status_for_atomical_id(operation.Payload.Args.ParentContainer)
-	if dmint_validated_status == nil {
+	// get_dmitem_parent_container_info
+	dmintValidatedStatus, err := m.getModHistory(operation.Payload.Args.ParentContainer)
+	if err != nil {
+		panic(err)
+	}
+	if dmintValidatedStatus == nil {
 		return false
 	}
-	if operation.CommitHeight < dmint_validated_status.MintHeight || height < dmint_validated_status.MintHeight {
+	if validateRulesData(dmintValidatedStatus.Rules) == nil {
 		return false
 	}
-	is_proof_valid := validate_dmitem_mint_args_with_container_dmint(operation.Payload, dmint_validated_status)
+	if dmintValidatedStatus.MintHeight < 0 {
+		return false
+	}
+	if dmintValidatedStatus.V != "1" {
+		return false
+	}
+	if len(dmintValidatedStatus.Merkle) != 64 {
+		return false
+	}
+	if operation.CommitHeight < dmintValidatedStatus.MintHeight || height < dmintValidatedStatus.MintHeight {
+		return false
+	}
+	// validate_dmitem_mint_args_with_container_dmint
+	for _, proof_item := range operation.Payload.Args.Proof {
+		if len(proof_item.D) != 64 {
+			return false
+		}
+	}
+	image := operation.Payload.Args.DynamicFields[operation.Payload.Args.Main]
+	is_proof_valid, err := validateMerkleProofDmint(dmintValidatedStatus.Merkle,
+		operation.Payload.Args.RequestDmitem, operation.Payload.Args.Bitworkc,
+		operation.Payload.Args.Bitworkr, operation.Payload.Args.Main, utils.DoubleSha256(image), operation.Payload.Args.Proof)
+	if err != nil {
+		return false
+	}
 	if !is_proof_valid {
 		return false
 	}
-	matched_price_point := m.get_applicable_rule_by_height(operation.Payload.Args.ParentContainer, operation.Payload.Args.RequestDmitem)
-	bitworkc := matched_price_point.Bitworkc
-	bitworkr := matched_price_point.Bitworkr
+	////
+	// get_applicable_rule_by_height
+	var matchedPricePoint *witness.RuleInfo
+	latest_state, err := m.getModHistory(operation.Payload.Args.ParentContainer)
+	if err != nil {
+		panic(err)
+	}
+	regex_price_point_list := validateRulesData(latest_state.Rules)
+	for _, regex_price_point := range regex_price_point_list {
+		valid_pattern := regexp.MustCompile(regex_price_point.P)
+		if !valid_pattern.MatchString(operation.Payload.Args.RequestDmitem) {
+			continue
+		}
+		matchedPricePoint = regex_price_point
+	}
+	////
+	bitworkc := matchedPricePoint.Bitworkc
+	bitworkr := matchedPricePoint.Bitworkr
 	bitworkc_actual := operation.Payload.Args.Bitworkc
 	bitworkr_actual := operation.Payload.Args.Bitworkr
 	if bitworkc == "any" {
@@ -44,61 +86,26 @@ func (m *Atomicals) verifyRuleAndMerkle(operation *witness.WitnessAtomicalsOpera
 			return false
 		}
 	}
-	if matched_price_point.O != nil {
+	if matchedPricePoint.O != nil {
 		return true
 	}
 	if bitworkc != "" || bitworkr != "" {
 		return true
 	}
-	// todo: put_pay_record
 	return false
 }
 
 func (m *Atomicals) get_applicable_rule_by_height(parent_atomical_id string, proposed_subnameid string) *witness.RuleInfo {
-	rule_mint_mod_history, err := m.get_mod_history(parent_atomical_id)
-	if err != nil {
-		panic(err)
-	}
-	latest_state := calculate_latest_state_from_mod_history(rule_mint_mod_history)
-	regex_price_point_list := validate_rules_data(latest_state)
-	for _, regex_price_point := range regex_price_point_list {
-		valid_pattern := regexp.MustCompile(regex_price_point.P)
-		if !valid_pattern.MatchString(proposed_subnameid) {
-			continue
-		}
-		return regex_price_point
-	}
+
 	return nil
 }
 
-func (m *Atomicals) get_container_dmint_status_for_atomical_id(atomical_id string) *witness.Dmint {
-	rule_mint_mod_history, err := m.get_mod_history(atomical_id)
-	if err != nil {
-		panic(err)
-	}
-	latest_state := calculate_latest_state_from_mod_history(rule_mint_mod_history)
-	if validate_rules_data(latest_state) == nil {
-		return nil
-	}
-	if latest_state.MintHeight < 0 {
-		return nil
-	}
-	if latest_state.V != "1" {
-		return nil
-	}
-	if len(latest_state.Merkle) != 64 {
-		return nil
-	}
-	// todo: get_general_data_with_cache
-	return latest_state
-}
-
-func validate_rules_data(namespace_data *witness.Dmint) []*witness.RuleInfo {
-	if len(namespace_data.Rules) <= 0 || len(namespace_data.Rules) > utils.MAX_SUBNAME_RULE_ENTRIES {
+func validateRulesData(rules []*witness.RuleInfo) []*witness.RuleInfo {
+	if len(rules) <= 0 || len(rules) > utils.MAX_SUBNAME_RULE_ENTRIES {
 		return nil
 	}
 	validated_rules_list := []*witness.RuleInfo{}
-	for _, rule := range namespace_data.Rules {
+	for _, rule := range rules {
 		regex_pattern := rule.P
 		if len(regex_pattern) > utils.MAX_SUBNAME_RULE_SIZE_LEN || len(regex_pattern) < 1 {
 			return nil
@@ -157,7 +164,10 @@ func validate_rules_data(namespace_data *witness.Dmint) []*witness.RuleInfo {
 			return nil
 		}
 	}
-	if validated_rules_list == nil || len(validated_rules_list) == 0 {
+	if validated_rules_list == nil {
+		return nil
+	}
+	if len(validated_rules_list) == 0 {
 		return nil
 	}
 	return validated_rules_list
@@ -184,21 +194,7 @@ func validate_subrealm_rules_outputs_format(outputs map[string]*witness.Output) 
 	return true
 }
 
-func validate_dmitem_mint_args_with_container_dmint(payload *witness.PayLoad, dmint *witness.Dmint) bool {
-	for _, proof_item := range payload.Args.Proof {
-		if len(proof_item.D) != 64 {
-			return false
-		}
-	}
-	image := payload.Args.DynamicFields[payload.Args.Main]
-	is_proof_valid, err := validate_merkle_proof_dmint(dmint.Merkle, payload.Args.RequestDmitem, payload.Args.Bitworkc, payload.Args.Bitworkr, payload.Args.Main, utils.DoubleSha256(image), payload.Args.Proof)
-	if err != nil {
-		return false
-	}
-	return is_proof_valid
-}
-
-func validate_merkle_proof_dmint(merkleStr string, item_name string, possible_bitworkc, possible_bitworkr, main string, main_hash []byte, proof []witness.Proof) (bool, error) {
+func validateMerkleProofDmint(merkleStr string, item_name string, possible_bitworkc, possible_bitworkr, main string, main_hash []byte, proof []witness.Proof) (bool, error) {
 	expected_root_hash, err := hex.DecodeString(merkleStr)
 	if err != nil {
 		return false, err
@@ -238,30 +234,7 @@ func validate_merkle_proof_dmint(merkleStr string, item_name string, possible_bi
 	return false, nil
 }
 
-func calculate_latest_state_from_mod_history(mod_history []*witness.Dmint) *witness.Dmint {
-	// Ensure it is sorted in ascending order
-	// sort.Slice(mod_history, func(i, j int) bool {
-	// 	return mod_history[i].ID < mod_history[j].ID
-	// })
-	current_object_state := &witness.Dmint{}
-	for _, element := range mod_history {
-		if element.A == 1 {
-			current_object_state = nil
-		} else {
-			current_object_state = element
-		}
-	}
-	return current_object_state
-}
-
-type regex_price_point struct {
-	o        map[string]*witness.Output
-	Bitworkc string
-	Bitworkr string
-	p        string
-}
-
-func (m *Atomicals) get_mod_history(parentContainerAtomicalsID string) ([]*witness.Dmint, error) {
+func (m *Atomicals) getModHistory(parentContainerAtomicalsID string) (*witness.Dmint, error) {
 	mod, err := m.Mod(parentContainerAtomicalsID)
 	if err != nil {
 		return nil, err
@@ -275,5 +248,19 @@ func (m *Atomicals) get_mod_history(parentContainerAtomicalsID string) ([]*witne
 	}
 	dmints := make([]*witness.Dmint, 0)
 	dmints = append(dmints, dmint)
-	return dmints, nil
+
+	// calculate_latest_state_from_mod_history
+	// Ensure it is sorted in ascending order
+	// sort.Slice(mod_history, func(i, j int) bool {
+	// 	return mod_history[i].ID < mod_history[j].ID
+	// })
+	current_object_state := &witness.Dmint{}
+	for _, element := range dmints {
+		if element.A == 1 {
+			current_object_state = nil
+		} else {
+			current_object_state = element
+		}
+	}
+	return current_object_state, nil
 }

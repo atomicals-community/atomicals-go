@@ -13,6 +13,7 @@ type DB interface {
 	ExecAllSql(location *postsql.Location) error
 
 	// nft read
+	NftUTXOsByUserPK(UserPK string) ([]*postsql.UTXONftInfo, error)
 	NftUTXOsByLocationID(locationID string) ([]*postsql.UTXONftInfo, error)
 	ParentRealmHasExist(parentRealmAtomicalsID string) (string, error)
 	NftRealmByNameHasExist(realmName string) (bool, error)
@@ -42,11 +43,12 @@ type DB interface {
 	InsertBtcTx(btcTx *postsql.BtcTx) error
 	BtcTx(txID string) (*postsql.BtcTx, error)
 	BtcTxHeight(txID string) (int64, error)
+	DeleteBtcTxUntil(blockHeight int64) error
 
-	// bitmap
+	// BloomFilter
 	InsertBloomFilter(name string, filter *bloom.BloomFilter) error
 	UpdateBloomFilter(name string, filter *bloom.BloomFilter) error
-	BloomFilter() (map[string]*bloom.BloomFilter, error)
+	BloomFilter() (map[string]*bloomFilterInfo, error)
 }
 
 func NewSqlDB(sqlDNS string) DB {
@@ -54,7 +56,12 @@ func NewSqlDB(sqlDNS string) DB {
 	if err != nil {
 		panic(err)
 	}
-	return &Postgres{
+	s := &Postgres{
 		DB: DB,
 	}
+	s.bloomFilter, err = s.BloomFilter()
+	if err != nil {
+		panic(err)
+	}
+	return s
 }

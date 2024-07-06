@@ -89,7 +89,7 @@ func ParseBitwork(bitwork string) *Bitwork {
 	}
 }
 
-func Get_next_bitwork_full_str(bitworkVec string, currentPrefixLen int) string {
+func GetNextBitworkFullStr(bitworkVec string, currentPrefixLen int) string {
 	baseBitworkPadded := fmt.Sprintf("%-32s", bitworkVec)
 	if currentPrefixLen >= 31 {
 		return baseBitworkPadded
@@ -97,17 +97,14 @@ func Get_next_bitwork_full_str(bitworkVec string, currentPrefixLen int) string {
 	return baseBitworkPadded[:currentPrefixLen+1]
 }
 
-func Is_mint_pow_valid(txid, mintPowCommit string) bool {
+func IsMintPowValid(txid, mintPowCommit string) bool {
 	bitworkCommitParts := ParseBitwork(mintPowCommit)
 	if bitworkCommitParts == nil {
 		return false
 	}
 	mintBitworkPrefix := bitworkCommitParts.Prefix
 	mintBitworkExt := bitworkCommitParts.Ext
-	if IsProofOfWorkPrefixMatch(txid, mintBitworkPrefix, mintBitworkExt) {
-		return true
-	}
-	return false
+	return IsProofOfWorkPrefixMatch(txid, mintBitworkPrefix, mintBitworkExt)
 }
 
 func Calculate_expected_bitwork(bitwork_vec string, actual_mints, max_mints, target_increment, starting_target int64) string {

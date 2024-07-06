@@ -6,6 +6,7 @@ import (
 )
 
 func (m *Postgres) InsertFtUTXO(UTXO *postsql.UTXOFtInfo) error {
+	m.addFtLocationID(UTXO.LocationID)
 	m.SQLRaw += m.ToSQL(func(tx *gorm.DB) *gorm.DB {
 		return tx.Save(UTXO)
 	}) + ";"
@@ -27,6 +28,8 @@ func (m *Postgres) UpdateDistributedFtAmount(tickerName string, mintTimes int64)
 }
 
 func (m *Postgres) InsertDistributedFt(entity *postsql.GlobalDistributedFt) error {
+	m.addDistributedFt(entity.TickerName)
+	m.addFtLocationID(entity.LocationID)
 	m.SQLRaw += m.ToSQL(func(tx *gorm.DB) *gorm.DB {
 		return tx.Save(entity)
 	}) + ";"
@@ -34,6 +37,8 @@ func (m *Postgres) InsertDistributedFt(entity *postsql.GlobalDistributedFt) erro
 }
 
 func (m *Postgres) InsertDirectFtUTXO(entity *postsql.GlobalDirectFt) error {
+	m.addDirectFt(entity.TickerName)
+	m.addFtLocationID(entity.LocationID)
 	m.SQLRaw += m.ToSQL(func(tx *gorm.DB) *gorm.DB {
 		return tx.Save(entity)
 	}) + ";"

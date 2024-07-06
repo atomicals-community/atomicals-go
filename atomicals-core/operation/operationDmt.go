@@ -76,7 +76,6 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 			}
 		}
 	} else { //ftEntity.MintMode == "fixed"
-		// ftEntity.MintBitworkc
 		if ftEntity.MintedTimes > ftEntity.MaxMints {
 			return errors.ErrInvalidMintedTimes
 		} else if ftEntity.MintedTimes < ftEntity.MaxMints {
@@ -111,8 +110,6 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 		AtomicalsID: operation.AtomicalsID,
 		LocationID:  operation.LocationID,
 	}
-	m.bloomFilter.AddFtLocationID(entity.LocationID)
-	m.UpdateBloomFilter(postsql.FtLocationFilter, m.bloomFilter.Filter[postsql.FtLocationFilter])
 	if err := m.InsertFtUTXO(entity); err != nil {
 		log.Log.Panicf("InsertFtUTXO err:%v", err)
 	}
@@ -123,22 +120,22 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 }
 
 // is_txid_valid_for_perpetual_bitwork
-func isTxidValidForPerpetualBitwork(txid string, bitwork_vec string, actual_mints, max_mints int64, mintBitworkrInc string, mintBitworkcStart int64, allow_higher bool) (bool, string) {
-	starting_target := mintBitworkcStart
-	target_increment, _ := strconv.Atoi(mintBitworkrInc) // never return err
-	expected_minimum_bitwork := utils.Calculate_expected_bitwork(bitwork_vec, actual_mints, max_mints, int64(target_increment), starting_target)
-	if utils.Is_mint_pow_valid(txid, expected_minimum_bitwork) {
-		return true, expected_minimum_bitwork
+func isTxidValidForPerpetualBitwork(txid string, bitworkVec string, actualMints, maxMints int64, mintBitworkrInc string, mintBitworkcStart int64, allowHigher bool) (bool, string) {
+	startingTarget := mintBitworkcStart
+	targetIncrement, _ := strconv.Atoi(mintBitworkrInc) // never return err
+	expectedMinimumBitwork := utils.Calculate_expected_bitwork(bitworkVec, actualMints, maxMints, int64(targetIncrement), startingTarget)
+	if utils.IsMintPowValid(txid, expectedMinimumBitwork) {
+		return true, expectedMinimumBitwork
 	}
-	if allow_higher {
-		parts := utils.ParseBitwork(expected_minimum_bitwork)
+	if allowHigher {
+		parts := utils.ParseBitwork(expectedMinimumBitwork)
 		if parts == nil {
 			return false, ""
 		}
 		prefix := parts.Prefix
-		next_full_bitwork_prefix := utils.Get_next_bitwork_full_str(bitwork_vec, len(prefix))
-		if utils.Is_mint_pow_valid(txid, next_full_bitwork_prefix) {
-			return true, next_full_bitwork_prefix
+		nextFullBitworkPrefix := utils.GetNextBitworkFullStr(bitworkVec, len(prefix))
+		if utils.IsMintPowValid(txid, nextFullBitworkPrefix) {
+			return true, nextFullBitworkPrefix
 		}
 	}
 	return false, ""
