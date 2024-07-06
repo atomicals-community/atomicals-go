@@ -3,32 +3,31 @@ package atomicals
 import (
 	"github.com/atomicals-go/atomicals-core/witness"
 	"github.com/atomicals-go/pkg/errors"
-	"github.com/atomicals-go/pkg/log"
 	"github.com/atomicals-go/repo/postsql"
 	"github.com/atomicals-go/utils"
 	"github.com/btcsuite/btcd/btcjson"
 )
 
 // mintDirectFt: Mint fungible token with direct fixed supply
-func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, vout []btcjson.Vout, userPk string) (err error) {
+func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, vout []btcjson.Vout, userPk string) (newGlobalDirectFt *postsql.GlobalDirectFt, err error) {
 	if operation.RevealInputIndex != 0 {
-		return errors.ErrInvalidRevealInputIndex
+		return nil, errors.ErrInvalidRevealInputIndex
 	}
 	if !operation.Payload.CheckRequest() {
-		return errors.ErrCheckRequest
+		return nil, errors.ErrCheckRequest
 	}
 	if !utils.IsValidTicker(operation.Payload.Args.RequestTicker) {
-		return errors.ErrInvalidTicker
+		return nil, errors.ErrInvalidTicker
 	}
 	if operation.Payload.IsImmutable() {
-		return errors.ErrCannotBeImmutable
+		return nil, errors.ErrCannotBeImmutable
 	}
 	if operation.Payload.Args.Bitworkc == "" {
-		return errors.ErrBitworkcNeeded
+		return nil, errors.ErrBitworkcNeeded
 	}
 	_, _, err = operation.IsValidBitwork()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	operation.CommitHeight, err = m.BtcTxHeight(operation.CommitTxID)
 	if err != nil {
@@ -38,21 +37,23 @@ func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, v
 		}
 	}
 	if operation.CommitHeight < utils.ATOMICALS_ACTIVATION_HEIGHT {
-		return errors.ErrInvalidCommitHeight
+		return nil, errors.ErrInvalidCommitHeight
 	}
 	if !operation.IsWithinAcceptableBlocksForGeneralReveal() {
-		return errors.ErrInvalidCommitHeight
+		return nil, errors.ErrInvalidCommitHeight
 	}
 	if !operation.IsWithinAcceptableBlocksForNameReveal() {
-		return errors.ErrInvalidCommitHeight
+		return nil, errors.ErrInvalidCommitHeight
 	}
 	if operation.RevealLocationHeight > utils.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && operation.CommitVoutIndex != utils.VOUT_EXPECT_OUTPUT_INDEX {
-		return errors.ErrInvalidVinIndex
+		return nil, errors.ErrInvalidVinIndex
 	}
 	if operation.CommitVoutIndex != utils.VOUT_EXPECT_OUTPUT_INDEX {
-		return errors.ErrInvalidVinIndex
+		return nil, errors.ErrInvalidVinIndex
 	}
-	entity := &postsql.GlobalDirectFt{
+
+	amount := utils.MulSatoshi(vout[utils.VOUT_EXPECT_OUTPUT_INDEX].Value)
+	newGlobalDirectFt = &postsql.GlobalDirectFt{
 		UserPk:      userPk,
 		AtomicalsID: operation.AtomicalsID,
 		LocationID:  operation.LocationID,
@@ -62,10 +63,7 @@ func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, v
 		// Meta:          operation.Payload.Meta,
 		Bitworkc:  operation.Payload.Args.Bitworkc,
 		Bitworkr:  operation.Payload.Args.Bitworkr,
-		MaxSupply: int64(vout[utils.VOUT_EXPECT_OUTPUT_INDEX].Value * utils.Satoshi),
+		MaxSupply: amount,
 	}
-	if err := m.InsertDirectFtUTXO(entity); err != nil {
-		log.Log.Panicf("InsertDirectFtUTXO err:%v", err)
-	}
-	return nil
+	return newGlobalDirectFt, nil
 }

@@ -9,7 +9,7 @@ const btcTxTableName = "btc_tx"
 
 type BtcTx struct {
 	gorm.Model
-	BlockHeight int64
+	BlockHeight int64 `gorm:"index"`
 	TxIndex     int64
 	TxID        string `gorm:"uniqueindex"`
 	Operation   string

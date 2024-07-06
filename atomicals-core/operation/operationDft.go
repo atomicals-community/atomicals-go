@@ -11,62 +11,61 @@ import (
 )
 
 // deployDistributedFt: operation dft
-func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOperation, userPk string) error {
+func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOperation, userPk string) (newGlobalDistributedFt *postsql.GlobalDistributedFt, err error) {
 	if operation.RevealInputIndex != 0 {
-		return errors.ErrInvalidRevealInputIndex
+		return nil, errors.ErrInvalidRevealInputIndex
 	}
 	if !operation.Payload.CheckRequest() {
-		return errors.ErrCheckRequest
+		return nil, errors.ErrCheckRequest
 	}
 	if !utils.IsValidTicker(operation.Payload.Args.RequestTicker) {
-		return errors.ErrInvalidTicker
+		return nil, errors.ErrInvalidTicker
 	}
 	ft, err := m.DistributedFtByName(operation.Payload.Args.RequestTicker)
 	if err != nil {
 		log.Log.Panicf("DistributedFtByName err:%v", err)
 	}
 	if ft != nil {
-		return errors.ErrTickerHasExist
+		return nil, errors.ErrTickerHasExist
 	}
 	if operation.Payload.Args.Bitworkc == "" {
-		return errors.ErrBitworkcNeeded
+		return nil, errors.ErrBitworkcNeeded
 	}
 	_, _, err = operation.IsValidBitwork()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if operation.Payload.Args.MintHeight < utils.DFT_MINT_HEIGHT_MIN || utils.DFT_MINT_HEIGHT_MAX < operation.Payload.Args.MintHeight {
-		return errors.ErrInvalidMintHeight
+		return nil, errors.ErrInvalidMintHeight
 	}
 	if operation.Payload.Args.MintAmount < utils.DFT_MINT_AMOUNT_MIN || utils.DFT_MINT_AMOUNT_MAX < operation.Payload.Args.MintAmount {
-		return errors.ErrInvalidMintHeight
+		return nil, errors.ErrInvalidMintHeight
 	}
 	if operation.Payload.Args.MaxMints < utils.DFT_MINT_MAX_MIN_COUNT {
-		return errors.ErrInvalidMaxMints
+		return nil, errors.ErrInvalidMaxMints
 	}
 	if operation.RevealLocationHeight < utils.ATOMICALS_ACTIVATION_HEIGHT_DENSITY {
 		if operation.Payload.Args.MaxMints > utils.DFT_MINT_MAX_MAX_COUNT_LEGACY {
-			return errors.ErrInvalidMaxMints
+			return nil, errors.ErrInvalidMaxMints
 		}
 	} else {
 		if operation.Payload.Args.MaxMints > utils.DFT_MINT_MAX_MAX_COUNT_DENSITY {
-			return errors.ErrInvalidMaxMints
+			return nil, errors.ErrInvalidMaxMints
 		}
 	}
 	mintBitworkc, _, err := utils.ParseMintBitwork(operation.CommitTxID, operation.Payload.Args.MintBitworkc, operation.Payload.Args.MintBitworkr)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if mintBitworkc != nil && len(mintBitworkc.Prefix) < 4 {
-		return errors.ErrInvalidBitworkcPrefix
+		return nil, errors.ErrInvalidBitworkcPrefix
 	}
 	if operation.Payload.IsImmutable() {
-		return errors.ErrCannotBeImmutable
+		return nil, errors.ErrCannotBeImmutable
 	}
 	if operation.Payload.Args.Md != "" && operation.Payload.Args.Md != "0" && operation.Payload.Args.Md != "1" {
-		return errors.ErrInvalidDftMd
+		return nil, errors.ErrInvalidDftMd
 	}
-
 	operation.CommitHeight, err = m.BtcTxHeight(operation.CommitTxID)
 	if err != nil {
 		operation.CommitHeight, err = m.GetTxHeightByTxID(operation.CommitTxID)
@@ -75,18 +74,18 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 		}
 	}
 	if operation.CommitHeight < utils.ATOMICALS_ACTIVATION_HEIGHT {
-		return errors.ErrInvalidCommitHeight
+		return nil, errors.ErrInvalidCommitHeight
 	}
 	if !operation.IsWithinAcceptableBlocksForGeneralReveal() {
-		return errors.ErrInvalidCommitHeight
+		return nil, errors.ErrInvalidCommitHeight
 	}
 	if !operation.IsWithinAcceptableBlocksForNameReveal() {
-		return errors.ErrInvalidCommitHeight
+		return nil, errors.ErrInvalidCommitHeight
 	}
 	if operation.RevealLocationHeight > utils.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && operation.CommitVoutIndex != utils.VOUT_EXPECT_OUTPUT_INDEX {
-		return errors.ErrInvalidVinIndex
+		return nil, errors.ErrInvalidVinIndex
 	}
-	entity := &postsql.GlobalDistributedFt{
+	newGlobalDistributedFt = &postsql.GlobalDistributedFt{
 		AtomicalsID:  operation.AtomicalsID,
 		LocationID:   operation.LocationID,
 		TickerName:   operation.Payload.Args.RequestTicker,
@@ -111,21 +110,21 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 		CommitHeight: operation.CommitHeight,
 	}
 
-	if utils.ATOMICALS_ACTIVATION_HEIGHT_DENSITY <= operation.RevealLocationHeight && entity.Md == "1" {
+	if utils.ATOMICALS_ACTIVATION_HEIGHT_DENSITY <= operation.RevealLocationHeight && newGlobalDistributedFt.Md == "1" {
 		if !utils.IsHexStringRegex(operation.Payload.Args.Bv) || len(operation.Payload.Args.Bv) < 4 {
-			return errors.ErrInvalidDftBv
+			return nil, errors.ErrInvalidDftBv
 		}
 		if operation.Payload.Args.MintBitworkc != "" || operation.Payload.Args.MintBitworkr != "" {
-			return errors.ErrInvalidDftMintBitwork
+			return nil, errors.ErrInvalidDftMintBitwork
 		}
 		if operation.Payload.Args.Bci != "" {
 			bci, err := strconv.Atoi(operation.Payload.Args.Bci)
 			if err == nil {
 				if 64 < bci {
-					return errors.ErrInvalidDftBci
+					return nil, errors.ErrInvalidDftBci
 				}
 				if operation.Payload.Args.Bcs < 64 || 256 < operation.Payload.Args.Bcs {
-					return errors.ErrInvalidDftBsc
+					return nil, errors.ErrInvalidDftBsc
 				}
 			}
 		}
@@ -133,32 +132,29 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 			bri, err := strconv.Atoi(operation.Payload.Args.Bri)
 			if err == nil {
 				if 64 < bri {
-					return errors.ErrInvalidDftBri
+					return nil, errors.ErrInvalidDftBri
 				}
 				if operation.Payload.Args.Brs < 64 || 256 < operation.Payload.Args.Brs {
-					return errors.ErrInvalidDftBrs
+					return nil, errors.ErrInvalidDftBrs
 				}
 			}
 		}
 		if 100000 < operation.Payload.Args.MaxMints {
-			return errors.ErrInvalidMaxMints
+			return nil, errors.ErrInvalidMaxMints
 		}
 		if operation.Payload.Args.Maxg < utils.DFT_MINT_MAX_MIN_COUNT || utils.DFT_MINT_MAX_MAX_COUNT_DENSITY < operation.Payload.Args.Maxg {
-			return errors.ErrInvalidDftMaxg
+			return nil, errors.ErrInvalidDftMaxg
 		}
-		entity.MaxMintsGlobal = operation.Payload.Args.Maxg
-		entity.MintMode = "perpetual"
-		if entity.MaxMintsGlobal != 0 {
-			entity.MaxSupply = entity.MintAmount * entity.MaxMintsGlobal
+		newGlobalDistributedFt.MaxMintsGlobal = operation.Payload.Args.Maxg
+		newGlobalDistributedFt.MintMode = "perpetual"
+		if newGlobalDistributedFt.MaxMintsGlobal != 0 {
+			newGlobalDistributedFt.MaxSupply = newGlobalDistributedFt.MintAmount * newGlobalDistributedFt.MaxMintsGlobal
 		} else {
-			entity.MaxSupply = -1
+			newGlobalDistributedFt.MaxSupply = -1
 		}
 	} else {
-		entity.MintMode = "fixed"
-		entity.MaxSupply = entity.MintAmount * entity.MaxMints
+		newGlobalDistributedFt.MintMode = "fixed"
+		newGlobalDistributedFt.MaxSupply = newGlobalDistributedFt.MintAmount * newGlobalDistributedFt.MaxMints
 	}
-	if err := m.InsertDistributedFt(entity); err != nil {
-		log.Log.Panicf("InsertDistributedFt err:%v", err)
-	}
-	return nil
+	return newGlobalDistributedFt, nil
 }

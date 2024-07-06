@@ -41,7 +41,7 @@ func (m *Postgres) ExecAllSql(location *postsql.Location) error {
 	return nil
 }
 
-func (m *Postgres) CurrentLocation() (*postsql.Location, error) {
+func (m *Postgres) Location() (*postsql.Location, error) {
 	entity := &postsql.Location{}
 	dbTx := m.Order("id desc").First(&entity)
 	if dbTx.Error != nil {

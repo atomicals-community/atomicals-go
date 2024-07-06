@@ -1,8 +1,6 @@
 package atomicals
 
 import (
-	"time"
-
 	"github.com/atomicals-go/pkg/btcsync"
 	"github.com/atomicals-go/pkg/conf"
 	"github.com/atomicals-go/repo"
@@ -11,7 +9,6 @@ import (
 type Atomicals struct {
 	*btcsync.BtcSync
 	repo.DB
-	startTime time.Time
 }
 
 func NewAtomicalsWithSQL(conf *conf.Config) *Atomicals {
@@ -21,8 +18,7 @@ func NewAtomicalsWithSQL(conf *conf.Config) *Atomicals {
 	}
 	db := repo.NewSqlDB(conf.SqlDNS)
 	return &Atomicals{
-		DB:        db,
-		BtcSync:   btcsync,
-		startTime: time.Now(),
+		DB:      db,
+		BtcSync: btcsync,
 	}
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/atomicals-go/utils"
 )
 
-func (m *Atomicals) verifyRuleAndMerkle(operation *witness.WitnessAtomicalsOperation, height int64) bool {
+func (m *Atomicals) verifyRuleAndMerkle(operation *witness.WitnessAtomicalsOperation) bool {
 	// get_dmitem_parent_container_info
 	dmintValidatedStatus, err := m.getModHistory(operation.Payload.Args.ParentContainer)
 	if err != nil {
@@ -33,7 +33,7 @@ func (m *Atomicals) verifyRuleAndMerkle(operation *witness.WitnessAtomicalsOpera
 	if len(dmintValidatedStatus.Merkle) != 64 {
 		return false
 	}
-	if operation.CommitHeight < dmintValidatedStatus.MintHeight || height < dmintValidatedStatus.MintHeight {
+	if operation.CommitHeight < dmintValidatedStatus.MintHeight || operation.RevealLocationHeight < dmintValidatedStatus.MintHeight {
 		return false
 	}
 	// validate_dmitem_mint_args_with_container_dmint

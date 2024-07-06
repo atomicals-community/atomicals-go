@@ -7,20 +7,14 @@ import (
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 )
 
-func (m *BtcSync) GetTxByHeightAndIndex(blockHeight, txIndex int64) (int64, int64, *btcjson.TxRawResult) {
+func (m *BtcSync) GetBlockByHeightSync(blockHeight int64) *btcjson.GetBlockVerboseTxResult {
 	for height := blockHeight; height < blockHeight+int64(BlockCacheNum); height++ {
 		if m.CurrentHeight < height {
 			m.blockHeightChannel <- height
 			m.CurrentHeight = height
 		}
 	}
-	block := m.BlockByHeight(blockHeight)
-	if txIndex < int64(len(block.Tx)) {
-		return block.Height, txIndex, &block.Tx[txIndex]
-	} else {
-		block = m.BlockByHeight(blockHeight + 1)
-		return block.Height, 0, &block.Tx[0]
-	}
+	return m.BlockByHeight(blockHeight)
 }
 
 func (m *BtcSync) BlockByHeight(blockHeight int64) *btcjson.GetBlockVerboseTxResult {
@@ -40,7 +34,7 @@ func (m *BtcSync) BlockByHeight(blockHeight int64) *btcjson.GetBlockVerboseTxRes
 func (m *BtcSync) FetchBlocks() error {
 	for height := range m.blockHeightChannel {
 		// set block cache
-		block, err := m.getBlockByHeight(height)
+		block, err := m.GetBlockByHeight(height)
 		if err != nil {
 			continue
 		}
@@ -49,7 +43,7 @@ func (m *BtcSync) FetchBlocks() error {
 	return nil
 }
 
-func (m *BtcSync) getBlockByHeight(height int64) (*btcjson.GetBlockVerboseTxResult, error) {
+func (m *BtcSync) GetBlockByHeight(height int64) (*btcjson.GetBlockVerboseTxResult, error) {
 	blockHash, err := m.GetBlockHash(height)
 	if err != nil {
 		return nil, err

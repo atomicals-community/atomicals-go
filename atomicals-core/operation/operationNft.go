@@ -8,14 +8,13 @@ import (
 	"github.com/atomicals-go/utils"
 )
 
-func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk string, height int64) error {
+func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk string) (newUTXONftInfo *postsql.UTXONftInfo, err error) {
 	if operation.RevealInputIndex != 0 {
-		return errors.ErrInvalidRevealInputIndex
+		return nil, errors.ErrInvalidRevealInputIndex
 	}
 	if !operation.Payload.CheckRequest() {
-		return errors.ErrCheckRequest
+		return nil, errors.ErrCheckRequest
 	}
-	var err error
 	operation.CommitHeight, err = m.BtcTxHeight(operation.CommitTxID)
 	if err != nil {
 		operation.CommitHeight, err = m.GetTxHeightByTxID(operation.CommitTxID)
@@ -24,36 +23,35 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 		}
 	}
 	if operation.CommitHeight < utils.ATOMICALS_ACTIVATION_HEIGHT {
-		return errors.ErrInvalidCommitHeight
+		return nil, errors.ErrInvalidCommitHeight
 	}
 	if !operation.IsWithinAcceptableBlocksForGeneralReveal() {
-		return errors.ErrInvalidCommitHeight
+		return nil, errors.ErrInvalidCommitHeight
 	}
 	if !operation.IsWithinAcceptableBlocksForNameReveal() {
-		return errors.ErrInvalidCommitHeight
+		return nil, errors.ErrInvalidCommitHeight
 	}
 	if operation.RevealLocationHeight >= utils.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && operation.CommitVoutIndex != utils.VOUT_EXPECT_OUTPUT_INDEX {
-		return errors.ErrInvalidVinIndex
+		return nil, errors.ErrInvalidVinIndex
 	}
-	entity := &postsql.UTXONftInfo{}
 	if operation.Payload.Args.RequestRealm != "" {
 		if !utils.IsValidRealm(operation.Payload.Args.RequestRealm) {
-			return errors.ErrInvalidRealm
+			return nil, errors.ErrInvalidRealm
 		}
 		isExist, err := m.NftRealmByNameHasExist(operation.Payload.Args.RequestRealm)
 		if err != nil {
 			log.Log.Panicf("NftRealmByNameHasExist err:%v", err)
 		}
 		if isExist {
-			return errors.ErrRealmHasExist
+			return nil, errors.ErrRealmHasExist
 		}
 		if operation.Payload.IsImmutable() {
-			return errors.ErrCannotBeImmutable
+			return nil, errors.ErrCannotBeImmutable
 		}
 		if operation.Payload.Args.Bitworkc == "" {
-			return errors.ErrBitworkcNeeded
+			return nil, errors.ErrBitworkcNeeded
 		}
-		entity = &postsql.UTXONftInfo{
+		newUTXONftInfo = &postsql.UTXONftInfo{
 			UserPk:      userPk,
 			RealmName:   operation.Payload.Args.RequestRealm,
 			Nonce:       operation.Payload.Args.Nonce,
@@ -65,39 +63,36 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 		}
 		bitworkc, _, err := operation.IsValidBitwork()
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if bitworkc != nil && len(bitworkc.Prefix) < 4 {
-			return errors.ErrInvalidBitworkcPrefix
-		}
-		if err := m.InsertNftUTXO(entity); err != nil {
-			log.Log.Panicf("InsertNftUTXO err:%v", err)
+			return nil, errors.ErrInvalidBitworkcPrefix
 		}
 	} else if operation.Payload.Args.RequestSubRealm != "" {
 		if !utils.IsValidSubRealm(operation.Payload.Args.RequestSubRealm) {
-			return errors.ErrInvalidContainer
+			return nil, errors.ErrInvalidContainer
 		}
 		if operation.Payload.Args.ClaimType != witness.Direct && operation.Payload.Args.ClaimType != witness.Rule {
-			return errors.ErrInvalidClaimType
+			return nil, errors.ErrInvalidClaimType
 		}
 		parentRealmName, err := m.ParentRealmHasExist(operation.Payload.Args.ParentRealm)
 		if err != nil {
 			log.Log.Panicf("ParentRealmHasExist err:%v", err)
 		}
 		if parentRealmName == "" {
-			return errors.ErrParentRealmNotExist
+			return nil, errors.ErrParentRealmNotExist
 		}
 		isExist, err := m.NftSubRealmByNameHasExist(operation.Payload.Args.ParentRealm, operation.Payload.Args.RequestSubRealm)
 		if err != nil {
 			log.Log.Panicf("NftSubRealmByName err:%v", err)
 		}
 		if isExist {
-			return errors.ErrSubRealmHasExist
+			return nil, errors.ErrSubRealmHasExist
 		}
 		if operation.Payload.IsImmutable() {
-			return errors.ErrCannotBeImmutable
+			return nil, errors.ErrCannotBeImmutable
 		}
-		entity = &postsql.UTXONftInfo{
+		newUTXONftInfo = &postsql.UTXONftInfo{
 			UserPk:                 userPk,
 			RealmName:              parentRealmName,
 			SubRealmName:           operation.Payload.Args.RequestSubRealm,
@@ -110,27 +105,24 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 			AtomicalsID:            operation.AtomicalsID,
 			LocationID:             operation.LocationID,
 		}
-		if err := m.InsertNftUTXO(entity); err != nil {
-			log.Log.Panicf("InsertNftUTXO err:%v", err)
-		}
 	} else if operation.Payload.Args.RequestContainer != "" {
 		if !utils.IsValidContainer(operation.Payload.Args.RequestContainer) {
-			return errors.ErrInvalidContainer
+			return nil, errors.ErrInvalidContainer
 		}
 		isExist, err := m.NftContainerByNameHasExist(operation.Payload.Args.RequestContainer)
 		if err != nil {
 			log.Log.Panicf("NftContainerByName err:%v", err)
 		}
 		if isExist {
-			return errors.ErrContainerHasExist
+			return nil, errors.ErrContainerHasExist
 		}
 		if operation.Payload.IsImmutable() {
-			return errors.ErrCannotBeImmutable
+			return nil, errors.ErrCannotBeImmutable
 		}
 		if operation.Payload.Args.Bitworkc == "" {
-			return errors.ErrBitworkcNeeded
+			return nil, errors.ErrBitworkcNeeded
 		}
-		entity = &postsql.UTXONftInfo{
+		newUTXONftInfo = &postsql.UTXONftInfo{
 			UserPk:        userPk,
 			ContainerName: operation.Payload.Args.RequestContainer,
 			Nonce:         operation.Payload.Args.Nonce,
@@ -142,40 +134,37 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 		}
 		bitworkc, _, err := operation.IsValidBitwork()
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if bitworkc != nil && len(bitworkc.Prefix) < 4 {
-			return errors.ErrInvalidBitworkcPrefix
-		}
-		if err := m.InsertNftUTXO(entity); err != nil {
-			log.Log.Panicf("InsertNftUTXO err:%v", err)
+			return nil, errors.ErrInvalidBitworkcPrefix
 		}
 	} else if operation.Payload.Args.RequestDmitem != "" {
 		if !utils.IsDmintActivated(operation.RevealLocationHeight) {
-			return errors.ErrDmintNotStart
+			return nil, errors.ErrDmintNotStart
 		}
 		parentContainer, err := m.ParentContainerHasExist(operation.Payload.Args.ParentContainer)
 		if err != nil {
 			log.Log.Panicf("ParentContainerHasExist err:%v", err)
 		}
 		if parentContainer == nil {
-			return errors.ErrContainerNotExist
+			return nil, errors.ErrContainerNotExist
 		}
 
 		if !utils.IsValidDmitem(operation.Payload.Args.RequestDmitem) {
-			return errors.ErrInvalidContainerDmitem
+			return nil, errors.ErrInvalidContainerDmitem
 		}
 		isExist, err := m.ContainerItemByNameHasExist(parentContainer.ContainerName, operation.Payload.Args.RequestDmitem)
 		if err != nil {
 			log.Log.Panicf("ContainerItemByName err:%v", err)
 		}
 		if isExist {
-			return errors.ErrSubRealmHasExist
+			return nil, errors.ErrSubRealmHasExist
 		}
-		if !m.verifyRuleAndMerkle(operation, height) {
-			return errors.ErrInvalidMerkleVerify
+		if !m.verifyRuleAndMerkle(operation) {
+			return nil, errors.ErrInvalidMerkleVerify
 		}
-		entity = &postsql.UTXONftInfo{
+		newUTXONftInfo = &postsql.UTXONftInfo{
 			UserPk:                     userPk,
 			ContainerName:              parentContainer.ContainerName,
 			Dmitem:                     operation.Payload.Args.RequestDmitem,
@@ -187,9 +176,6 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 			AtomicalsID:                operation.AtomicalsID,
 			LocationID:                 operation.LocationID,
 		}
-		if err := m.InsertNftUTXO(entity); err != nil {
-			log.Log.Panicf("InsertNftUTXO err:%v", err)
-		}
 	}
-	return nil
+	return newUTXONftInfo, nil
 }

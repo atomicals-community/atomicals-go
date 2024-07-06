@@ -11,6 +11,12 @@ type (
 	RespAssetByUserPK {
 		Assets []*UTXONftInfo `json:"assets"`
 	}
+	ReqCheckTx {
+		Txid string `json:"tx_id"`
+	}
+	RespCheckTx {
+		Description string `json:"description"`
+	}
 )
 
 service main-api {
@@ -19,6 +25,9 @@ service main-api {
 
 	@handler getAssetByUserPkHandler
 	get /api/v1/getAssetByUserPk (ReqAssetByUserPK) returns (RespAssetByUserPK)
+
+	@handler checkTx
+	get /api/v1/checkTx (ReqCheckTx) returns (RespCheckTx)
 }
 
 type UTXONftInfo {

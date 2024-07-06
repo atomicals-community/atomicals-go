@@ -9,7 +9,7 @@ import (
 
 type DB interface {
 	// location
-	CurrentLocation() (*postsql.Location, error)
+	Location() (*postsql.Location, error)
 	ExecAllSql(location *postsql.Location) error
 
 	// nft read
@@ -23,16 +23,17 @@ type DB interface {
 	ContainerItemByNameHasExist(container, item string) (bool, error)
 	// nft write
 	InsertNftUTXO(UTXO *postsql.UTXONftInfo) error
-	TransferNftUTXO(oldLocationID, newLocationID, newUserPk string) error
+	UpdateNftUTXO(UTXO *postsql.UTXONftInfo) error
 
 	// ft read
+	FtUTXOsByUserPK(UserPK string) ([]*postsql.UTXOFtInfo, error)
 	FtUTXOsByLocationID(locationID string) ([]*postsql.UTXOFtInfo, error)
 	DistributedFtByName(tickerName string) (*postsql.GlobalDistributedFt, error)
 	// ft write
 	InsertFtUTXO(UTXO *postsql.UTXOFtInfo) error
 	DeleteFtUTXO(locationID string) error
 	InsertDistributedFt(ft *postsql.GlobalDistributedFt) error
-	UpdateDistributedFtAmount(tickerName string, mintTimes int64) error
+	UpdateDistributedFt(ft *postsql.GlobalDistributedFt) error
 	InsertDirectFtUTXO(entity *postsql.GlobalDirectFt) error
 
 	// mod

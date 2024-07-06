@@ -11,7 +11,7 @@ import (
 	"github.com/btcsuite/btcd/btcjson"
 )
 
-func (m *Atomicals) transferNft(operation *witness.WitnessAtomicalsOperation, tx *btcjson.TxRawResult) error {
+func (m *Atomicals) transferNft(operation *witness.WitnessAtomicalsOperation, tx btcjson.TxRawResult) (updateNfts []*postsql.UTXONftInfo, err error) {
 	if operation.IsSplatOperation() { // calculate_nft_atomicals_splat
 		atomicalsNfts := make([]*postsql.UTXONftInfo, 0)
 		for _, vin := range tx.Vin {
@@ -43,11 +43,9 @@ func (m *Atomicals) transferNft(operation *witness.WitnessAtomicalsOperation, tx
 				utils.IsUnspendableLegacy(scriptPubKeyBytes) {
 				outputIndex = int64(0)
 			}
-			newUserPk := tx.Vout[outputIndex].ScriptPubKey.Address
-			newLocationID := utils.AtomicalsID(tx.Txid, outputIndex)
-			if err := m.TransferNftUTXO(nft.LocationID, newLocationID, newUserPk); err != nil {
-				log.Log.Panicf("TransferNftUTXO err:%v", err)
-			}
+			nft.LocationID = utils.AtomicalsID(tx.Txid, outputIndex)
+			nft.UserPk = tx.Vout[outputIndex].ScriptPubKey.Address
+			updateNfts = append(updateNfts, nft)
 			expectedOutputIndexIncrementing += 1
 		}
 	} else { // build_nft_input_idx_to_atomical_map && calculate_nft_atomicals_regular
@@ -85,11 +83,9 @@ func (m *Atomicals) transferNft(operation *witness.WitnessAtomicalsOperation, tx
 					expectedOutputIndex = int64(0)
 				}
 				for _, nft := range nfts {
-					newUserPk := tx.Vout[expectedOutputIndex].ScriptPubKey.Address
-					newLocationID := utils.AtomicalsID(tx.Txid, expectedOutputIndex)
-					if err := m.TransferNftUTXO(nft.LocationID, newLocationID, newUserPk); err != nil {
-						log.Log.Panicf("TransferNftUTXO err:%v", err)
-					}
+					nft.LocationID = utils.AtomicalsID(tx.Txid, expectedOutputIndex)
+					nft.UserPk = tx.Vout[expectedOutputIndex].ScriptPubKey.Address
+					updateNfts = append(updateNfts, nft)
 				}
 				if foundAtomicalAtInput {
 					nextOutputIdx++
@@ -127,14 +123,12 @@ func (m *Atomicals) transferNft(operation *witness.WitnessAtomicalsOperation, tx
 					expectedOutputIndex = int64(0)
 				}
 				for _, nft := range preNfts {
-					newUserPk := tx.Vout[expectedOutputIndex].ScriptPubKey.Address
-					newLocationID := utils.AtomicalsID(tx.Txid, expectedOutputIndex)
-					if err := m.TransferNftUTXO(nft.LocationID, newLocationID, newUserPk); err != nil {
-						log.Log.Panicf("TransferNftUTXO err:%v", err)
-					}
+					nft.LocationID = utils.AtomicalsID(tx.Txid, expectedOutputIndex)
+					nft.UserPk = tx.Vout[expectedOutputIndex].ScriptPubKey.Address
+					updateNfts = append(updateNfts, nft)
 				}
 			}
 		}
 	}
-	return nil
+	return updateNfts, nil
 }

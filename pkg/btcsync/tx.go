@@ -21,8 +21,24 @@ func (m *BtcSync) GetTxHeightByTxID(txID string) (int64, error) {
 	return blockInfo.Height, nil
 }
 
-func (m *BtcSync) GetTransaction(txHash string) (*btcjson.TxRawResult, error) {
-	hash, err := chainhash.NewHashFromStr(txHash)
+func (m *BtcSync) GetTxByTxID(txID string) (*btcjson.TxRawResult, int64, error) {
+	t, err := m.GetTransaction(txID)
+	if err != nil {
+		return nil, -1, err
+	}
+	blockHash, err := chainhash.NewHashFromStr(t.BlockHash)
+	if err != nil {
+		return nil, -1, err
+	}
+	blockInfo, err := m.GetBlockVerboseTx(blockHash)
+	if err != nil {
+		return nil, -1, err
+	}
+	return t, blockInfo.Height, nil
+}
+
+func (m *BtcSync) GetTransaction(txID string) (*btcjson.TxRawResult, error) {
+	hash, err := chainhash.NewHashFromStr(txID)
 	if err != nil {
 		return nil, err
 	}

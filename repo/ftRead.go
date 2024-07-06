@@ -6,6 +6,18 @@ import (
 	"github.com/atomicals-go/repo/postsql"
 )
 
+func (m *Postgres) FtUTXOsByUserPK(UserPK string) ([]*postsql.UTXOFtInfo, error) {
+	var entity []*postsql.UTXOFtInfo
+	dbTx := m.Model(postsql.UTXOFtInfo{}).Where("user_pk = ?", UserPK).Find(&entity)
+	if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {
+		return nil, dbTx.Error
+	}
+	// if dbTx.RowsAffected == 0 {
+	// 	return nil, nil
+	// }
+	return entity, nil
+}
+
 func (m *Postgres) FtUTXOsByLocationID(locationID string) ([]*postsql.UTXOFtInfo, error) {
 	if !m.testFtLocationID(locationID) {
 		return nil, nil

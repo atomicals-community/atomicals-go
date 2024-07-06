@@ -13,6 +13,7 @@ import (
 )
 
 var configFile = flag.String("f", "etc/main-api.yaml", "the config file")
+var atomicalsConfigFilePath = "./conf/config.json"
 
 func main() {
 	flag.Parse()
@@ -23,7 +24,7 @@ func main() {
 	server := rest.MustNewServer(c.RestConf)
 	defer server.Stop()
 
-	ctx := svc.NewServiceContext(c)
+	ctx := svc.NewServiceContext(c, atomicalsConfigFilePath)
 	handler.RegisterHandlers(server, ctx)
 
 	fmt.Printf("Starting server at %s:%d...\n", c.Host, c.Port)

@@ -20,9 +20,9 @@ func (m *Postgres) DeleteFtUTXO(locationID string) error {
 	return nil
 }
 
-func (m *Postgres) UpdateDistributedFtAmount(tickerName string, mintTimes int64) error {
+func (m *Postgres) UpdateDistributedFt(entity *postsql.GlobalDistributedFt) error {
 	m.SQLRaw += m.ToSQL(func(tx *gorm.DB) *gorm.DB {
-		return tx.Model(postsql.GlobalDistributedFt{}).Where("ticker_name = ?", tickerName).Update("minted_times", mintTimes)
+		return tx.Model(postsql.GlobalDistributedFt{}).Where("ticker_name = ?", entity.TickerName).Updates(map[string]interface{}{"minted_times": entity.MintedTimes})
 	}) + ";"
 	return nil
 }

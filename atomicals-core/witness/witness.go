@@ -25,7 +25,7 @@ type WitnessAtomicalsOperation struct {
 
 // # Parses and detects valid Atomicals protocol operations in a witness script
 // # Stops when it finds the first operation in the first input
-func ParseWitness(tx *btcjson.TxRawResult, height int64) *WitnessAtomicalsOperation {
+func ParseWitness(tx btcjson.TxRawResult, height int64) *WitnessAtomicalsOperation {
 	for vinIndex, vin := range tx.Vin {
 		if !vin.HasWitness() {
 			continue

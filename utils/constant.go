@@ -1,7 +1,14 @@
 package utils
 
+import "github.com/shopspring/decimal"
+
+var (
+	Satoshi     = decimal.NewFromFloat(1e+08)   //1BTC
+	SatoshiSqrt = decimal.NewFromFloat(10000.0) //1BTC
+)
+
 const (
-	Satoshi = float64(100000000) //1BTC
+	SafeBlockHeightInterupt = 3
 )
 
 const (
@@ -27,5 +34,5 @@ const (
 	ATOMICALS_ACTIVATION_HEIGHT_COMMITZ                    = 822800
 	ATOMICALS_ACTIVATION_HEIGHT_DENSITY                    = 828128
 	ATOMICALS_ACTIVATION_HEIGHT_DFT_BITWORK_ROLLOVER       = 828628
-	AtOMICALS_FT_PARTIAL_SPLITING_HEIGHT                   = 845000 // 845000 is a tmp value, it will be changed depending on the situation
+	ATOMICALS_ACTIVATION_HEIGHT_CUSTOM_COLORING            = 848484
 )

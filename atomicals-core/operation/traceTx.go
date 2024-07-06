@@ -1,7 +1,6 @@
 package atomicals
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/atomicals-go/atomicals-core/witness"
@@ -12,66 +11,139 @@ import (
 )
 
 func (m *Atomicals) Run() {
-	location, err := m.CurrentLocation()
+	location, err := m.Location()
 	if err != nil {
-		log.Log.Panicf("CurrentLocation err:%v", err)
+		log.Log.Panicf("Location err:%v", err)
 	}
-	tx := &btcjson.TxRawResult{}
-	location.BlockHeight, location.TxIndex, tx = m.GetTxByHeightAndIndex(location.BlockHeight, location.TxIndex+1)
-	m.traceTx(tx, location)
-
-	if location.TxIndex == 0 {
-		log.Log.Infof("height:%v, time:%v", location.BlockHeight, time.Since(m.startTime))
-		m.startTime = time.Now()
+	maxBlockHeight, err := m.GetBlockCount()
+	if err != nil {
+		log.Log.Panicf("GetBlockCount err:%v", err)
+	}
+	if location.BlockHeight+utils.SafeBlockHeightInterupt > maxBlockHeight {
+		time.Sleep(10 * time.Minute)
+	}
+	if err := m.TraceBlock(location.BlockHeight, location.TxIndex); err != nil {
+		return
 	}
 }
+func (m *Atomicals) TraceBlock(height, txIndex int64) error {
+	startTime := time.Now()
 
-func (m *Atomicals) traceTx(tx *btcjson.TxRawResult, location *postsql.Location) error {
-	operation := witness.ParseWitness(tx, location.BlockHeight)
+	block, err := m.GetBlockByHeight(height)
+	if err != nil {
+		return err
+	}
+	if txIndex+1 >= int64(len(block.Tx)) {
+		height++
+		txIndex = 0
+		block, err = m.GetBlockByHeight(height)
+		if err != nil {
+			return err
+		}
+	}
+	for index := int64(txIndex + 1); index < int64(len(block.Tx)); index++ {
+		tx := block.Tx[index]
+		// parse this tx
+		mod, deleteFts, newFts, updateNfts, newUTXOFtInfo,
+			updateDistributedFt, newGlobalDistributedFt, newGlobalDirectFt, newUTXONftInfo := m.TraceTx(tx, block.Height)
+
+		// update db if needed
+		if mod != nil {
+			m.InsertMod(mod)
+		}
+		for _, v := range deleteFts {
+			if err := m.DeleteFtUTXO(v.LocationID); err != nil {
+				log.Log.Panicf("DeleteFtUTXO err:%v", err)
+			}
+		}
+		for _, v := range newFts {
+			if err := m.InsertFtUTXO(v); err != nil {
+				log.Log.Panicf("InsertFtUTXO err:%v", err)
+			}
+		}
+		for _, v := range updateNfts {
+			if err := m.UpdateNftUTXO(v); err != nil {
+				log.Log.Panicf("UpdateNftUTXO err:%v", err)
+			}
+		}
+		if newUTXOFtInfo != nil {
+			if err := m.InsertFtUTXO(newUTXOFtInfo); err != nil {
+				log.Log.Panicf("InsertFtUTXO err:%v", err)
+			}
+		}
+		if updateDistributedFt != nil {
+			if err := m.UpdateDistributedFt(updateDistributedFt); err != nil {
+				log.Log.Panicf("UpdateDistributedFtAmount err:%v", err)
+			}
+		}
+		if newGlobalDistributedFt != nil {
+			if err := m.InsertDistributedFt(newGlobalDistributedFt); err != nil {
+				log.Log.Panicf("InsertDistributedFt err:%v", err)
+			}
+		}
+		if newGlobalDirectFt != nil {
+			if err := m.InsertDirectFtUTXO(newGlobalDirectFt); err != nil {
+				log.Log.Panicf("InsertDirectFtUTXO err:%v", err)
+			}
+		}
+		if newUTXONftInfo != nil {
+			if err := m.InsertNftUTXO(newUTXONftInfo); err != nil {
+				log.Log.Panicf("InsertNftUTXO err:%v", err)
+			}
+		}
+
+		// we don't need save all height-txid in db
+		if index == 0 {
+			m.DeleteBtcTxUntil(block.Height - utils.MINT_GENERAL_COMMIT_REVEAL_DELAY_BLOCKS)
+		}
+		if err := m.ExecAllSql(&postsql.Location{
+			BlockHeight: block.Height,
+			TxIndex:     index,
+			Txid:        tx.Txid,
+		}); err != nil {
+			log.Log.Panicf("ExecAllSql err:%v", err)
+		}
+	}
+	log.Log.Infof("height:%v, time:%v", block.Height, time.Since(startTime))
+	return nil
+}
+
+func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) (
+	mod *postsql.ModInfo,
+	deleteFts []*postsql.UTXOFtInfo, newFts []*postsql.UTXOFtInfo,
+	updateNfts []*postsql.UTXONftInfo,
+	newUTXOFtInfo *postsql.UTXOFtInfo, updateDistributedFt *postsql.GlobalDistributedFt,
+	newGlobalDistributedFt *postsql.GlobalDistributedFt,
+	newGlobalDirectFt *postsql.GlobalDirectFt,
+	newUTXONftInfo *postsql.UTXONftInfo,
+) {
+	operation := witness.ParseWitness(tx, height)
 
 	// step 1: insert mod
-	if operation.Op == "mod" && len(tx.Vin) != 0 {
-		vin := tx.Vin[0]
-		preNftLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
-		preNfts, err := m.NftUTXOsByLocationID(preNftLocationID)
-		if err != nil {
-			log.Log.Panicf("NftUTXOsByLocationID err:%v", err)
-		}
-		if len(preNfts) != 0 {
-			r, err := json.Marshal(operation.Payload.Dmint)
-			if err != nil {
-				log.Log.Panicf("Marshal err:%v", err)
-			}
-			m.InsertMod(&postsql.ModInfo{
-				Height:      location.BlockHeight,
-				AtomicalsID: preNfts[0].AtomicalsID,
-				LocationID:  preNfts[0].LocationID,
-				Mod:         string(r),
-				ModStr:      operation.PayloadStr,
-			})
-		}
+	if operation.Op == "mod" {
+		mod = m.operationMod(operation, tx)
 	}
 
 	// step 2: transfer nft, transfer ft
-	if location.BlockHeight < utils.AtOMICALS_FT_PARTIAL_SPLITING_HEIGHT {
-		m.transferFt(operation, tx)
+	if height < utils.ATOMICALS_ACTIVATION_HEIGHT_CUSTOM_COLORING {
+		deleteFts, newFts, _ = m.transferFt(operation, tx)
 	} else {
-		m.transferFtPartialColour(operation, tx)
+		// deleteFts, newFts, _ = m.transferFtPartialColour(operation, tx)
 	}
-	m.transferNft(operation, tx)
+	updateNfts, _ = m.transferNft(operation, tx)
 
 	// step 3: process operation
 	userPk := tx.Vout[utils.VOUT_EXPECT_OUTPUT_INDEX].ScriptPubKey.Address
 	if operation.Op == "dmt" {
-		m.mintDistributedFt(operation, tx.Vout, userPk)
+		newUTXOFtInfo, updateDistributedFt, _ = m.mintDistributedFt(operation, tx.Vout, userPk)
 	} else {
 		switch operation.Op {
 		case "dft":
-			m.deployDistributedFt(operation, userPk)
+			newGlobalDistributedFt, _ = m.deployDistributedFt(operation, userPk)
 		case "ft":
-			m.mintDirectFt(operation, tx.Vout, userPk)
+			newGlobalDirectFt, _ = m.mintDirectFt(operation, tx.Vout, userPk)
 		case "nft":
-			m.mintNft(operation, userPk, location.BlockHeight)
+			newUTXONftInfo, _ = m.mintNft(operation, userPk)
 		case "evt":
 		case "dat":
 		case "sl":
@@ -81,32 +153,11 @@ func (m *Atomicals) traceTx(tx *btcjson.TxRawResult, location *postsql.Location)
 
 	// step 4 check payment
 
-	// step 5: exec sql
-	// delete useless btctx
-	if location.TxIndex == 0 {
-		m.DeleteBtcTxUntil(location.BlockHeight - utils.MINT_GENERAL_COMMIT_REVEAL_DELAY_BLOCKS)
-	}
-	if err := m.ExecAllSql(&postsql.Location{
-		BlockHeight: location.BlockHeight,
-		TxIndex:     location.TxIndex,
-		Txid:        tx.Txid,
-	}); err != nil {
-		log.Log.Panicf("ExecAllSql err:%v", err)
-	}
-	return nil
-}
-
-func (m *Atomicals) TraceSpecificTx() {
-	// height := int64(812547)
-	// index := int64(5)
-	// for {
-	// 	tx := &btcjson.TxRawResult{}
-	// 	height, index, tx = m.GetTxByHeightAndIndex(height, index)
-	// 	log.Log.Infof("height: %v txIndex: %v Txid: %v", height, index, tx.Txid)
-	// 	if tx.Txid == "4211d0c9b069f1c9624b9616c6ea0c0c548d8beceede393c938d09eb4e971a47" {
-	// 		witness.ParseWitness(tx, height)
-	// 		panic("")
-	// 	}
-	// 	index += 1
-	// }
+	return mod,
+		deleteFts, newFts,
+		updateNfts,
+		newUTXOFtInfo, updateDistributedFt,
+		newGlobalDistributedFt,
+		newGlobalDirectFt,
+		newUTXONftInfo
 }

@@ -9,16 +9,26 @@ type ReqAssetByUserPK struct {
 	UserPK string `json:"user_pk"`
 }
 
+type ReqCheckTx struct {
+	LocationID string `json:"location_id"`
+}
+
 type RespAssetByLocationID struct {
 	Assets []*UTXONftInfo `json:"assets"`
 }
 
 type RespAssetByUserPK struct {
-	Assets []*UTXONftInfo `json:"assets"`
+	NftAssets []*UTXONftInfo `json:"nft_assets"`
+	FtAssets []*UTXOFtInfo `json:"ft_assets"`
+}
+
+type RespCheckTx struct {
+	Description string `json:"description"`
+	Status string `json:"status"`
 }
 
 type UTXONftInfo struct {
-	UserPk                     string
+	UserPk                     string `json:"user_pk"`
 	AtomicalsID                string `json:"atomicals_id"`
 	LocationID                 string `json:"location_id"`
 	RealmName                  string `json:"realm_name"`
@@ -32,3 +42,31 @@ type UTXONftInfo struct {
 	Bitworkc                   string `json:"bitworkc"`
 	Bitworkr                   string `json:"bitworkr"`
 }
+
+type UTXOFtInfo struct {
+	UserPk                     string `json:"user_pk"`
+	AtomicalsID                string `json:"atomicals_id"`
+	LocationID                 string `json:"location_id"`
+
+	Bitworkc                   string `json:"bitworkc"`
+	Bitworkr                   string `json:"bitworkr"`
+
+	// DistributedFt
+	MintTicker      string `json:"mint_ticker"`
+	Nonce                      int64  `json:"nonce"`
+	Time                       int64  `json:"time"`
+	MintBitworkVec  string `json:"mint_bitwork_vec"`
+	MintBitworkcInc string `json:"mint_bitworkc_inc"`
+	MintBitworkrInc string `json:"mint_bitwork_rinc"`
+	Amount          int64    `json:"amount"`
+
+	// DirectFt
+	Type       string  `json:"type"`
+	Subtype    string  `json:"sub_type"`
+	TickerName string  `json:"ticker_name"`
+	MaxSupply  int64  `json:"max_supply"`
+	MintAmount int64  `json:"mint_amount"`
+	MintHeight int64  `json:"mint_height"`
+	MaxMints   int64  `json:"max_mints"`
+}
+
