@@ -34,11 +34,13 @@ func (m *BtcSync) BlockByHeight(blockHeight int64) *btcjson.GetBlockVerboseTxRes
 func (m *BtcSync) FetchBlocks() error {
 	for height := range m.blockHeightChannel {
 		// set block cache
-		block, err := m.GetBlockByHeight(height)
-		if err != nil {
-			continue
+		for {
+			block, err := m.GetBlockByHeight(height)
+			if err == nil {
+				m.blockCache.Store(height, block)
+				break
+			}
 		}
-		m.blockCache.Store(height, block)
 	}
 	return nil
 }

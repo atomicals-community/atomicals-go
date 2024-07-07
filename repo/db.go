@@ -66,7 +66,7 @@ func (m *Postgres) InsertBtcTx(btcTx *postsql.BtcTx) error {
 
 func (m *Postgres) DeleteBtcTxUntil(blockHeight int64) error {
 	m.SQLRaw += m.ToSQL(func(tx *gorm.DB) *gorm.DB {
-		return tx.Model(postsql.BtcTx{}).Unscoped().Where("block_height < ? and operation = ?", blockHeight, "").Delete(&postsql.UTXOFtInfo{})
+		return tx.Model(postsql.BtcTx{}).Unscoped().Where("block_height = ? and operation = ?", blockHeight, "").Delete(&postsql.UTXOFtInfo{})
 	}) + ";"
 	return nil
 }

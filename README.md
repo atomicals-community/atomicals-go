@@ -19,15 +19,27 @@
 - 适应btc链分叉：无需担心btc链分叉的影响，保证通过atomicals-go查到的atomicals永远是最新的正确的，并且包括最新区块
 - 支持查询mempool中的交易：即使某笔交易还没有被打包，只要你运行的btc节点可以查询到mempool中的交易，你就可以通过接口查看这笔atomicals交易包含的资产详情
 
-## Performance
+#### Performance
 - atomicals-core will spend 2.5s per block. if currentBlockHeight=834773, it will take about 20 hours to sync all btc blocks
 - 同步耗时平均2～4s/block，一天左右可以同步完成
+
+#### code counter
+
+| language | files | code | comment | blank | total |
+| :--- | ---: | ---: | ---: | ---: | ---: |
+| go | 70 | 4,268 | 198 | 520 | 4,986 |
+
+- 整个项目只有4k多行，我比较满意了，但是还存在很多冗余代码，有优化的空间
+- 函数，变量和文件命名还存在不规范的地方，有可能我一开始随便写了个名字，后面习惯了也就意识不到哪里命名不够见名知意了
+- 存在不够直接易懂的函数逻辑，和以上同因，如果你觉得哪里读起来太绕，麻烦提issue或者pr帮我纠正
+
 
 #### TODO:
 - 我发现payment没有什么用，所以atomicals-go没有保存任何payment信息，如果有必要，希望有人来完成它
 - 为api-service服务提供更多必要的http接口, 由于我个人用不到任何http接口，所以不清楚那些接口是必要的，只提供了几个作为示例：getassetbyuserpk getassetbylocationid
 - checktx接口很重要，它是保证atomicals-go避免btc分叉影响的核心，它能够同步安全区块间隔以上的交易和mempool中的交易，但是其返回值格式化不彻底。希望有人来规范它；同样的原因，我不清楚atomicals的其他项目需要什么样的参数，大家可以定制不同的返回结构体，提交pr
 - http接口中应该加入必要的缓存
+
 
 ## How to run atomicals-go
 1. run a local btc node
@@ -94,6 +106,5 @@ go run ./
 // start atomicals-api service if you need
 cd atomicals-api
 go run ./
-
 
 
