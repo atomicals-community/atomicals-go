@@ -95,20 +95,20 @@ download atomicals-core
 }
 ```
 ``` 
-// cd to atomicals-core path
+// cd to atomicals-go path
 go mod tidy
 
 // init sql table
-cd repo/postsql/init
+cd repo/postsql/init/
 go run ./
 
 // start indexer
-cd atomicals-core
+cd atomicals-indexer/
 go run ./  
 // or run it with nohup: nohup go run ./ > log.txt 2>&1 &
 ``` 
 // start atomicals-api service if you need
+```
 cd atomicals-api
 go run ./
-
-
+```

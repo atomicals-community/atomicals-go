@@ -1,6 +1,7 @@
 package witness
 
 import (
+	pythonparse "github.com/atomicals-go/atomicals-indexer/atomicals-core/witness/python-parse"
 	"github.com/atomicals-go/utils"
 
 	"github.com/btcsuite/btcd/btcjson"
@@ -36,17 +37,9 @@ func ParseWitness(tx btcjson.TxRawResult, height int64) *WitnessAtomicalsOperati
 				continue
 			}
 			var payloadStr string
-			// if op == "mod" {
-			// 	payloadStr = pythonparse.ParseAtomicalsOperation(script)
-			// } else if op == "nft" && payload.Args.RequestContainer != "" {
-			// 	payloadStr = pythonparse.ParseAtomicalsOperation(script)
-			// } else if op == "nft" && payload.Args.RequestDmitem != "" {
-			// 	payloadStr = pythonparse.ParseAtomicalsOperation(script)
-			// } else if op == "x" {
-			// 	payloadStr = pythonparse.ParseAtomicalsOperation(script)
-			// } else if op == "y" {
-			// 	payloadStr = pythonparse.ParseAtomicalsOperation(script)
-			// }
+			if op == "mod" {
+				payloadStr = pythonparse.ParseAtomicalsOperation(script)
+			}
 			return &WitnessAtomicalsOperation{
 				Op:              op,
 				Payload:         payload,

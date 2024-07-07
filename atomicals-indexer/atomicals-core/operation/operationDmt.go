@@ -108,7 +108,7 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 		Bitworkc:    operation.Payload.Args.Bitworkc,
 		Bitworkr:    operation.Payload.Args.Bitworkr,
 		Amount:      amount,
-		AtomicalsID: operation.AtomicalsID,
+		AtomicalsID: updateDistributedFt.AtomicalsID,
 		LocationID:  operation.LocationID,
 	}
 	updateDistributedFt.MintedTimes = updateDistributedFt.MintedTimes + 1
