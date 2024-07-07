@@ -33,6 +33,10 @@
 - 函数，变量和文件命名还存在不规范的地方，有可能我一开始随便写了个名字，后面习惯了也就意识不到哪里命名不够见名知意了
 - 存在不够直接易懂的函数逻辑，和以上同因，如果你觉得哪里读起来太绕，麻烦提issue或者pr帮我纠正
 
+#### framework
+![image](https://github.com/atomicals-community/atomicals-go/blob/main/doc/pic/atomicals-go-framework.png)
+
+
 
 #### TODO:
 - 我发现payment没有什么用，所以atomicals-go没有保存任何payment信息，如果有必要，希望有人来完成它
