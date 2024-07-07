@@ -3,7 +3,7 @@ package atomicals
 import (
 	"strconv"
 
-	"github.com/atomicals-go/atomicals-core/witness"
+	"github.com/atomicals-go/atomicals-indexer/atomicals-core/witness"
 	"github.com/atomicals-go/pkg/errors"
 	"github.com/atomicals-go/pkg/log"
 	"github.com/atomicals-go/repo/postsql"

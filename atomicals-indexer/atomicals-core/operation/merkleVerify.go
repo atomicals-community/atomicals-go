@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/atomicals-go/atomicals-core/witness"
+	"github.com/atomicals-go/atomicals-indexer/atomicals-core/witness"
 	"github.com/atomicals-go/pkg/merkle"
 	"github.com/atomicals-go/utils"
 )

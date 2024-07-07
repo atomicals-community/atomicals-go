@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"sort"
 
-	"github.com/atomicals-go/atomicals-core/witness"
+	"github.com/atomicals-go/atomicals-indexer/atomicals-core/witness"
 	"github.com/atomicals-go/pkg/log"
 	"github.com/atomicals-go/repo/postsql"
 	"github.com/atomicals-go/utils"

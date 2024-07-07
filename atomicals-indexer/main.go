@@ -5,7 +5,7 @@ import (
 	"net"
 	"os"
 
-	atomicals "github.com/atomicals-go/atomicals-core/operation"
+	atomicals "github.com/atomicals-go/atomicals-indexer/atomicals-core/operation"
 	"github.com/atomicals-go/pkg/conf"
 )
 
