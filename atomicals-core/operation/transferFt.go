@@ -105,7 +105,6 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 		}
 
 		// calculate_outputs_to_color_for_ft_atomical_ids
-		nonCleanOutputSlots := false
 		voutRemainingSpace := make([]int64, len(tx.Vout))
 		for i, vout := range tx.Vout {
 			voutRemainingSpace[i] = utils.MulSatoshi(vout.Value)
@@ -174,15 +173,6 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 				}
 			}
 		}
-		// # If the output slots did not fit cleanly, then default to just assigning everything from the 0'th output index
-		if nonCleanOutputSlots {
-			newFts = make([]*postsql.UTXOFtInfo, 0)
-			for _, ft := range deleteFts {
-				newFt := postsql.UTXOFtInfo{}
-				_, _, fts, _, _ := assignExpectedOutputsBasic(ft, newFt, operation, tx, 0, voutRemainingSpace)
-				newFts = append(newFts, &fts)
-			}
-		}
 	}
 	if tx.Txid == "ec4d4c0b24196f838e059927c84b42b87d91dc63a9692392bdfe8c78b89702e9" {
 		log.Log.Infof("Txid:%v", tx.Txid)
@@ -195,10 +185,4 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 		log.Log.Infof("Txid:%v", tx.Txid)
 	}
 	return deleteFts, newFts, nil
-}
-
-// assign_expected_outputs_basic
-func assignExpectedOutputsBasic(ft *postsql.UTXOFtInfo, newFt postsql.UTXOFtInfo, operation *witness.WitnessAtomicalsOperation, tx btcjson.TxRawResult, startOutIdx int64, voutRemainingSpace []int64) (bool, int64, postsql.UTXOFtInfo, []int64, error) {
-
-	return false, -1, postsql.UTXOFtInfo{}, voutRemainingSpace, nil
 }

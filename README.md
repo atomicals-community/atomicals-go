@@ -23,6 +23,12 @@
 - atomicals-core will spend 2.5s per block. if currentBlockHeight=834773, it will take about 20 hours to sync all btc blocks
 - 同步耗时平均2～4s/block，一天左右可以同步完成
 
+#### TODO:
+- 我发现payment没有什么用，所以atomicals-go没有保存任何payment信息，如果有必要，希望有人来完成它
+- 为api-service服务提供更多必要的http接口, 由于我个人用不到任何http接口，所以不清楚那些接口是必要的，只提供了几个作为示例：getassetbyuserpk getassetbylocationid
+- checktx接口很重要，它是保证atomicals-go避免btc分叉影响的核心，它能够同步安全区块间隔以上的交易和mempool中的交易，但是其返回值格式化不彻底。希望有人来规范它；同样的原因，我不清楚atomicals的其他项目需要什么样的参数，大家可以定制不同的返回结构体，提交pr
+- http接口中应该加入必要的缓存
+
 ## How to run atomicals-go
 1. run a local btc node
 ```
@@ -89,7 +95,5 @@ go run ./
 cd atomicals-api
 go run ./
 
-#### TODO:
-- 我发现payment没有什么用，所以atomicals-go没有保存任何payment信息，如果有必要，希望有人来完成它
-- 为api-service服务提供更多必要的http接口
+
 

@@ -10,7 +10,7 @@ import (
 type DB interface {
 	// location
 	Location() (*postsql.Location, error)
-	ExecAllSql(location *postsql.Location) error
+	ExecAllSql(blockHeight, txIndex int64, txID, operation string) error
 
 	// nft read
 	NftUTXOsByUserPK(UserPK string) ([]*postsql.UTXONftInfo, error)

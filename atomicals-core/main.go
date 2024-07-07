@@ -27,5 +27,4 @@ func main() {
 		a.Run()
 	}
 
-	// a.TraceSpecificTx()
 }

@@ -10,7 +10,7 @@ type ReqAssetByUserPK struct {
 }
 
 type ReqCheckTx struct {
-	LocationID string `json:"location_id"`
+	Txid string `json:"tx_id"`
 }
 
 type RespAssetByLocationID struct {
@@ -23,6 +23,7 @@ type RespAssetByUserPK struct {
 }
 
 type RespCheckTx struct {
+	Operation string `json:"operation"`
 	Description string `json:"description"`
 	Status string `json:"status"`
 }

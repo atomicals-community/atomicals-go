@@ -2,12 +2,11 @@ package logic
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 
 	"github.com/atomicals-go/atomicals-api/internal/svc"
 	"github.com/atomicals-go/atomicals-api/internal/types"
 	"github.com/atomicals-go/repo/postsql"
-	"github.com/atomicals-go/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,52 +26,35 @@ func NewCheckTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *CheckTxLo
 }
 
 func (l *CheckTxLogic) CheckTx(req *types.ReqCheckTx) (resp *types.RespCheckTx, err error) {
-	txID, _ := utils.SplitAtomicalsID(req.LocationID)
-	tx, height, err := l.svcCtx.GetTxByTxID(txID)
+	tx, height, err := l.svcCtx.GetTxByTxID(req.Txid)
 	if err != nil {
 		l.Errorf("[CheckTx] GetTxByTxID err:%v", err)
 		return
 	}
-	if height <= l.svcCtx.SyncHeight {
+	if 0 <= height && height <= l.svcCtx.SyncHeight {
 		resp.Status = "confirmed"
-		var nftAssets []*postsql.UTXONftInfo
-		nftAssets, err = l.svcCtx.NftUTXOsByLocationID(req.LocationID)
+		txRecord := &postsql.BtcTx{}
+		txRecord, err = l.svcCtx.BtcTx(req.Txid)
 		if err != nil {
-			l.Errorf("[CheckTx] NftUTXOsByLocationID err:%v", err)
+			l.Errorf("[CheckTx] BtcTx err:%v", err)
 			return
 		}
-		if len(nftAssets) != 0 {
-			var res []byte
-			res, err = json.Marshal(nftAssets)
-			if err != nil {
-				l.Errorf("[CheckTx] Marshal err:%v", err)
-				return
-			}
-			resp.Description += string(res)
-		}
-		var ftAssets []*postsql.UTXOFtInfo
-		ftAssets, err = l.svcCtx.FtUTXOsByLocationID(req.LocationID)
-		if err != nil {
-			l.Errorf("[CheckTx] NftUTXOsByLocationID err:%v", err)
-			return
-		}
-		if len(ftAssets) != 0 {
-			var res []byte
-			res, err = json.Marshal(ftAssets)
-			if err != nil {
-				l.Errorf("[CheckTx] Marshal err:%v", err)
-				return
-			}
-			resp.Description += string(res)
-		}
+		resp.Operation = txRecord.Operation
+		resp.Description = txRecord.Description
 	} else if l.svcCtx.SyncHeight < height && height < l.svcCtx.MaxBlockHeight {
 		resp.Status = "until confirmation depth"
-		resp.Description += l.svcCtx.PendingAtomicalsAsset.CheckAssetByLocationID(req.LocationID)
-
-	} else if l.svcCtx.MaxBlockHeight < height {
+		pendingAssets, ok := l.svcCtx.PendingAtomicalsAssetMap[req.Txid]
+		if !ok {
+			l.Errorf("[CheckTx] BtcTx err:%v", errors.New("atomicals operation not found"))
+			return
+		}
+		resp.Description = pendingAssets.CheckAsset()
+		resp.Operation = pendingAssets.Operation
+	} else if height < 0 {
 		resp.Status = "in mempool"
-		p := l.svcCtx.SyncMempoolAtomicalsAsset(*tx, height)
-		resp.Description += p.CheckAssetByLocationID(req.LocationID)
+		pendingAssets := l.svcCtx.SyncMempoolAtomicalsAsset(*tx, height)
+		resp.Description = pendingAssets.CheckAsset()
+		resp.Operation = pendingAssets.Operation
 	}
 	return
 }

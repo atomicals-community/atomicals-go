@@ -13,11 +13,13 @@ type Postgres struct {
 	SQLRaw      string
 }
 
-func (m *Postgres) ExecAllSql(location *postsql.Location) error {
+func (m *Postgres) ExecAllSql(blockHeight, txIndex int64, txID, operation string) error {
 	m.InsertBtcTx(&postsql.BtcTx{
-		BlockHeight: location.BlockHeight,
-		TxIndex:     location.TxIndex,
-		TxID:        location.Txid,
+		BlockHeight: blockHeight,
+		TxIndex:     txIndex,
+		TxID:        txID,
+		Operation:   operation,
+		Description: m.SQLRaw,
 	})
 
 	for name, v := range m.bloomFilter {
@@ -27,7 +29,7 @@ func (m *Postgres) ExecAllSql(location *postsql.Location) error {
 	}
 
 	sql := m.ToSQL(func(tx *gorm.DB) *gorm.DB {
-		return tx.Model(postsql.Location{}).Where("name = ?", "atomicals").Updates(map[string]interface{}{"block_height": location.BlockHeight, "tx_index": location.TxIndex})
+		return tx.Model(postsql.Location{}).Where("name = ?", "atomicals").Updates(map[string]interface{}{"block_height": blockHeight, "tx_index": txIndex})
 	})
 	m.SQLRaw = m.SQLRaw + sql + ";"
 	dbTx := m.Exec(m.SQLRaw)
@@ -64,7 +66,7 @@ func (m *Postgres) InsertBtcTx(btcTx *postsql.BtcTx) error {
 
 func (m *Postgres) DeleteBtcTxUntil(blockHeight int64) error {
 	m.SQLRaw += m.ToSQL(func(tx *gorm.DB) *gorm.DB {
-		return tx.Model(postsql.BtcTx{}).Unscoped().Where("block_height < ?", blockHeight).Delete(&postsql.UTXOFtInfo{})
+		return tx.Model(postsql.BtcTx{}).Unscoped().Where("block_height < ? and operation = ?", blockHeight, "").Delete(&postsql.UTXOFtInfo{})
 	}) + ";"
 	return nil
 }

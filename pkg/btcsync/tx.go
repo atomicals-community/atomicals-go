@@ -26,6 +26,9 @@ func (m *BtcSync) GetTxByTxID(txID string) (*btcjson.TxRawResult, int64, error) 
 	if err != nil {
 		return nil, -1, err
 	}
+	if t.BlockHash == "" {
+		return nil, -1, nil
+	}
 	blockHash, err := chainhash.NewHashFromStr(t.BlockHash)
 	if err != nil {
 		return nil, -1, err
