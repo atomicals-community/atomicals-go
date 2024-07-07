@@ -135,6 +135,7 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) (
 	if height < utils.ATOMICALS_ACTIVATION_HEIGHT_CUSTOM_COLORING {
 		deleteFts, newFts, _ = m.transferFt(operation, tx)
 	} else {
+		panic("~")
 		deleteFts, newFts, _ = m.transferFtPartialColour(operation, tx)
 	}
 	updateNfts, _ = m.transferNft(operation, tx)

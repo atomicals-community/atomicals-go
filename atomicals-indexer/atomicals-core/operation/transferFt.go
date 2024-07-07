@@ -119,7 +119,7 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 			}
 			newFtAmount := int64(0)
 			outputIndex := int64(0)
-			for i, ft := range ftSlice {
+			for _, ft := range ftSlice {
 				for {
 					if outputIndex >= int64(len(tx.Vout)) {
 						break
@@ -135,7 +135,6 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 					}
 					locationID := utils.AtomicalsID(operation.RevealLocationTxID, int64(outputIndex))
 					if voutRemainingSpace[outputIndex] > ft.Amount { // burn rest ft
-						log.Log.Infof("height:%v %v, time:%v", i, voutRemainingSpace[outputIndex], ft.Amount)
 						voutRemainingSpace[outputIndex] = voutRemainingSpace[outputIndex] - ft.Amount
 						newFtAmount += ft.Amount
 						break

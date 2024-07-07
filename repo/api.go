@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
-//go:generate gotests -w -all api.go
+//go:generate mockgen -source api.go -destination api_mock.go -package repo
 type DB interface {
 	// location
 	Location() (*postsql.Location, error)

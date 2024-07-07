@@ -35,6 +35,7 @@ var (
 	ErrCannotBeImmutable            = New(20010, "ErrCannotBeImmutable")
 	ErrInvalidVinIndex              = New(20010, "ErrInvalidVinIndex")
 	ErrInvalidClaimType             = New(20010, "ErrInvalidClaimType")
+	ErrInvalidRule                  = New(20010, "ErrInvalidRule")
 	ErrInvalidDftMd                 = New(20010, "ErrInvalidDftMd")
 	ErrInvalidDftBv                 = New(20010, "ErrInvalidDftBv")
 	ErrInvalidDftMintBitwork        = New(20010, "ErrInvalidDftMintBitwork")
