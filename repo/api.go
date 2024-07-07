@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
+//go:generate gotests -w -all api.go
 type DB interface {
 	// location
 	Location() (*postsql.Location, error)
