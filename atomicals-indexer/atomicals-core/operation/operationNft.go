@@ -89,15 +89,11 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 		if operation.Payload.IsImmutable() {
 			return nil, errors.ErrCannotBeImmutable
 		}
-		if operation.Payload.Args.ClaimType == witness.Direct {
-
-		} else if operation.Payload.Args.ClaimType == witness.Rule {
+		if operation.Payload.Args.ClaimType == witness.Rule {
 			matched_rule := m.get_applicable_rule_by_height(operation.Payload.Args.ParentRealm, operation.Payload.Args.RequestSubRealm)
 			if !m.checkRule(matched_rule, operation.Payload.Args.Bitworkc, operation.Payload.Args.Bitworkr) {
 				return nil, errors.ErrInvalidRule
 			}
-		} else {
-			return nil, errors.ErrInvalidClaimType
 		}
 		newUTXONftInfo = &postsql.UTXONftInfo{
 			UserPk:                 userPk,

@@ -111,6 +111,7 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 				deleteFtMap[ft.AtomicalsID] = append(deleteFtMap[ft.AtomicalsID], ft)
 			}
 		}
+
 		// calculate_outputs_to_color_for_ft_atomical_ids
 		for _, ftSlice := range deleteFtMap {
 			voutRemainingSpace := make([]int64, len(tx.Vout))
@@ -119,7 +120,7 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 			}
 			newFtAmount := int64(0)
 			outputIndex := int64(0)
-			for _, ft := range ftSlice {
+			for i, ft := range ftSlice {
 				for {
 					if outputIndex >= int64(len(tx.Vout)) {
 						break
@@ -137,6 +138,22 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 					if voutRemainingSpace[outputIndex] > ft.Amount { // burn rest ft
 						voutRemainingSpace[outputIndex] = voutRemainingSpace[outputIndex] - ft.Amount
 						newFtAmount += ft.Amount
+						if utils.IsCustomColoring(operation.RevealLocationHeight) && i == (len(ftSlice)-1) {
+							newFts = append(newFts, &postsql.UTXOFtInfo{
+								UserPk:          vout.ScriptPubKey.Address,
+								AtomicalsID:     ft.AtomicalsID,
+								LocationID:      locationID,
+								MintTicker:      ft.MintTicker,
+								Nonce:           ft.Nonce,
+								Time:            ft.Time,
+								Bitworkc:        ft.Bitworkc,
+								Bitworkr:        ft.Bitworkr,
+								MintBitworkVec:  ft.MintBitworkVec,
+								MintBitworkcInc: ft.MintBitworkcInc,
+								MintBitworkrInc: ft.MintBitworkrInc,
+								Amount:          newFtAmount,
+							})
+						}
 						break
 					} else if voutRemainingSpace[outputIndex] == ft.Amount { // burn rest ft
 						voutRemainingSpace[outputIndex] = voutRemainingSpace[outputIndex] - ft.Amount

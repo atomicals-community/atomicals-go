@@ -15,7 +15,7 @@ func (m *Postgres) InsertFtUTXO(UTXO *postsql.UTXOFtInfo) error {
 
 func (m *Postgres) DeleteFtUTXO(locationID string) error {
 	m.SQLRaw += m.ToSQL(func(tx *gorm.DB) *gorm.DB {
-		return tx.Model(postsql.UTXOFtInfo{}).Where("location_id = ?", locationID).Delete(&postsql.UTXOFtInfo{})
+		return tx.Model(postsql.UTXOFtInfo{}).Unscoped().Where("location_id = ?", locationID).Delete(&postsql.UTXOFtInfo{})
 	}) + ";"
 	return nil
 }

@@ -51,6 +51,11 @@ type DB interface {
 	InsertBloomFilter(name string, filter *bloom.BloomFilter) error
 	UpdateBloomFilter(name string, filter *bloom.BloomFilter) error
 	BloomFilter() (map[string]*bloomFilterInfo, error)
+
+	// sync nft/ft asset with locationID
+	AddLocationIDIntoChannel(locationID string)
+	GetNftUTXOFromChannel(locationID string) ([]*postsql.UTXONftInfo, error)
+	GetFtUTXOFromChannel(locationID string) ([]*postsql.UTXOFtInfo, error)
 }
 
 func NewSqlDB(sqlDNS string) DB {
@@ -59,11 +64,13 @@ func NewSqlDB(sqlDNS string) DB {
 		panic(err)
 	}
 	s := &Postgres{
-		DB: DB,
+		DB:                DB,
+		locationIDChannel: make(chan string, 10),
 	}
 	s.bloomFilter, err = s.BloomFilter()
 	if err != nil {
 		panic(err)
 	}
+	go s.fetchUTXO()
 	return s
 }

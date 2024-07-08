@@ -11,7 +11,7 @@ import (
 )
 
 func (m *Atomicals) checkRule(rule *witness.RuleInfo, bitworkc_actual, bitworkr_actual string) bool {
-	if rule != nil {
+	if rule == nil {
 		return false
 	}
 	bitworkc := rule.Bitworkc

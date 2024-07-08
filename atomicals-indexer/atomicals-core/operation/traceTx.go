@@ -124,6 +124,11 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) (
 	newGlobalDirectFt *postsql.GlobalDirectFt,
 	newUTXONftInfo *postsql.UTXONftInfo,
 ) {
+	for _, vin := range tx.Vin {
+		preLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
+		m.AddLocationIDIntoChannel(preLocationID)
+	}
+
 	operation := witness.ParseWitness(tx, height)
 
 	// step 1: insert mod
@@ -132,12 +137,7 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) (
 	}
 
 	// step 2: transfer nft, transfer ft
-	if height < utils.ATOMICALS_ACTIVATION_HEIGHT_CUSTOM_COLORING {
-		deleteFts, newFts, _ = m.transferFt(operation, tx)
-	} else {
-		panic("~")
-		deleteFts, newFts, _ = m.transferFtPartialColour(operation, tx)
-	}
+	deleteFts, newFts, _ = m.transferFt(operation, tx)
 	updateNfts, _ = m.transferNft(operation, tx)
 
 	// step 3: process operation

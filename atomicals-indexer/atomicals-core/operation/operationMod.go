@@ -14,11 +14,14 @@ func (m *Atomicals) operationMod(operation *witness.WitnessAtomicalsOperation, t
 	if operation.Op != "mod" || len(tx.Vin) == 0 {
 		return nil
 	}
-	vin := tx.Vin[0]
-	preNftLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
-	preNfts, err := m.NftUTXOsByLocationID(preNftLocationID)
-	if err != nil {
-		log.Log.Panicf("NftUTXOsByLocationID err:%v", err)
+	var preNfts []*postsql.UTXONftInfo
+	var err error
+	for _, vin := range tx.Vin {
+		preNftLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
+		preNfts, err = m.NftUTXOsByLocationID(preNftLocationID)
+		if err != nil {
+			log.Log.Panicf("NftUTXOsByLocationID err:%v", err)
+		}
 	}
 	if len(preNfts) == 0 {
 		return nil
