@@ -107,6 +107,7 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 		for _, ft := range deleteFts {
 			if _, ok := deleteFtMap[ft.AtomicalsID]; !ok {
 				deleteFtMap[ft.AtomicalsID] = make([]*postsql.UTXOFtInfo, 0)
+				deleteFtMap[ft.AtomicalsID] = append(deleteFtMap[ft.AtomicalsID], ft)
 			} else {
 				deleteFtMap[ft.AtomicalsID] = append(deleteFtMap[ft.AtomicalsID], ft)
 			}

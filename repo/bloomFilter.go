@@ -129,3 +129,43 @@ func (m *Postgres) addFtLocationID(locationID string) {
 func (m *Postgres) testFtLocationID(locationID string) bool {
 	return m.bloomFilter[postsql.FtLocationFilter].filter.Test([]byte(fmt.Sprintf("%v_%v", postsql.TypeDirectFt, locationID)))
 }
+
+func (m *Postgres) InitBloomFilter() {
+	limit := 1000
+	for offset := 0; offset < 17000; offset += limit {
+		nfts, err := m.NftUTXOsByID(offset, limit)
+		if err != nil {
+			panic(err)
+		}
+		for _, nft := range nfts {
+			if nft.RealmName != "" {
+				m.addRealm(nft.RealmName)
+			}
+			if nft.ContainerName != "" {
+				m.addContainer(nft.ContainerName)
+			}
+			m.addNftLocationID(nft.LocationID)
+		}
+	}
+	for offset := 0; offset < 50000; offset += limit {
+		fts, err := m.FtUTXOsByID(offset, limit)
+		if err != nil {
+			panic(err)
+		}
+		for _, ft := range fts {
+			m.addFtLocationID(ft.LocationID)
+		}
+	}
+	for offset := 0; offset < 50000; offset += limit {
+		fts, err := m.DistributedFtByID(offset, limit)
+		if err != nil {
+			panic(err)
+		}
+		for _, ft := range fts {
+			m.addDistributedFt(ft.TickerName)
+		}
+	}
+	for name, v := range m.bloomFilter {
+		m.UpdateBloomFilter(name, v.filter)
+	}
+}

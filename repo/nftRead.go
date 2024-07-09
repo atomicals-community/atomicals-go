@@ -113,3 +113,12 @@ func (m *Postgres) ContainerItemByNameHasExist(containerName, itemID string) (bo
 	}
 	return true, nil
 }
+
+func (m *Postgres) NftUTXOsByID(offset, limit int) ([]*postsql.UTXONftInfo, error) {
+	var entity []*postsql.UTXONftInfo
+	dbTx := m.Model(postsql.UTXONftInfo{}).Order("id").Offset(offset).Limit(limit).Find(&entity)
+	if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {
+		return nil, dbTx.Error
+	}
+	return entity, nil
+}

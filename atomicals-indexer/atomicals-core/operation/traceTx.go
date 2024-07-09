@@ -124,11 +124,6 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) (
 	newGlobalDirectFt *postsql.GlobalDirectFt,
 	newUTXONftInfo *postsql.UTXONftInfo,
 ) {
-	for _, vin := range tx.Vin {
-		preLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
-		m.AddLocationIDIntoChannel(preLocationID)
-	}
-
 	operation := witness.ParseWitness(tx, height)
 
 	// step 1: insert mod

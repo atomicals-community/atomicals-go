@@ -2,7 +2,6 @@ package repo
 
 import (
 	"strings"
-	"sync"
 
 	"github.com/atomicals-go/repo/postsql"
 	"gorm.io/gorm"
@@ -13,10 +12,6 @@ type Postgres struct {
 	SQLRaw string
 
 	bloomFilter map[string]*bloomFilterInfo
-
-	locationIDChannel chan string // locationID
-	ftUTXOMap         sync.Map    // key:locationID
-	nftUTXOMap        sync.Map    // key:locationID
 }
 
 func (m *Postgres) ExecAllSql(blockHeight, txIndex int64, txID, operation string) error {

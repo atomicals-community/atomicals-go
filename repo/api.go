@@ -22,6 +22,8 @@ type DB interface {
 	ParentContainerHasExist(parentContainerAtomicalsID string) (*postsql.UTXONftInfo, error)
 	NftContainerByNameHasExist(containerName string) (bool, error)
 	ContainerItemByNameHasExist(container, item string) (bool, error)
+	NftUTXOsByID(offset, limit int) ([]*postsql.UTXONftInfo, error)
+
 	// nft write
 	InsertNftUTXO(UTXO *postsql.UTXONftInfo) error
 	UpdateNftUTXO(UTXO *postsql.UTXONftInfo) error
@@ -30,6 +32,8 @@ type DB interface {
 	FtUTXOsByUserPK(UserPK string) ([]*postsql.UTXOFtInfo, error)
 	FtUTXOsByLocationID(locationID string) ([]*postsql.UTXOFtInfo, error)
 	DistributedFtByName(tickerName string) (*postsql.GlobalDistributedFt, error)
+	FtUTXOsByID(offset, limit int) ([]*postsql.UTXOFtInfo, error)
+
 	// ft write
 	InsertFtUTXO(UTXO *postsql.UTXOFtInfo) error
 	DeleteFtUTXO(locationID string) error
@@ -51,11 +55,7 @@ type DB interface {
 	InsertBloomFilter(name string, filter *bloom.BloomFilter) error
 	UpdateBloomFilter(name string, filter *bloom.BloomFilter) error
 	BloomFilter() (map[string]*bloomFilterInfo, error)
-
-	// sync nft/ft asset with locationID
-	AddLocationIDIntoChannel(locationID string)
-	GetNftUTXOFromChannel(locationID string) ([]*postsql.UTXONftInfo, error)
-	GetFtUTXOFromChannel(locationID string) ([]*postsql.UTXOFtInfo, error)
+	InitBloomFilter()
 }
 
 func NewSqlDB(sqlDNS string) DB {
@@ -64,13 +64,11 @@ func NewSqlDB(sqlDNS string) DB {
 		panic(err)
 	}
 	s := &Postgres{
-		DB:                DB,
-		locationIDChannel: make(chan string, 10),
+		DB: DB,
 	}
 	s.bloomFilter, err = s.BloomFilter()
 	if err != nil {
 		panic(err)
 	}
-	go s.fetchUTXO()
 	return s
 }
