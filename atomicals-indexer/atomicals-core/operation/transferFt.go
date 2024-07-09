@@ -133,6 +133,7 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 					}
 					if utils.IsUnspendableGenesis(scriptPubKeyBytes) ||
 						utils.IsUnspendableLegacy(scriptPubKeyBytes) {
+						outputIndex = outputIndex + 1
 						continue
 					}
 					locationID := utils.AtomicalsID(operation.RevealLocationTxID, int64(outputIndex))
