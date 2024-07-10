@@ -43,12 +43,14 @@ func (*BloomFilter) Init(db *gorm.DB) {
 	assert.Nil(nil, err)
 	dbTx = db.Save(&BloomFilter{Name: FtFilter, Data: data})
 	assert.Nil(nil, dbTx.Error)
-	filter = bloom.NewWithEstimates(20000, 0.01)
+
+	filter = bloom.NewWithEstimates(40000, 0.01)
 	data, err = filter.MarshalJSON()
 	assert.Nil(nil, err)
 	dbTx = db.Save(&BloomFilter{Name: NftLocationFilter, Data: data})
 	assert.Nil(nil, dbTx.Error)
-	filter = bloom.NewWithEstimates(50000, 0.01)
+
+	filter = bloom.NewWithEstimates(80000, 0.01)
 	data, err = filter.MarshalJSON()
 	assert.Nil(nil, err)
 	dbTx = db.Save(&BloomFilter{Name: FtLocationFilter, Data: data})

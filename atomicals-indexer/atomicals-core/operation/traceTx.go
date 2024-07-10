@@ -11,6 +11,8 @@ import (
 )
 
 func (m *Atomicals) Run() {
+	startTime := time.Now()
+
 	location, err := m.Location()
 	if err != nil {
 		log.Log.Panicf("Location err:%v", err)
@@ -25,10 +27,9 @@ func (m *Atomicals) Run() {
 	if err := m.TraceBlock(location.BlockHeight, location.TxIndex); err != nil {
 		return
 	}
+	log.Log.Infof("maxBlockHeight:%v, currentHeight:%v, time:%v", maxBlockHeight, location.BlockHeight, time.Since(startTime))
 }
 func (m *Atomicals) TraceBlock(height, txIndex int64) error {
-	startTime := time.Now()
-
 	block, err := m.GetBlockByHeight(height)
 	if err != nil {
 		return err
@@ -111,7 +112,6 @@ func (m *Atomicals) TraceBlock(height, txIndex int64) error {
 			log.Log.Panicf("ExecAllSql err:%v", err)
 		}
 	}
-	log.Log.Infof("height:%v, time:%v", block.Height, time.Since(startTime))
 	return nil
 }
 
