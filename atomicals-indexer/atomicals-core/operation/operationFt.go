@@ -3,6 +3,7 @@ package atomicals
 import (
 	"github.com/atomicals-go/atomicals-indexer/atomicals-core/witness"
 	"github.com/atomicals-go/pkg/errors"
+	"github.com/atomicals-go/pkg/log"
 	"github.com/atomicals-go/repo/postsql"
 	"github.com/atomicals-go/utils"
 	"github.com/btcsuite/btcd/btcjson"
@@ -18,6 +19,13 @@ func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, v
 	}
 	if !utils.IsValidTicker(operation.Payload.Args.RequestTicker) {
 		return nil, errors.ErrInvalidTicker
+	}
+	ft, err := m.DirectFtByName(operation.Payload.Args.RequestTicker)
+	if err != nil {
+		log.Log.Panicf("DistributedFtByName err:%v", err)
+	}
+	if ft != nil {
+		return nil, errors.ErrTickerHasExist
 	}
 	if operation.Payload.IsImmutable() {
 		return nil, errors.ErrCannotBeImmutable

@@ -32,6 +32,7 @@ type DB interface {
 	FtUTXOsByUserPK(UserPK string) ([]*postsql.UTXOFtInfo, error)
 	FtUTXOsByLocationID(locationID string) ([]*postsql.UTXOFtInfo, error)
 	DistributedFtByName(tickerName string) (*postsql.GlobalDistributedFt, error)
+	DirectFtByName(tickerName string) (*postsql.GlobalDirectFt, error)
 	FtUTXOsByID(offset, limit int) ([]*postsql.UTXOFtInfo, error)
 
 	// ft write

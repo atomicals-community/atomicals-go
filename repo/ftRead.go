@@ -45,6 +45,18 @@ func (m *Postgres) DistributedFtByName(tickerName string) (*postsql.GlobalDistri
 	return entity, nil
 }
 
+func (m *Postgres) DirectFtByName(tickerName string) (*postsql.GlobalDirectFt, error) {
+	var entity *postsql.GlobalDirectFt
+	dbTx := m.Model(postsql.GlobalDirectFt{}).Where("ticker_name = ?", tickerName).Find(&entity)
+	if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {
+		return nil, dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		return nil, nil
+	}
+	return entity, nil
+}
+
 func (m *Postgres) FtUTXOsByID(offset, limit int) ([]*postsql.UTXOFtInfo, error) {
 	var entity []*postsql.UTXOFtInfo
 	dbTx := m.Model(postsql.UTXOFtInfo{}).Order("id").Offset(offset).Limit(limit).Find(&entity)
