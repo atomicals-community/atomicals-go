@@ -162,7 +162,10 @@ func parseOperationAndPayLoad(script string) (string, *PayLoad, error) {
 			return "", nil, err
 		}
 		if _, ok := tempMap[payload.Args.Main]; ok {
-			payload.Args.DynamicFields[payload.Args.Main] = tempMap[payload.Args.Main].([]byte)
+			_, ok = tempMap[payload.Args.Main].([]byte)
+			if ok {
+				payload.Args.DynamicFields[payload.Args.Main] = tempMap[payload.Args.Main].([]byte)
+			}
 		}
 		// get TotalAmountToSkipPotential
 		if operation == "y" {
