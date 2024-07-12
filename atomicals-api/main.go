@@ -13,7 +13,7 @@ import (
 )
 
 var configFile = flag.String("f", "etc/main-api.yaml", "the config file")
-var atomicalsConfigFilePath = "./conf/config.json"
+var atomicalsConfigFilePath = "etc/config.json"
 
 func main() {
 	flag.Parse()
