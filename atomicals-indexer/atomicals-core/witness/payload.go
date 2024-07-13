@@ -9,11 +9,11 @@ import (
 )
 
 type PayLoad struct {
-	Args      *Args  `cbor:"args"`
-	A         int    `cbor:"$a"`        // for mod
-	Dmint     *Dmint `cbor:"dmint"`     // for mod
-	Subrealms *Dmint `cbor:"subrealms"` // for mod
-	Meta      *Meta  `cbor:"meta"`
+	Args      *Args `cbor:"args"`
+	A         int   `cbor:"$a"`        // for mod
+	Dmint     *Mod  `cbor:"dmint"`     // for mod
+	Subrealms *Mod  `cbor:"subrealms"` // for mod
+	Meta      *Meta `cbor:"meta"`
 }
 
 type Args struct {
@@ -90,7 +90,7 @@ type Proof struct {
 	P bool   `cbor:"p"`
 }
 
-type Dmint struct {
+type Mod struct {
 	A          int64       `cbor:"$a"`
 	V          string      `cbor:"v"`
 	Items      int64       `cbor:"items"`

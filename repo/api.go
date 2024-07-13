@@ -15,6 +15,7 @@ type DB interface {
 
 	// nft read
 	NftUTXOsByUserPK(UserPK string) ([]*postsql.UTXONftInfo, error)
+	NftUTXOsByAtomicalsID(atomicalsID string) ([]*postsql.UTXONftInfo, error)
 	NftUTXOsByLocationID(locationID string) ([]*postsql.UTXONftInfo, error)
 	ParentRealmHasExist(parentRealmAtomicalsID string) (string, error)
 	NftRealmByNameHasExist(realmName string) (bool, error)
@@ -43,7 +44,7 @@ type DB interface {
 	InsertDirectFtUTXO(entity *postsql.GlobalDirectFt) error
 
 	// mod
-	InsertMod(mod *postsql.ModInfo) error
+	InsertOrUpdateMod(mod *postsql.ModInfo) error
 	Mod(atomicalsID string) (*postsql.ModInfo, error)
 
 	// btc

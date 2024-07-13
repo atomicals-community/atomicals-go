@@ -55,7 +55,7 @@ func (m *Atomicals) get_applicable_rule_by_height(parent_atomical_id string, pro
 	return nil
 }
 
-func (m *Atomicals) getModHistory(parentContainerAtomicalsID string) (*witness.Dmint, error) {
+func (m *Atomicals) getModHistory(parentContainerAtomicalsID string) (*witness.Mod, error) {
 	mod, err := m.Mod(parentContainerAtomicalsID)
 	if err != nil {
 		return nil, err
@@ -63,11 +63,11 @@ func (m *Atomicals) getModHistory(parentContainerAtomicalsID string) (*witness.D
 	if mod == nil {
 		return nil, nil
 	}
-	dmint := &witness.Dmint{}
+	dmint := &witness.Mod{}
 	if err := json.Unmarshal([]byte(mod.Mod), dmint); err != nil {
 		return nil, err
 	}
-	dmints := make([]*witness.Dmint, 0)
+	dmints := make([]*witness.Mod, 0)
 	dmints = append(dmints, dmint)
 
 	// calculate_latest_state_from_mod_history
@@ -75,7 +75,7 @@ func (m *Atomicals) getModHistory(parentContainerAtomicalsID string) (*witness.D
 	// sort.Slice(mod_history, func(i, j int) bool {
 	// 	return mod_history[i].ID < mod_history[j].ID
 	// })
-	current_object_state := &witness.Dmint{}
+	current_object_state := &witness.Mod{}
 	for _, element := range dmints {
 		if element.A == 1 {
 			current_object_state = nil

@@ -52,7 +52,7 @@ func (m *Atomicals) TraceBlock(height, txIndex int64) error {
 
 		// update db if needed
 		if mod != nil {
-			m.InsertMod(mod)
+			m.InsertOrUpdateMod(mod)
 			op = "mod"
 		}
 		for _, v := range deleteFts {

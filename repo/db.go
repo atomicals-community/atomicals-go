@@ -96,7 +96,7 @@ func (m *Postgres) BtcTxHeight(txID string) (int64, error) {
 	return entity.BlockHeight, nil
 }
 
-func (m *Postgres) InsertMod(mod *postsql.ModInfo) error {
+func (m *Postgres) InsertOrUpdateMod(mod *postsql.ModInfo) error {
 	m.SQLRaw += m.ToSQL(func(tx *gorm.DB) *gorm.DB {
 		return m.Save(mod)
 	}) + ";"
@@ -104,13 +104,13 @@ func (m *Postgres) InsertMod(mod *postsql.ModInfo) error {
 }
 
 func (m *Postgres) Mod(atomicalsID string) (*postsql.ModInfo, error) {
-	var entity *postsql.ModInfo
-	dbTx := m.Where("atomicals_id = ?", atomicalsID).Find(&entity)
+	var entities *postsql.ModInfo
+	dbTx := m.Where("atomicals_id = ?", atomicalsID).Order("id").Find(&entities)
 	if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {
 		return nil, dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
 		return nil, nil
 	}
-	return entity, nil
+	return entities, nil
 }

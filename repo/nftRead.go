@@ -18,6 +18,18 @@ func (m *Postgres) NftUTXOsByUserPK(UserPK string) ([]*postsql.UTXONftInfo, erro
 	return entity, nil
 }
 
+func (m *Postgres) NftUTXOsByAtomicalsID(atomicalsID string) ([]*postsql.UTXONftInfo, error) {
+	if !m.testNftLocationID(atomicalsID) {
+		return nil, nil
+	}
+	var entity []*postsql.UTXONftInfo
+	dbTx := m.Model(postsql.UTXONftInfo{}).Where("atomicals_id = ?", atomicalsID).Find(&entity)
+	if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {
+		return nil, dbTx.Error
+	}
+	return entity, nil
+}
+
 func (m *Postgres) NftUTXOsByLocationID(locationID string) ([]*postsql.UTXONftInfo, error) {
 	if !m.testNftLocationID(locationID) {
 		return nil, nil
@@ -27,9 +39,6 @@ func (m *Postgres) NftUTXOsByLocationID(locationID string) ([]*postsql.UTXONftIn
 	if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {
 		return nil, dbTx.Error
 	}
-	// if dbTx.RowsAffected == 0 {
-	// 	return nil, nil
-	// }
 	return entity, nil
 }
 
