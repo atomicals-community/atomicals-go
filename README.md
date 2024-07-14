@@ -43,6 +43,8 @@
 - checktx接口很重要，它是保证atomicals-go避免btc分叉影响的核心，它能够同步安全区块间隔以上的交易和mempool中的交易，但是其返回值格式化不彻底。希望有人来规范它；同样的原因，我不清楚atomicals的其他项目需要什么样的参数，大家可以定制不同的返回结构体，提交pr
 - http接口中应该加入必要的缓存
 
+- hey, 关心atomicals的各位小伙伴们，之前和wizz的成员沟通后，todo list中的payment也很重要，我将把这个功能补齐，这还需要一段时间。
+- 后续payment功能完成后，我将联系一些社区看看有没有人愿意运行这个索引器，我再提供一个简单的前端，提供某个token的历史持仓记录功能。引导更多人使用它，方便检测出索引器是否还存在位置bug。等到确认功能完备且索引正确后，我将在此基础上实现avm，任何人对此感兴趣的话，欢迎在twitter或者github issue中联系我
 
 ## How to run atomicals-go
 1. run a local btc node
