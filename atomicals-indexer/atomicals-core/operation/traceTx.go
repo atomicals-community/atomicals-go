@@ -27,8 +27,10 @@ func (m *Atomicals) Run() {
 	if err := m.TraceBlock(location.BlockHeight, location.TxIndex); err != nil {
 		return
 	}
+
 	log.Log.Infof("maxBlockHeight:%v, currentHeight:%v, time:%v", maxBlockHeight, location.BlockHeight, time.Since(startTime))
 }
+
 func (m *Atomicals) TraceBlock(height, txIndex int64) error {
 	block, err := m.GetBlockByHeight(height)
 	if err != nil {
@@ -44,7 +46,7 @@ func (m *Atomicals) TraceBlock(height, txIndex int64) error {
 	}
 	for index := int64(txIndex + 1); index < int64(len(block.Tx)); index++ {
 		tx := block.Tx[index]
-		// parse this tx
+
 		mod, deleteFts, newFts, updateNfts, newUTXOFtInfo,
 			updateDistributedFt, newGlobalDistributedFt, newGlobalDirectFt, newUTXONftInfo := m.TraceTx(tx, block.Height)
 
@@ -91,7 +93,7 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) (
 		case "dft":
 			newGlobalDistributedFt, _ = m.deployDistributedFt(operation, userPk)
 		case "ft":
-			newGlobalDirectFt, _ = m.mintDirectFt(operation, tx.Vout, userPk)
+			// newGlobalDirectFt, _ = m.mintDirectFt(operation, tx.Vout, userPk)
 		case "nft":
 			// newUTXONftInfo, _ = m.mintNft(operation, userPk)
 		case "evt":
