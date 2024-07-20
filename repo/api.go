@@ -15,7 +15,7 @@ type DB interface {
 
 	// nft read
 	NftUTXOsByUserPK(UserPK string) ([]*postsql.UTXONftInfo, error)
-	NftUTXOsByAtomicalsID(atomicalsID string) ([]*postsql.UTXONftInfo, error)
+	NftUTXOByAtomicalsID(atomicalsID string) (*postsql.UTXONftInfo, error)
 	NftUTXOsByLocationID(locationID string) ([]*postsql.UTXONftInfo, error)
 	ParentRealmHasExist(parentRealmAtomicalsID string) (string, error)
 	NftRealmByNameHasExist(realmName string) (bool, error)
@@ -23,6 +23,7 @@ type DB interface {
 	ParentContainerHasExist(parentContainerAtomicalsID string) (*postsql.UTXONftInfo, error)
 	NftContainerByNameHasExist(containerName string) (bool, error)
 	ContainerItemByNameHasExist(container, item string) (bool, error)
+	LatestItemByContainerName(container string) (*postsql.UTXONftInfo, error)
 	NftUTXOsByID(offset, limit int) ([]*postsql.UTXONftInfo, error)
 
 	// nft write
@@ -45,7 +46,7 @@ type DB interface {
 
 	// mod
 	InsertOrUpdateMod(mod *postsql.ModInfo) error
-	Mod(atomicalsID string) (*postsql.ModInfo, error)
+	ModHistory(atomicalsID string, height int64) ([]*postsql.ModInfo, error)
 
 	// btc
 	InsertBtcTx(btcTx *postsql.BtcTx) error

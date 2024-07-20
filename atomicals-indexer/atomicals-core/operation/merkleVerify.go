@@ -4,32 +4,37 @@ import (
 	"encoding/hex"
 
 	"github.com/atomicals-go/atomicals-indexer/atomicals-core/witness"
+	"github.com/atomicals-go/pkg/log"
 	"github.com/atomicals-go/pkg/merkle"
 	"github.com/atomicals-go/utils"
 )
 
 func (m *Atomicals) verifyRuleAndMerkle(operation *witness.WitnessAtomicalsOperation) bool {
 	// get_dmitem_parent_container_info
-	dmintValidatedStatus, err := m.getModHistory(operation.Payload.Args.ParentContainer)
+	dmintValidatedStatus, err := m.getModHistory(operation.Payload.Args.ParentContainer, operation.RevealLocationHeight)
 	if err != nil {
 		panic(err)
 	}
-	if dmintValidatedStatus == nil {
-		return false
-	}
-	if validateRulesData(dmintValidatedStatus.Rules) == nil {
-		return false
-	}
-	if dmintValidatedStatus.MintHeight < 0 {
-		return false
-	}
-	if dmintValidatedStatus.V != "1" {
-		return false
-	}
-	if len(dmintValidatedStatus.Merkle) != 64 {
-		return false
-	}
 	if operation.CommitHeight < dmintValidatedStatus.MintHeight || operation.RevealLocationHeight < dmintValidatedStatus.MintHeight {
+		return false
+	}
+	parentContainer, err := m.NftUTXOByAtomicalsID(operation.Payload.Args.ParentContainer)
+	if err != nil {
+		log.Log.Panicf("ParentContainerHasExist err:%v", err)
+	}
+	latestItem, err := m.LatestItemByContainerName(parentContainer.ContainerName)
+	if err != nil {
+		log.Log.Panicf("LatestItemByContainerName err:%v", err)
+	}
+	txID, _ := utils.SplitAtomicalsID(latestItem.LocationID)
+	latsetMintHeight, err := m.BtcTxHeight(txID)
+	if err != nil {
+		log.Log.Panicf("BtcTxHeight err:%v", err)
+	}
+	if operation.CommitHeight < latsetMintHeight {
+		return false
+	}
+	if operation.RevealLocationHeight < latsetMintHeight {
 		return false
 	}
 	// validate_dmitem_mint_args_with_container_dmint
@@ -48,7 +53,7 @@ func (m *Atomicals) verifyRuleAndMerkle(operation *witness.WitnessAtomicalsOpera
 	if !is_proof_valid {
 		return false
 	}
-	matchedPricePoint := m.get_applicable_rule_by_height(operation.Payload.Args.ParentContainer, operation.Payload.Args.RequestDmitem)
+	matchedPricePoint := m.get_applicable_rule_by_height(operation.Payload.Args.ParentContainer, operation.Payload.Args.RequestDmitem, operation.RevealLocationHeight)
 	return m.checkRule(matchedPricePoint, operation.Payload.Args.Bitworkc, operation.Payload.Args.Bitworkr)
 }
 

@@ -90,7 +90,8 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 			return nil, errors.ErrCannotBeImmutable
 		}
 		if operation.Payload.Args.ClaimType == witness.Rule {
-			matched_rule := m.get_applicable_rule_by_height(operation.Payload.Args.ParentRealm, operation.Payload.Args.RequestSubRealm)
+			matched_rule := m.get_applicable_rule_by_height(operation.Payload.Args.ParentRealm,
+				operation.Payload.Args.RequestSubRealm, operation.CommitHeight-utils.MINT_SUBNAME_RULES_BECOME_EFFECTIVE_IN_BLOCKS)
 			if !m.checkRule(matched_rule, operation.Payload.Args.Bitworkc, operation.Payload.Args.Bitworkr) {
 				return nil, errors.ErrInvalidRule
 			}

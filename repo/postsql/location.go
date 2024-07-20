@@ -1,7 +1,6 @@
 package postsql
 
 import (
-	"github.com/atomicals-go/utils"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -27,7 +26,7 @@ func (*Location) Init(db *gorm.DB) {
 	assert.Nil(nil, err)
 	err = dmodel.CreateTable(&Location{})
 	assert.Nil(nil, err)
-	dbTx := db.Save(&Location{Name: "atomicals", BlockHeight: utils.ATOMICALS_ACTIVATION_HEIGHT, TxIndex: -1})
+	dbTx := db.Save(&Location{Name: "atomicals", BlockHeight: 812480, TxIndex: -1})
 	assert.Nil(nil, dbTx.Error)
 }
 

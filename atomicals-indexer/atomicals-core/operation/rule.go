@@ -2,6 +2,7 @@ package atomicals
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -39,8 +40,8 @@ func (m *Atomicals) checkRule(rule *witness.RuleInfo, bitworkc_actual, bitworkr_
 	}
 	return false
 }
-func (m *Atomicals) get_applicable_rule_by_height(parent_atomical_id string, proposed_subnameid string) *witness.RuleInfo {
-	latest_state, err := m.getModHistory(parent_atomical_id)
+func (m *Atomicals) get_applicable_rule_by_height(parent_atomical_id string, proposed_subnameid string, height int64) *witness.RuleInfo {
+	latest_state, err := m.getModHistory(parent_atomical_id, height)
 	if err != nil {
 		panic(err)
 	}
@@ -55,21 +56,23 @@ func (m *Atomicals) get_applicable_rule_by_height(parent_atomical_id string, pro
 	return nil
 }
 
-func (m *Atomicals) getModHistory(parentContainerAtomicalsID string) (*witness.Mod, error) {
-	mod, err := m.Mod(parentContainerAtomicalsID)
+// get_mod_history
+func (m *Atomicals) getModHistory(parentContainerAtomicalsID string, height int64) (*witness.Mod, error) {
+	mods, err := m.ModHistory(parentContainerAtomicalsID, height)
 	if err != nil {
 		return nil, err
 	}
-	if mod == nil {
-		return nil, nil
-	}
-	dmint := &witness.Mod{}
-	if err := json.Unmarshal([]byte(mod.Mod), dmint); err != nil {
-		return nil, err
+	if mods == nil {
+		return nil, errors.New("invalid mod")
 	}
 	dmints := make([]*witness.Mod, 0)
-	dmints = append(dmints, dmint)
-
+	for _, mod := range mods {
+		dmint := &witness.Mod{}
+		if err := json.Unmarshal([]byte(mod.Mod), dmint); err != nil {
+			return nil, err
+		}
+		dmints = append(dmints, dmint)
+	}
 	// calculate_latest_state_from_mod_history
 	// Ensure it is sorted in ascending order
 	// sort.Slice(mod_history, func(i, j int) bool {
@@ -82,6 +85,21 @@ func (m *Atomicals) getModHistory(parentContainerAtomicalsID string) (*witness.M
 		} else {
 			current_object_state = element
 		}
+	}
+	if current_object_state == nil {
+		return nil, errors.New("invalid mod")
+	}
+	if validateRulesData(current_object_state.Rules) == nil {
+		return nil, errors.New("invalid mod")
+	}
+	if current_object_state.MintHeight < 0 {
+		return nil, errors.New("invalid mod")
+	}
+	if current_object_state.V != "1" {
+		return nil, errors.New("invalid mod")
+	}
+	if len(current_object_state.Merkle) != 64 {
+		return nil, errors.New("invalid mod")
 	}
 	return current_object_state, nil
 }

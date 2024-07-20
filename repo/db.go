@@ -103,9 +103,9 @@ func (m *Postgres) InsertOrUpdateMod(mod *postsql.ModInfo) error {
 	return nil
 }
 
-func (m *Postgres) Mod(atomicalsID string) (*postsql.ModInfo, error) {
-	var entities *postsql.ModInfo
-	dbTx := m.Where("atomicals_id = ?", atomicalsID).Order("id").Find(&entities)
+func (m *Postgres) ModHistory(atomicalsID string, height int64) ([]*postsql.ModInfo, error) {
+	var entities []*postsql.ModInfo
+	dbTx := m.Where("atomicals_id = ? and height >= ?", atomicalsID, height).Order("id").Find(&entities)
 	if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {
 		return nil, dbTx.Error
 	}
