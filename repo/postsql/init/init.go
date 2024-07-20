@@ -14,7 +14,7 @@ func InitModels(db *gorm.DB) {
 	(&postsql.UTXONftInfo{}).Init(db)
 	(&postsql.ModInfo{}).Init(db)
 	(&postsql.PaymentInfo{}).Init(db)
-	(&postsql.BtcTx{}).Init(db)
+	(&postsql.AtomicalsTx{}).Init(db)
 	(&postsql.Location{}).Init(db)
 	(&postsql.BloomFilter{}).Init(db)
 }
@@ -26,7 +26,7 @@ func AutoMigrate(db *gorm.DB) {
 	(&postsql.UTXONftInfo{}).AutoMigrate(db)
 	(&postsql.ModInfo{}).AutoMigrate(db)
 	(&postsql.PaymentInfo{}).AutoMigrate(db)
-	(&postsql.BtcTx{}).AutoMigrate(db)
+	(&postsql.AtomicalsTx{}).AutoMigrate(db)
 	(&postsql.Location{}).AutoMigrate(db)
 	(&postsql.BloomFilter{}).AutoMigrate(db)
 }

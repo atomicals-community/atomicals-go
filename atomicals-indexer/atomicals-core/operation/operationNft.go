@@ -15,7 +15,7 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 	if !operation.Payload.CheckRequest() {
 		return nil, errors.ErrCheckRequest
 	}
-	operation.CommitHeight, err = m.BtcTxHeight(operation.CommitTxID)
+	operation.CommitHeight, err = m.AtomicalsTxHeight(operation.CommitTxID)
 	if err != nil {
 		operation.CommitHeight, err = m.GetTxHeightByTxID(operation.CommitTxID)
 		if err != nil {

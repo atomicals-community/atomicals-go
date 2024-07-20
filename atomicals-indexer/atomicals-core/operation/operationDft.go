@@ -66,7 +66,7 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 	if operation.Payload.Args.Md != "" && operation.Payload.Args.Md != "0" && operation.Payload.Args.Md != "1" {
 		return nil, errors.ErrInvalidDftMd
 	}
-	operation.CommitHeight, err = m.BtcTxHeight(operation.CommitTxID)
+	operation.CommitHeight, err = m.AtomicalsTxHeight(operation.CommitTxID)
 	if err != nil {
 		operation.CommitHeight, err = m.GetTxHeightByTxID(operation.CommitTxID)
 		if err != nil {

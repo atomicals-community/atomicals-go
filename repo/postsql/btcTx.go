@@ -5,9 +5,9 @@ import (
 	"gorm.io/gorm"
 )
 
-const btcTxTableName = "btc_tx"
+const atomicalsTxTableName = "atomicals_tx"
 
-type BtcTx struct {
+type AtomicalsTx struct {
 	gorm.Model
 	BlockHeight int64 `gorm:"index"`
 	TxIndex     int64
@@ -16,20 +16,20 @@ type BtcTx struct {
 	Description string
 }
 
-func (*BtcTx) TableName() string {
-	return btcTxTableName
+func (*AtomicalsTx) TableName() string {
+	return atomicalsTxTableName
 }
 
-func (*BtcTx) Init(db *gorm.DB) {
+func (*AtomicalsTx) Init(db *gorm.DB) {
 	var err error
-	dmodel := newDefaultModel(btcTxTableName, db)
+	dmodel := newDefaultModel(atomicalsTxTableName, db)
 	err = dmodel.DropTable()
 	assert.Nil(nil, err)
-	err = dmodel.CreateTable(&BtcTx{})
+	err = dmodel.CreateTable(&AtomicalsTx{})
 	assert.Nil(nil, err)
 }
 
-func (*BtcTx) AutoMigrate(db *gorm.DB) {
-	err := db.AutoMigrate(BtcTx{})
+func (*AtomicalsTx) AutoMigrate(db *gorm.DB) {
+	err := db.AutoMigrate(AtomicalsTx{})
 	assert.Nil(nil, err)
 }

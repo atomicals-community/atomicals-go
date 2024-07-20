@@ -2,7 +2,6 @@ package repo
 
 import (
 	"github.com/atomicals-go/repo/postsql"
-	"github.com/bits-and-blooms/bloom/v3"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -11,7 +10,10 @@ import (
 type DB interface {
 	// location
 	Location() (*postsql.Location, error)
-	ExecAllSql(blockHeight, txIndex int64, txID, operation string) error
+
+	// btc
+	AtomicalsTx(txID string) (*postsql.AtomicalsTx, error)
+	AtomicalsTxHeight(txID string) (int64, error)
 
 	// nft read
 	NftUTXOsByUserPK(UserPK string) ([]*postsql.UTXONftInfo, error)
@@ -24,41 +26,25 @@ type DB interface {
 	NftContainerByNameHasExist(containerName string) (bool, error)
 	ContainerItemByNameHasExist(container, item string) (bool, error)
 	LatestItemByContainerName(container string) (*postsql.UTXONftInfo, error)
-	NftUTXOsByID(offset, limit int) ([]*postsql.UTXONftInfo, error)
-
-	// nft write
-	InsertNftUTXO(UTXO *postsql.UTXONftInfo) error
-	UpdateNftUTXO(UTXO *postsql.UTXONftInfo) error
 
 	// ft read
 	FtUTXOsByUserPK(UserPK string) ([]*postsql.UTXOFtInfo, error)
 	FtUTXOsByLocationID(locationID string) ([]*postsql.UTXOFtInfo, error)
 	DistributedFtByName(tickerName string) (*postsql.GlobalDistributedFt, error)
 	DirectFtByName(tickerName string) (*postsql.GlobalDirectFt, error)
-	FtUTXOsByID(offset, limit int) ([]*postsql.UTXOFtInfo, error)
-
-	// ft write
-	InsertFtUTXO(UTXO *postsql.UTXOFtInfo) error
-	DeleteFtUTXO(locationID string) error
-	InsertDistributedFt(ft *postsql.GlobalDistributedFt) error
-	UpdateDistributedFt(ft *postsql.GlobalDistributedFt) error
-	InsertDirectFtUTXO(entity *postsql.GlobalDirectFt) error
 
 	// mod
-	InsertOrUpdateMod(mod *postsql.ModInfo) error
 	ModHistory(atomicalsID string, height int64) ([]*postsql.ModInfo, error)
 
-	// btc
-	InsertBtcTx(btcTx *postsql.BtcTx) error
-	BtcTx(txID string) (*postsql.BtcTx, error)
-	BtcTxHeight(txID string) (int64, error)
-	DeleteBtcTxUntil(blockHeight int64) error
-
-	// BloomFilter
-	InsertBloomFilter(name string, filter *bloom.BloomFilter) error
-	UpdateBloomFilter(name string, filter *bloom.BloomFilter) error
-	BloomFilter() (map[string]*bloomFilterInfo, error)
-	InitBloomFilter()
+	UpdateDB(
+		currentHeight, currentTxIndex int64, txID string,
+		mod *postsql.ModInfo,
+		deleteFts []*postsql.UTXOFtInfo, newFts []*postsql.UTXOFtInfo,
+		updateNfts []*postsql.UTXONftInfo,
+		newUTXOFtInfo *postsql.UTXOFtInfo, updateDistributedFt *postsql.GlobalDistributedFt,
+		newGlobalDistributedFt *postsql.GlobalDistributedFt,
+		newGlobalDirectFt *postsql.GlobalDirectFt,
+		newUTXONftInfo *postsql.UTXONftInfo) error
 }
 
 func NewSqlDB(sqlDNS string) DB {

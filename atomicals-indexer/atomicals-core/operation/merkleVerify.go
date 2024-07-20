@@ -27,9 +27,9 @@ func (m *Atomicals) verifyRuleAndMerkle(operation *witness.WitnessAtomicalsOpera
 		log.Log.Panicf("LatestItemByContainerName err:%v", err)
 	}
 	txID, _ := utils.SplitAtomicalsID(latestItem.LocationID)
-	latsetMintHeight, err := m.BtcTxHeight(txID)
+	latsetMintHeight, err := m.AtomicalsTxHeight(txID)
 	if err != nil {
-		log.Log.Panicf("BtcTxHeight err:%v", err)
+		log.Log.Panicf("AtomicalsTxHeight err:%v", err)
 	}
 	if operation.CommitHeight < latsetMintHeight {
 		return false

@@ -33,10 +33,10 @@ func (l *CheckTxLogic) CheckTx(req *types.ReqCheckTx) (resp *types.RespCheckTx, 
 	}
 	if 0 <= height && height <= l.svcCtx.SyncHeight {
 		resp.Status = "confirmed"
-		txRecord := &postsql.BtcTx{}
-		txRecord, err = l.svcCtx.BtcTx(req.Txid)
+		txRecord := &postsql.AtomicalsTx{}
+		txRecord, err = l.svcCtx.AtomicalsTx(req.Txid)
 		if err != nil {
-			l.Errorf("[CheckTx] BtcTx err:%v", err)
+			l.Errorf("[CheckTx] AtomicalsTx err:%v", err)
 			return
 		}
 		resp.Operation = txRecord.Operation
@@ -45,7 +45,7 @@ func (l *CheckTxLogic) CheckTx(req *types.ReqCheckTx) (resp *types.RespCheckTx, 
 		resp.Status = "until confirmation depth"
 		pendingAssets, ok := l.svcCtx.PendingAtomicalsAssetMap[req.Txid]
 		if !ok {
-			l.Errorf("[CheckTx] BtcTx err:%v", errors.New("atomicals operation not found"))
+			l.Errorf("[CheckTx] AtomicalsTx err:%v", errors.New("atomicals operation not found"))
 			return
 		}
 		resp.Description = pendingAssets.CheckAsset()
