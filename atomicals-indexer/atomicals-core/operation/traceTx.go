@@ -70,9 +70,6 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) (
 	newUTXONftInfo *postsql.UTXONftInfo,
 ) {
 	operation := witness.ParseWitness(tx, height)
-	if operation.Payload != nil && !(operation.Payload.Args.MintTicker == "atom" || operation.Payload.Args.RequestTicker == "atom") {
-		return nil, nil, nil, nil, nil, nil, nil, nil, nil
-	}
 
 	// step 1: insert mod
 	// if operation.Op == "mod" {
