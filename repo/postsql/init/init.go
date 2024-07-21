@@ -17,6 +17,7 @@ func InitModels(db *gorm.DB) {
 	(&postsql.AtomicalsTx{}).Init(db)
 	(&postsql.Location{}).Init(db)
 	(&postsql.BloomFilter{}).Init(db)
+	(&postsql.StatisticTx{}).Init(db)
 }
 
 func AutoMigrate(db *gorm.DB) {
@@ -29,6 +30,7 @@ func AutoMigrate(db *gorm.DB) {
 	(&postsql.AtomicalsTx{}).AutoMigrate(db)
 	(&postsql.Location{}).AutoMigrate(db)
 	(&postsql.BloomFilter{}).AutoMigrate(db)
+	(&postsql.StatisticTx{}).AutoMigrate(db)
 }
 
 func main() {

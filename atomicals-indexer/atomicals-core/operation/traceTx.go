@@ -46,7 +46,6 @@ func (m *Atomicals) TraceBlock(height, txIndex int64) error {
 	}
 	for index := int64(txIndex + 1); index < int64(len(block.Tx)); index++ {
 		tx := block.Tx[index]
-
 		mod, deleteFts, newFts, updateNfts, newUTXOFtInfo,
 			updateDistributedFt, newGlobalDistributedFt, newGlobalDirectFt, newUTXONftInfo := m.TraceTx(tx, block.Height)
 
@@ -82,6 +81,7 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) (
 
 	// step 2: transfer nft, transfer ft
 	deleteFts, newFts, _ = m.transferFt(operation, tx)
+
 	// updateNfts, _ = m.transferNft(operation, tx)
 
 	// step 3: process operation

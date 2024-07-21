@@ -13,6 +13,7 @@ type DB interface {
 
 	// btc
 	AtomicalsTx(txID string) (*postsql.AtomicalsTx, error)
+	AtomicalsTxByHeight(height int64) ([]*postsql.AtomicalsTx, error)
 	AtomicalsTxHeight(txID string) (int64, error)
 
 	// nft read

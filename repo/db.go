@@ -1,7 +1,7 @@
 package repo
 
 import (
-	"encoding/json"
+	"fmt"
 
 	"github.com/atomicals-go/repo/postsql"
 	"github.com/atomicals-go/utils"
@@ -35,32 +35,35 @@ func (m *Postgres) UpdateDB(
 		}
 
 		// transfer ft
-		for _, v := range deleteFts {
-			dbErr := tx.Model(postsql.UTXOFtInfo{}).Unscoped().Where("location_id = ?", v.LocationID).Delete(&postsql.UTXOFtInfo{})
-			if dbErr.Error != nil {
-				return dbErr.Error
+		if len(deleteFts) > 0 {
+			locationIDs := make([]string, len(deleteFts))
+			for i, v := range deleteFts {
+				locationIDs[i] = v.LocationID
+				description += fmt.Sprintf("delete#ticker:%v,locationID:%v,userPk:%v,amount:%v\n", v.MintTicker, v.LocationID, v.UserPk, v.Amount)
+			}
+			if dbErr := tx.Model(&postsql.UTXOFtInfo{}).Unscoped().Where("location_id IN ?", locationIDs).Delete(&postsql.UTXOFtInfo{}).Error; dbErr != nil {
+				return dbErr
 			}
 			op = "transfer_ft"
-			vStr, _ := json.Marshal(v)
-			description = "delete#" + string(vStr) + "\n"
 		}
-		for _, v := range newFts {
-			m.addFtLocationID(v.LocationID)
-			dbErr := tx.Save(v)
-			if dbErr.Error != nil {
-				return dbErr.Error
+		if len(newFts) > 0 {
+			for _, v := range newFts {
+				m.addFtLocationID(v.LocationID)
+				description += fmt.Sprintf("insert#ticker:%v,locationID:%v,userPk:%v,amount:%v\n", v.MintTicker, v.LocationID, v.UserPk, v.Amount)
+			}
+			if dbErr := tx.Create(&newFts).Error; dbErr != nil {
+				return dbErr
 			}
 			op = "transfer_ft"
-			vStr, _ := json.Marshal(v)
-			description = "insert#" + string(vStr) + "\n"
 		}
 
 		// transfer nft
-		for _, v := range updateNfts {
-			m.addNftLocationID(v.LocationID)
-			dbErr := tx.Save(v)
-			if dbErr.Error != nil {
-				return dbErr.Error
+		if len(updateNfts) > 0 {
+			for _, v := range updateNfts {
+				m.addNftLocationID(v.LocationID)
+			}
+			if dbErr := tx.Save(&updateNfts).Error; dbErr != nil {
+				return dbErr
 			}
 			op = "transfer_nft"
 		}
@@ -68,13 +71,11 @@ func (m *Postgres) UpdateDB(
 		// mint ft
 		if newUTXOFtInfo != nil {
 			m.addFtLocationID(newUTXOFtInfo.LocationID)
-			dbErr := tx.Save(newUTXOFtInfo)
-			if dbErr.Error != nil {
-				return dbErr.Error
+			if dbErr := tx.Save(newUTXOFtInfo).Error; dbErr != nil {
+				return dbErr
 			}
 			op = "dmt"
-			vStr, _ := json.Marshal(newUTXOFtInfo)
-			description = "insert#" + string(vStr) + "\n"
+			description += fmt.Sprintf("insert#ticker:%v,locationID:%v,userPk:%v,amount:%v\n", newUTXOFtInfo.MintTicker, newUTXOFtInfo.LocationID, newUTXOFtInfo.UserPk, newUTXOFtInfo.Amount)
 		}
 		if updateDistributedFt != nil {
 			dbErr := tx.Model(postsql.GlobalDistributedFt{}).Where("ticker_name = ?", updateDistributedFt.TickerName).Updates(map[string]interface{}{"minted_times": updateDistributedFt.MintedTimes})

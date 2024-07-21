@@ -42,3 +42,12 @@ func (m *Postgres) AtomicalsTxHeight(txID string) (int64, error) {
 	}
 	return entity.BlockHeight, nil
 }
+
+func (m *Postgres) AtomicalsTxByHeight(height int64) ([]*postsql.AtomicalsTx, error) {
+	var entity []*postsql.AtomicalsTx
+	dbTx := m.Where("block_height = ?", height).Order("id").Find(&entity)
+	if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {
+		return nil, dbTx.Error
+	}
+	return entity, nil
+}
