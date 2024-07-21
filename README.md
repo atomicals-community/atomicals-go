@@ -7,8 +7,8 @@
     - atomicals交易发送工具[atomicals-js](https://github.com/atomicals/atomicals-js)命令工具
 - Atomicals-go: 是atomicals索引器atomicals-electrumx的golang版本，并以文本方式提供了atomicals协议的详细内容（在本仓库的doc目录下）
 
-- 在未来一段时间内[github:random](https://github.com/yimingWOW)仍然会维护该项目（及时同步atomicals-electrumx的更新）
-- 如果您想加入，可以通过twitter联系我：[x:random](https://twitter.com/isyiming)
+- 在未来一段时间内[github:yimingWOW](https://github.com/yimingWOW)仍然会维护该项目（及时同步atomicals-electrumx的更新）
+- 如果您想加入，可以通过twitter联系我：[x:@isyiming](https://twitter.com/isyiming)
 - 或者为我捐款: bc1p7uaqs0qq40mxqyljd93raxullh0ece2xvns5s5y9700v4ec0qjmsdt2q2n 接受任何类型的资产
 
 #### 嗨，atomicals-go终于完成了，我简单说一下这个indexer的优点
