@@ -80,10 +80,10 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 					return fts[i].AtomicalsID < fts[j].AtomicalsID
 				})
 				for _, ft := range fts {
-					if _, ok := seenFtmap[ft.MintTicker]; ok {
+					if _, ok := seenFtmap[ft.AtomicalsID]; ok {
 						continue
 					}
-					seenFtmap[ft.MintTicker] = true
+					seenFtmap[ft.AtomicalsID] = true
 					deleteFts = append(deleteFts, ft)
 				}
 			}

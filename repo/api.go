@@ -37,15 +37,7 @@ type DB interface {
 	// mod
 	ModHistory(atomicalsID string, height int64) ([]*postsql.ModInfo, error)
 
-	UpdateDB(
-		currentHeight, currentTxIndex int64, txID string,
-		mod *postsql.ModInfo,
-		deleteFts []*postsql.UTXOFtInfo, newFts []*postsql.UTXOFtInfo,
-		updateNfts []*postsql.UTXONftInfo,
-		newUTXOFtInfo *postsql.UTXOFtInfo, updateDistributedFt *postsql.GlobalDistributedFt,
-		newGlobalDistributedFt *postsql.GlobalDistributedFt,
-		newGlobalDirectFt *postsql.GlobalDirectFt,
-		newUTXONftInfo *postsql.UTXONftInfo) error
+	UpdateDB(currentHeight, currentTxIndex int64, txID string, data *AtomicaslData) error
 }
 
 func NewSqlDB(sqlDNS string) DB {

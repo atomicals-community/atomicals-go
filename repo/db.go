@@ -12,22 +12,31 @@ type Postgres struct {
 	*gorm.DB
 	bloomFilter map[string]*bloomFilterInfo
 }
+type AtomicaslData struct {
+	Mod                    *postsql.ModInfo
+	DeleteFts              []*postsql.UTXOFtInfo
+	NewFts                 []*postsql.UTXOFtInfo
+	UpdateNfts             []*postsql.UTXONftInfo
+	NewUTXOFtInfo          *postsql.UTXOFtInfo
+	UpdateDistributedFt    *postsql.GlobalDistributedFt
+	NewGlobalDistributedFt *postsql.GlobalDistributedFt
+	NewGlobalDirectFt      *postsql.GlobalDirectFt
+	NewUTXONftInfo         *postsql.UTXONftInfo
+}
 
 func (m *Postgres) UpdateDB(
 	currentHeight, currentTxIndex int64, txID string,
-	mod *postsql.ModInfo,
-	deleteFts []*postsql.UTXOFtInfo, newFts []*postsql.UTXOFtInfo,
-	updateNfts []*postsql.UTXONftInfo,
-	newUTXOFtInfo *postsql.UTXOFtInfo, updateDistributedFt *postsql.GlobalDistributedFt,
-	newGlobalDistributedFt *postsql.GlobalDistributedFt,
-	newGlobalDirectFt *postsql.GlobalDirectFt,
-	newUTXONftInfo *postsql.UTXONftInfo) error {
+	data *AtomicaslData,
+) error {
+	if data == nil {
+		return nil
+	}
 	op := ""
 	description := ""
 	err := m.Transaction(func(tx *gorm.DB) error {
 		// mod
-		if mod != nil {
-			dbErr := tx.Save(mod)
+		if data.Mod != nil {
+			dbErr := tx.Save(data.Mod)
 			if dbErr.Error != nil {
 				return dbErr.Error
 			}
@@ -35,9 +44,9 @@ func (m *Postgres) UpdateDB(
 		}
 
 		// transfer ft
-		if len(deleteFts) > 0 {
-			locationIDs := make([]string, len(deleteFts))
-			for i, v := range deleteFts {
+		if len(data.DeleteFts) > 0 {
+			locationIDs := make([]string, len(data.DeleteFts))
+			for i, v := range data.DeleteFts {
 				locationIDs[i] = v.LocationID
 				description += fmt.Sprintf("delete#ticker:%v,locationID:%v,userPk:%v,amount:%v\n", v.MintTicker, v.LocationID, v.UserPk, v.Amount)
 			}
@@ -46,56 +55,56 @@ func (m *Postgres) UpdateDB(
 			}
 			op = "transfer_ft"
 		}
-		if len(newFts) > 0 {
-			for _, v := range newFts {
+		if len(data.NewFts) > 0 {
+			for _, v := range data.NewFts {
 				m.addFtLocationID(v.LocationID)
 				description += fmt.Sprintf("insert#ticker:%v,locationID:%v,userPk:%v,amount:%v\n", v.MintTicker, v.LocationID, v.UserPk, v.Amount)
 			}
-			if dbErr := tx.Create(&newFts).Error; dbErr != nil {
+			if dbErr := tx.Create(&data.NewFts).Error; dbErr != nil {
 				return dbErr
 			}
 			op = "transfer_ft"
 		}
 
 		// transfer nft
-		if len(updateNfts) > 0 {
-			for _, v := range updateNfts {
+		if len(data.UpdateNfts) > 0 {
+			for _, v := range data.UpdateNfts {
 				m.addNftLocationID(v.LocationID)
 			}
-			if dbErr := tx.Save(&updateNfts).Error; dbErr != nil {
+			if dbErr := tx.Save(&data.UpdateNfts).Error; dbErr != nil {
 				return dbErr
 			}
 			op = "transfer_nft"
 		}
 
 		// mint ft
-		if newUTXOFtInfo != nil {
-			m.addFtLocationID(newUTXOFtInfo.LocationID)
-			if dbErr := tx.Save(newUTXOFtInfo).Error; dbErr != nil {
+		if data.NewUTXOFtInfo != nil {
+			m.addFtLocationID(data.NewUTXOFtInfo.LocationID)
+			if dbErr := tx.Save(data.NewUTXOFtInfo).Error; dbErr != nil {
 				return dbErr
 			}
 			op = "dmt"
-			description += fmt.Sprintf("insert#ticker:%v,locationID:%v,userPk:%v,amount:%v\n", newUTXOFtInfo.MintTicker, newUTXOFtInfo.LocationID, newUTXOFtInfo.UserPk, newUTXOFtInfo.Amount)
+			description += fmt.Sprintf("insert#ticker:%v,locationID:%v,userPk:%v,amount:%v\n", data.NewUTXOFtInfo.MintTicker, data.NewUTXOFtInfo.LocationID, data.NewUTXOFtInfo.UserPk, data.NewUTXOFtInfo.Amount)
 		}
-		if updateDistributedFt != nil {
-			dbErr := tx.Model(postsql.GlobalDistributedFt{}).Where("ticker_name = ?", updateDistributedFt.TickerName).Updates(map[string]interface{}{"minted_times": updateDistributedFt.MintedTimes})
+		if data.UpdateDistributedFt != nil {
+			dbErr := tx.Model(postsql.GlobalDistributedFt{}).Where("ticker_name = ?", data.UpdateDistributedFt.TickerName).Updates(map[string]interface{}{"minted_times": data.UpdateDistributedFt.MintedTimes})
 			if dbErr.Error != nil {
 				return dbErr.Error
 			}
 			op = "dmt"
 		}
-		if newGlobalDistributedFt != nil {
-			m.addDistributedFt(newGlobalDistributedFt.TickerName)
-			m.addFtLocationID(newGlobalDistributedFt.LocationID)
-			dbErr := tx.Save(newGlobalDistributedFt)
+		if data.NewGlobalDistributedFt != nil {
+			m.addDistributedFt(data.NewGlobalDistributedFt.TickerName)
+			m.addFtLocationID(data.NewGlobalDistributedFt.LocationID)
+			dbErr := tx.Save(data.NewGlobalDistributedFt)
 			if dbErr.Error != nil {
 				return dbErr.Error
 			}
 			op = "dft"
 		}
-		if newGlobalDirectFt != nil {
-			m.addFtLocationID(newGlobalDirectFt.LocationID)
-			dbErr := tx.Save(newGlobalDirectFt)
+		if data.NewGlobalDirectFt != nil {
+			m.addFtLocationID(data.NewGlobalDirectFt.LocationID)
+			dbErr := tx.Save(data.NewGlobalDirectFt)
 			if dbErr.Error != nil {
 				return dbErr.Error
 			}
@@ -103,14 +112,14 @@ func (m *Postgres) UpdateDB(
 		}
 
 		// mint nft
-		if newUTXONftInfo != nil {
-			if newUTXONftInfo.RealmName != "" {
-				m.addRealm(newUTXONftInfo.RealmName)
-			} else if newUTXONftInfo.ContainerName != "" {
-				m.addContainer(newUTXONftInfo.ContainerName)
+		if data.NewUTXONftInfo != nil {
+			if data.NewUTXONftInfo.RealmName != "" {
+				m.addRealm(data.NewUTXONftInfo.RealmName)
+			} else if data.NewUTXONftInfo.ContainerName != "" {
+				m.addContainer(data.NewUTXONftInfo.ContainerName)
 			}
-			m.addNftLocationID(newUTXONftInfo.LocationID)
-			dbErr := tx.Save(newUTXONftInfo)
+			m.addNftLocationID(data.NewUTXONftInfo.LocationID)
+			dbErr := tx.Save(data.NewUTXONftInfo)
 			if dbErr.Error != nil {
 				return dbErr.Error
 			}
@@ -128,38 +137,39 @@ func (m *Postgres) UpdateDB(
 				if dbErr.Error != nil {
 					return dbErr.Error
 				}
+				v.needUpdate = false
 			}
 		}
-		for _, v := range m.bloomFilter {
-			v.needUpdate = false
-		}
 
-		// insert btc tx record
-		dbErr := tx.Save(&postsql.AtomicalsTx{
-			BlockHeight: currentHeight,
-			TxIndex:     currentTxIndex,
-			TxID:        txID,
-			Operation:   op,
-			Description: description,
-		})
-		if dbErr.Error != nil {
-			return dbErr.Error
-		}
-
-		// we don't need save all height-txid in db, delete atomicals tx until
-		if currentTxIndex == 0 {
-			dbErr = tx.Model(postsql.AtomicalsTx{}).Unscoped().Where("block_height = ? and operation = ?", currentHeight-utils.MINT_GENERAL_COMMIT_REVEAL_DELAY_BLOCKS, "").Delete(&postsql.AtomicalsTx{})
+		if op != "" {
+			// insert btc tx record
+			dbErr := tx.Save(&postsql.AtomicalsTx{
+				BlockHeight: currentHeight,
+				TxIndex:     currentTxIndex,
+				TxID:        txID,
+				Operation:   op,
+				Description: description,
+			})
 			if dbErr.Error != nil {
 				return dbErr.Error
 			}
 		}
 
 		// update location
-		dbErr = tx.Model(postsql.Location{}).Where("name = ?", "atomicals").Updates(map[string]interface{}{"block_height": currentHeight, "tx_index": currentTxIndex})
+		// if op != "" || (currentHeight%10 == 0 && currentTxIndex == 0) {
+		dbErr := tx.Model(postsql.Location{}).Where("name = ?", "atomicals").Updates(map[string]interface{}{"block_height": currentHeight, "tx_index": currentTxIndex})
 		if dbErr.Error != nil {
 			return dbErr.Error
 		}
+		// }
 
+		// we don't need save all height-txid in db, delete atomicals tx until
+		if currentTxIndex == 0 {
+			dbErr := tx.Model(postsql.AtomicalsTx{}).Unscoped().Where("block_height = ? and operation = ?", currentHeight-utils.MINT_GENERAL_COMMIT_REVEAL_DELAY_BLOCKS, "").Delete(&postsql.AtomicalsTx{})
+			if dbErr.Error != nil {
+				return dbErr.Error
+			}
+		}
 		return nil
 	})
 	return err

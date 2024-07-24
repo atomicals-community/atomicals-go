@@ -5,6 +5,7 @@ import (
 
 	"github.com/atomicals-go/atomicals-indexer/atomicals-core/witness"
 	"github.com/atomicals-go/pkg/log"
+	"github.com/atomicals-go/repo"
 	"github.com/atomicals-go/repo/postsql"
 	"github.com/atomicals-go/utils"
 	"github.com/btcsuite/btcd/btcjson"
@@ -12,64 +13,47 @@ import (
 
 func (m *Atomicals) Run() {
 	startTime := time.Now()
-
-	location, err := m.Location()
-	if err != nil {
-		log.Log.Panicf("Location err:%v", err)
-	}
-	maxBlockHeight, err := m.GetBlockCount()
-	if err != nil {
-		log.Log.Panicf("GetBlockCount err:%v", err)
-	}
-	if location.BlockHeight+utils.SafeBlockHeightInterupt > maxBlockHeight {
+	if m.location.BlockHeight+utils.SafeBlockHeightInterupt > m.maxBlockHeight {
 		time.Sleep(10 * time.Minute)
-	}
-	if err := m.TraceBlock(location.BlockHeight, location.TxIndex); err != nil {
-		return
-	}
-
-	log.Log.Infof("maxBlockHeight:%v, currentHeight:%v, time:%v", maxBlockHeight, location.BlockHeight, time.Since(startTime))
-}
-
-func (m *Atomicals) TraceBlock(height, txIndex int64) error {
-	block, err := m.GetBlockByHeight(height)
-	if err != nil {
-		return err
-	}
-	if txIndex+1 >= int64(len(block.Tx)) {
-		height++
-		txIndex = -1
-		block, err = m.GetBlockByHeight(height)
+		var err error
+		m.maxBlockHeight, err = m.GetBlockCount()
 		if err != nil {
-			return err
+			log.Log.Panicf("GetBlockCount err:%v", err)
 		}
 	}
-	for index := int64(txIndex + 1); index < int64(len(block.Tx)); index++ {
-		tx := block.Tx[index]
-		mod, deleteFts, newFts, updateNfts, newUTXOFtInfo,
-			updateDistributedFt, newGlobalDistributedFt, newGlobalDirectFt, newUTXONftInfo := m.TraceTx(tx, block.Height)
-
-		err := m.UpdateDB(block.Height, index, tx.Txid,
-			mod, deleteFts, newFts, updateNfts, newUTXOFtInfo,
-			updateDistributedFt, newGlobalDistributedFt, newGlobalDirectFt, newUTXONftInfo)
+	block, err := m.GetBlockByHeight(m.location.BlockHeight)
+	if err != nil {
+		log.Log.Panicf("GetBlockByHeight err:%v", err)
+	}
+	m.location.TxIndex++
+	if m.location.TxIndex >= int64(len(block.Tx)) {
+		m.location.BlockHeight++
+		m.location.TxIndex = 0
+		block, err = m.GetBlockByHeight(m.location.BlockHeight)
+		if err != nil {
+			log.Log.Panicf("GetBlockByHeight err:%v", err)
+		}
+	}
+	for txIndex, tx := range block.Tx {
+		if int64(txIndex) < m.location.TxIndex {
+			continue
+		}
+		m.location.TxIndex = int64(txIndex)
+		data := m.TraceTx(tx, block.Height)
+		err = m.UpdateDB(block.Height, m.location.TxIndex, tx.Txid, data)
 		if err != nil {
 			log.Log.Panicf("UpdateDB err:%v", err)
 		}
-
 	}
-	return nil
+
+	log.Log.Infof("maxBlockHeight:%v, currentHeight:%v, time:%v", m.maxBlockHeight, m.location.BlockHeight, time.Since(startTime))
 }
 
-func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) (
-	mod *postsql.ModInfo,
-	deleteFts []*postsql.UTXOFtInfo, newFts []*postsql.UTXOFtInfo,
-	updateNfts []*postsql.UTXONftInfo,
-	newUTXOFtInfo *postsql.UTXOFtInfo, updateDistributedFt *postsql.GlobalDistributedFt,
-	newGlobalDistributedFt *postsql.GlobalDistributedFt,
-	newGlobalDirectFt *postsql.GlobalDirectFt,
-	newUTXONftInfo *postsql.UTXONftInfo,
-) {
+func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) *repo.AtomicaslData {
 	operation := witness.ParseWitness(tx, height)
+	if operation.Payload != nil && !(operation.Payload.Args.MintTicker == "atom" || operation.Payload.Args.RequestTicker == "atom") {
+		return nil
+	}
 
 	// step 1: insert mod
 	// if operation.Op == "mod" {
@@ -77,11 +61,14 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) (
 	// }
 
 	// step 2: transfer nft, transfer ft
-	deleteFts, newFts, _ = m.transferFt(operation, tx)
+	deleteFts, newFts, _ := m.transferFt(operation, tx)
 
 	// updateNfts, _ = m.transferNft(operation, tx)
 
 	// step 3: process operation
+	var newUTXOFtInfo *postsql.UTXOFtInfo
+	var updateDistributedFt *postsql.GlobalDistributedFt
+	var newGlobalDistributedFt *postsql.GlobalDistributedFt
 	userPk := tx.Vout[utils.VOUT_EXPECT_OUTPUT_INDEX].ScriptPubKey.Address
 	if operation.Op == "dmt" {
 		newUTXOFtInfo, updateDistributedFt, _ = m.mintDistributedFt(operation, tx.Vout, userPk)
@@ -100,13 +87,18 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) (
 		}
 	}
 
-	// step 4 check payment
+	// TODO: step 4 check payment
 
-	return mod,
-		deleteFts, newFts,
-		updateNfts,
-		newUTXOFtInfo, updateDistributedFt,
-		newGlobalDistributedFt,
-		newGlobalDirectFt,
-		newUTXONftInfo
+	return &repo.AtomicaslData{
+		// Mod:                    mod,
+		DeleteFts: deleteFts,
+		NewFts:    newFts,
+		// UpdateNfts:             updateNfts,
+		NewUTXOFtInfo:          newUTXOFtInfo,
+		UpdateDistributedFt:    updateDistributedFt,
+		NewGlobalDistributedFt: newGlobalDistributedFt,
+		// NewGlobalDirectFt:      newGlobalDirectFt,
+		// NewUTXONftInfo:         newUTXONftInfo,
+	}
+
 }
