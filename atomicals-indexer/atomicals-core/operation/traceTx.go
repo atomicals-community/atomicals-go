@@ -40,9 +40,11 @@ func (m *Atomicals) Run() {
 		}
 		m.location.TxIndex = int64(txIndex)
 		data := m.TraceTx(tx, block.Height)
-		err = m.UpdateDB(block.Height, m.location.TxIndex, tx.Txid, data)
-		if err != nil {
-			log.Log.Panicf("UpdateDB err:%v", err)
+		if (data != nil && data.Op != "") || (block.Height%10 == 0 && m.location.TxIndex == 0) {
+			err = m.UpdateDB(block.Height, m.location.TxIndex, tx.Txid, data)
+			if err != nil {
+				log.Log.Panicf("UpdateDB err:%v", err)
+			}
 		}
 	}
 
@@ -88,8 +90,7 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) *repo.Atomicas
 	}
 
 	// TODO: step 4 check payment
-
-	return &repo.AtomicaslData{
+	data := &repo.AtomicaslData{
 		// Mod:                    mod,
 		DeleteFts: deleteFts,
 		NewFts:    newFts,
@@ -100,5 +101,7 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) *repo.Atomicas
 		// NewGlobalDirectFt:      newGlobalDirectFt,
 		// NewUTXONftInfo:         newUTXONftInfo,
 	}
+	data.ParseOperation()
 
+	return data
 }

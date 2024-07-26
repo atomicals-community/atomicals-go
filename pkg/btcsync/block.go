@@ -28,6 +28,16 @@ func (m *BtcSync) BlockByHeight(blockHeight int64) *btcjson.GetBlockVerboseTxRes
 		}
 		time.Sleep(1 * time.Second)
 	}
+	for _, tx := range b.Tx {
+		m.txCache[tx.Txid] = b.Height
+		m.txCacheByHeight[b.Height] = append(m.txCacheByHeight[b.Height], tx.Txid)
+		if _, ok := m.txCacheByHeight[b.Height-100]; ok {
+			for _, txID := range m.txCacheByHeight[b.Height-100] {
+				delete(m.txCache, txID)
+			}
+			delete(m.txCacheByHeight, b.Height-100)
+		}
+	}
 	return b
 }
 

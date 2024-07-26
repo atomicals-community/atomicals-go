@@ -6,6 +6,10 @@ import (
 )
 
 func (m *BtcSync) GetTxHeightByTxID(txID string) (int64, error) {
+	height, ok := m.txCache[txID]
+	if ok {
+		return height, nil
+	}
 	t, err := m.GetTransaction(txID)
 	if err != nil {
 		return -1, err

@@ -13,6 +13,7 @@ import (
 
 func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx btcjson.TxRawResult) (deleteFts []*postsql.UTXOFtInfo, newFts []*postsql.UTXOFtInfo, err error) {
 	if operation.IsSplitOperation() { // color_ft_atomicals_split
+		panic("")
 		for _, vin := range tx.Vin {
 			preLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
 			preFts, err := m.FtUTXOsByLocationID(preLocationID)
@@ -62,8 +63,7 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 		// color exactly the same amount of vout
 		// burn the rest ft
 		if utils.IsDmintActivated(operation.RevealLocationHeight) {
-			atomicalsFtsVinIndexMap := make(map[int64][]*postsql.UTXOFtInfo, 0) // key: vinIndex
-			for vinIndex, vin := range tx.Vin {
+			for _, vin := range tx.Vin {
 				preLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
 				preFts, err := m.FtUTXOsByLocationID(preLocationID)
 				if err != nil {
@@ -72,21 +72,11 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 				if len(preFts) == 0 {
 					continue
 				}
-				atomicalsFtsVinIndexMap[int64(vinIndex)] = preFts
+				deleteFts = append(deleteFts, preFts...)
 			}
-			seenFtmap := make(map[string]bool, 0) // key: tickerName
-			for _, fts := range atomicalsFtsVinIndexMap {
-				sort.Slice(fts, func(i, j int) bool {
-					return fts[i].AtomicalsID < fts[j].AtomicalsID
-				})
-				for _, ft := range fts {
-					if _, ok := seenFtmap[ft.AtomicalsID]; ok {
-						continue
-					}
-					seenFtmap[ft.AtomicalsID] = true
-					deleteFts = append(deleteFts, ft)
-				}
-			}
+			sort.Slice(deleteFts, func(i, j int) bool {
+				return deleteFts[i].AtomicalsID < deleteFts[j].AtomicalsID
+			})
 		} else {
 			for _, vin := range tx.Vin {
 				preLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
@@ -114,6 +104,9 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 		}
 
 		// calculate_outputs_to_color_for_ft_atomical_ids
+		if len(deleteFtMap) > 1 {
+			panic("")
+		}
 		for _, ftSlice := range deleteFtMap {
 			voutRemainingSpace := make([]int64, len(tx.Vout))
 			for i, vout := range tx.Vout {
