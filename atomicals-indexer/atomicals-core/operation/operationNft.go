@@ -54,7 +54,6 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 		newUTXONftInfo = &postsql.UTXONftInfo{
 			UserPk:      userPk,
 			RealmName:   operation.Payload.Args.RequestRealm,
-			Nonce:       operation.Payload.Args.Nonce,
 			Time:        operation.Payload.Args.Time,
 			Bitworkc:    operation.Payload.Args.Bitworkc,
 			Bitworkr:    operation.Payload.Args.Bitworkr,
@@ -102,7 +101,6 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 			SubRealmName:           operation.Payload.Args.RequestSubRealm,
 			ClaimType:              operation.Payload.Args.ClaimType,
 			ParentRealmAtomicalsID: operation.Payload.Args.ParentRealm,
-			Nonce:                  operation.Payload.Args.Nonce,
 			Time:                   operation.Payload.Args.Time,
 			Bitworkc:               operation.Payload.Args.Bitworkc,
 			Bitworkr:               operation.Payload.Args.Bitworkr,
@@ -129,7 +127,6 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 		newUTXONftInfo = &postsql.UTXONftInfo{
 			UserPk:        userPk,
 			ContainerName: operation.Payload.Args.RequestContainer,
-			Nonce:         operation.Payload.Args.Nonce,
 			Time:          operation.Payload.Args.Time,
 			Bitworkc:      operation.Payload.Args.Bitworkc,
 			Bitworkr:      operation.Payload.Args.Bitworkr,
@@ -173,7 +170,6 @@ func (m *Atomicals) mintNft(operation *witness.WitnessAtomicalsOperation, userPk
 			ContainerName:              parentContainer.ContainerName,
 			Dmitem:                     operation.Payload.Args.RequestDmitem,
 			ParentContainerAtomicalsID: operation.Payload.Args.ParentContainer,
-			Nonce:                      operation.Payload.Args.Nonce,
 			Time:                       operation.Payload.Args.Time,
 			Bitworkc:                   operation.Payload.Args.Bitworkc,
 			Bitworkr:                   operation.Payload.Args.Bitworkr,

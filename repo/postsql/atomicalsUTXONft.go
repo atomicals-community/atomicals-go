@@ -36,7 +36,6 @@ type UTXONftInfo struct {
 	Dmitem                     string `gorm:"index"`
 	ParentContainerAtomicalsID string
 
-	Nonce    int64
 	Time     int64
 	Bitworkc string
 	Bitworkr string

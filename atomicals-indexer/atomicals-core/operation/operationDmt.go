@@ -100,7 +100,6 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 	newUTXOFtInfo = &postsql.UTXOFtInfo{
 		UserPk:      userPk,
 		MintTicker:  ticker,
-		Nonce:       operation.Payload.Args.Nonce,
 		Time:        operation.Payload.Args.Time,
 		Bitworkc:    operation.Payload.Args.Bitworkc,
 		Bitworkr:    operation.Payload.Args.Bitworkr,

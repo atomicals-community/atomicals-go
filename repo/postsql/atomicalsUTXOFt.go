@@ -24,7 +24,6 @@ type UTXOFtInfo struct {
 
 	// DistributedFt
 	MintTicker      string `gorm:"index"`
-	Nonce           int64
 	Time            int64
 	MintBitworkVec  string
 	MintBitworkcInc string

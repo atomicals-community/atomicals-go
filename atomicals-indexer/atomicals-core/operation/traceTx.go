@@ -20,6 +20,7 @@ func (m *Atomicals) Run() {
 		if err != nil {
 			log.Log.Panicf("GetBlockCount err:%v", err)
 		}
+		return
 	}
 	block, err := m.GetBlockByHeight(m.location.BlockHeight)
 	if err != nil {
@@ -40,11 +41,9 @@ func (m *Atomicals) Run() {
 		}
 		m.location.TxIndex = int64(txIndex)
 		data := m.TraceTx(tx, block.Height)
-		if (data != nil && data.Op != "") || (block.Height%10 == 0 && m.location.TxIndex == 0) {
-			err = m.UpdateDB(block.Height, m.location.TxIndex, tx.Txid, data)
-			if err != nil {
-				log.Log.Panicf("UpdateDB err:%v", err)
-			}
+		err = m.UpdateDB(block.Height, m.location.TxIndex, tx.Txid, data)
+		if err != nil {
+			log.Log.Panicf("UpdateDB err:%v", err)
 		}
 	}
 
@@ -53,7 +52,7 @@ func (m *Atomicals) Run() {
 
 func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) *repo.AtomicaslData {
 	operation := witness.ParseWitness(tx, height)
-	if operation.Payload != nil && !(operation.Payload.Args.MintTicker == "atom" || operation.Payload.Args.RequestTicker == "atom") {
+	if operation.Payload != nil && !(operation.Payload.Args.MintTicker == "atom" || operation.Payload.Args.MintTicker == "quark" || operation.Payload.Args.RequestTicker == "atom" || operation.Payload.Args.RequestTicker == "quark") {
 		return nil
 	}
 
@@ -101,7 +100,5 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) *repo.Atomicas
 		// NewGlobalDirectFt:      newGlobalDirectFt,
 		// NewUTXONftInfo:         newUTXONftInfo,
 	}
-	data.ParseOperation()
-
 	return data
 }

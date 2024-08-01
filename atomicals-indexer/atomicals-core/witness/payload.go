@@ -17,8 +17,8 @@ type PayLoad struct {
 }
 
 type Args struct {
-	Nonce int64 `cbor:"nonce"`
-	Time  int64 `cbor:"time"`
+	// Nonce int64 `cbor:"nonce"`
+	Time int64 `cbor:"time"`
 
 	// optional
 	Bitworkc string `cbor:"bitworkc"`
