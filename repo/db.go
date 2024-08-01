@@ -26,6 +26,9 @@ type AtomicaslData struct {
 }
 
 func (m *AtomicaslData) ParseOperation() {
+	if m == nil {
+		return
+	}
 	// mod
 	if m.Mod != nil {
 		m.Op = "mod"
@@ -75,9 +78,12 @@ func (m *Postgres) UpdateDB(
 	currentHeight, currentTxIndex int64, txID string,
 	data *AtomicaslData,
 ) error {
-	if data == nil {
+	data.ParseOperation()
+
+	if !((data != nil && data.Op != "") || (currentHeight%10 == 0 && currentTxIndex == 0)) {
 		return nil
 	}
+
 	err := m.Transaction(func(tx *gorm.DB) error {
 		// mod
 		if data.Mod != nil {
