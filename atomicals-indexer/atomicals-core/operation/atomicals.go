@@ -16,14 +16,14 @@ type Atomicals struct {
 }
 
 func NewAtomicalsWithSQL(conf *conf.Config) *Atomicals {
-	btcsync, err := btcsync.NewBtcSync(conf.BtcRpcURL, conf.BtcRpcUser, conf.BtcRpcPassword)
-	if err != nil {
-		panic(err)
-	}
 	db := repo.NewSqlDB(conf.SqlDNS)
 	location, err := db.Location()
 	if err != nil {
 		log.Log.Panicf("Location err:%v", err)
+	}
+	btcsync, err := btcsync.NewBtcSync(conf.BtcRpcURL, conf.BtcRpcUser, conf.BtcRpcPassword)
+	if err != nil {
+		panic(err)
 	}
 	maxBlockHeight, err := btcsync.GetBlockCount()
 	if err != nil {

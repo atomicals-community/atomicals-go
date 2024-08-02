@@ -66,6 +66,9 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 	if operation.Payload.Args.Md != "" && operation.Payload.Args.Md != "0" && operation.Payload.Args.Md != "1" {
 		return nil, errors.ErrInvalidDftMd
 	}
+	if operation.RevealLocationHeight > utils.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && operation.CommitVoutIndex != utils.VOUT_EXPECT_OUTPUT_INDEX {
+		return nil, errors.ErrInvalidVinIndex
+	}
 	operation.CommitHeight, err = m.GetTxHeightByTxID(operation.CommitTxID)
 	if err != nil {
 		panic(err)
@@ -78,9 +81,6 @@ func (m *Atomicals) deployDistributedFt(operation *witness.WitnessAtomicalsOpera
 	}
 	if !operation.IsWithinAcceptableBlocksForNameReveal() {
 		return nil, errors.ErrInvalidCommitHeight
-	}
-	if operation.RevealLocationHeight > utils.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && operation.CommitVoutIndex != utils.VOUT_EXPECT_OUTPUT_INDEX {
-		return nil, errors.ErrInvalidVinIndex
 	}
 	newGlobalDistributedFt = &postsql.GlobalDistributedFt{
 		AtomicalsID:  operation.AtomicalsID,

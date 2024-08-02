@@ -6,10 +6,6 @@ import (
 )
 
 func (m *BtcSync) GetTxHeightByTxID(txID string) (int64, error) {
-	height, ok := m.txCache[txID]
-	if ok {
-		return height, nil
-	}
 	t, err := m.GetTransaction(txID)
 	if err != nil {
 		return -1, err
@@ -18,7 +14,7 @@ func (m *BtcSync) GetTxHeightByTxID(txID string) (int64, error) {
 	if err != nil {
 		return -1, err
 	}
-	blockInfo, err := m.GetBlockVerboseTx(blockHash)
+	blockInfo, err := m.GetBlockVerbose(blockHash)
 	if err != nil {
 		return -1, err
 	}

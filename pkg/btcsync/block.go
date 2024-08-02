@@ -7,14 +7,14 @@ import (
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 )
 
-func (m *BtcSync) GetBlockByHeightSync(blockHeight int64) *btcjson.GetBlockVerboseTxResult {
+func (m *BtcSync) GetBlockByHeightSync(blockHeight int64) (*btcjson.GetBlockVerboseTxResult, error) {
 	for height := blockHeight; height < blockHeight+int64(BlockCacheNum); height++ {
 		if m.CurrentHeight < height {
 			m.blockHeightChannel <- height
 			m.CurrentHeight = height
 		}
 	}
-	return m.BlockByHeight(blockHeight)
+	return m.BlockByHeight(blockHeight), nil
 }
 
 func (m *BtcSync) BlockByHeight(blockHeight int64) *btcjson.GetBlockVerboseTxResult {
@@ -27,16 +27,6 @@ func (m *BtcSync) BlockByHeight(blockHeight int64) *btcjson.GetBlockVerboseTxRes
 			break
 		}
 		time.Sleep(1 * time.Second)
-	}
-	for _, tx := range b.Tx {
-		m.txCache[tx.Txid] = b.Height
-		m.txCacheByHeight[b.Height] = append(m.txCacheByHeight[b.Height], tx.Txid)
-		if _, ok := m.txCacheByHeight[b.Height-100]; ok {
-			for _, txID := range m.txCacheByHeight[b.Height-100] {
-				delete(m.txCache, txID)
-			}
-			delete(m.txCacheByHeight, b.Height-100)
-		}
 	}
 	return b
 }
@@ -64,6 +54,7 @@ func (m *BtcSync) GetBlockByHeight(height int64) (*btcjson.GetBlockVerboseTxResu
 	if err != nil {
 		return nil, err
 	}
+	m.CurrentHeight = height
 	return block, nil
 }
 

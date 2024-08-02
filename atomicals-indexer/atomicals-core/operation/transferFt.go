@@ -2,6 +2,7 @@ package atomicals
 
 import (
 	"encoding/hex"
+	"fmt"
 	"sort"
 
 	"github.com/atomicals-go/atomicals-indexer/atomicals-core/witness"
@@ -101,11 +102,10 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 				deleteFtMap[ft.AtomicalsID] = append(deleteFtMap[ft.AtomicalsID], ft)
 			}
 		}
-
-		// calculate_outputs_to_color_for_ft_atomical_ids
 		if len(deleteFtMap) > 1 {
 			panic("")
 		}
+		// calculate_outputs_to_color_for_ft_atomical_ids
 		for _, ftSlice := range deleteFtMap {
 			voutRemainingSpace := make([]int64, len(tx.Vout))
 			for i, vout := range tx.Vout {
@@ -188,6 +188,13 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 					}
 				}
 			}
+		}
+		if len(deleteFtMap) > 1 {
+			fmt.Printf(tx.Txid)
+			for _, v := range newFts {
+				fmt.Printf(v.MintTicker, v.Amount)
+			}
+			panic("")
 		}
 	}
 	return deleteFts, newFts, nil

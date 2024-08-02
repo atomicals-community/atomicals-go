@@ -12,6 +12,9 @@ import (
 )
 
 func (m *Atomicals) Run() {
+	var startTime1 time.Duration
+	var startTime2 time.Duration
+
 	startTime := time.Now()
 	if m.location.BlockHeight+utils.SafeBlockHeightInterupt > m.maxBlockHeight {
 		time.Sleep(10 * time.Minute)
@@ -22,32 +25,37 @@ func (m *Atomicals) Run() {
 		}
 		return
 	}
-	block, err := m.GetBlockByHeight(m.location.BlockHeight)
+	block, err := m.GetBlockByHeightSync(m.location.BlockHeight)
 	if err != nil {
-		log.Log.Panicf("GetBlockByHeight err:%v", err)
+		log.Log.Panicf("GetBlockByHeightSync err:%v", err)
 	}
 	m.location.TxIndex++
 	if m.location.TxIndex >= int64(len(block.Tx)) {
 		m.location.BlockHeight++
 		m.location.TxIndex = 0
-		block, err = m.GetBlockByHeight(m.location.BlockHeight)
+		block, err = m.GetBlockByHeightSync(m.location.BlockHeight)
 		if err != nil {
-			log.Log.Panicf("GetBlockByHeight err:%v", err)
+			log.Log.Panicf("GetBlockByHeightSync err:%v", err)
 		}
 	}
 	for txIndex, tx := range block.Tx {
 		if int64(txIndex) < m.location.TxIndex {
 			continue
 		}
+		startTime := time.Now()
 		m.location.TxIndex = int64(txIndex)
 		data := m.TraceTx(tx, block.Height)
+		startTime1 = startTime1 + time.Since(startTime)
+
+		startTime = time.Now()
 		err = m.UpdateDB(block.Height, m.location.TxIndex, tx.Txid, data)
 		if err != nil {
 			log.Log.Panicf("UpdateDB err:%v", err)
 		}
+		startTime2 = startTime2 + time.Since(startTime)
 	}
 
-	log.Log.Infof("maxBlockHeight:%v, currentHeight:%v, time:%v", m.maxBlockHeight, m.location.BlockHeight, time.Since(startTime))
+	log.Log.Infof("maxBlockHeight:%v, currentHeight:%v,lenTx:%v time:%v %v %v", m.maxBlockHeight, m.location.BlockHeight, len(block.Tx), time.Since(startTime), startTime1, startTime2)
 }
 
 func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) *repo.AtomicaslData {

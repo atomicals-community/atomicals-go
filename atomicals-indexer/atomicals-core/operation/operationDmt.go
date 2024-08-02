@@ -27,13 +27,6 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 	if operation.RevealLocationHeight < updateDistributedFt.CommitHeight+utils.MINT_REALM_CONTAINER_TICKER_COMMIT_REVEAL_DELAY_BLOCKS {
 		return nil, nil, errors.ErrInvalidCommitHeight
 	}
-	operation.CommitHeight, err = m.GetTxHeightByTxID(operation.CommitTxID)
-	if err != nil {
-		panic(err)
-	}
-	if operation.CommitHeight < updateDistributedFt.MintHeight {
-		return nil, nil, errors.ErrInvalidCommitHeight
-	}
 	if operation.RevealLocationHeight >= utils.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ && operation.CommitVoutIndex != utils.VOUT_EXPECT_OUTPUT_INDEX {
 		return nil, nil, errors.ErrInvalidVinIndex
 	}
@@ -96,6 +89,13 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 	_, _, err = operation.IsValidBitwork()
 	if err != nil {
 		return nil, nil, err
+	}
+	operation.CommitHeight, err = m.GetTxHeightByTxID(operation.CommitTxID)
+	if err != nil {
+		panic(err)
+	}
+	if operation.CommitHeight < updateDistributedFt.MintHeight {
+		return nil, nil, errors.ErrInvalidCommitHeight
 	}
 	newUTXOFtInfo = &postsql.UTXOFtInfo{
 		UserPk:      userPk,
