@@ -38,7 +38,6 @@ type UTXONftInfo struct {
 	ContainerName              string `json:"container_name"`
 	Dmitem                     string `json:"dmitem"`
 	ParentContainerAtomicalsID string `json:"parent_container_atomicals_id"`
-	Nonce                      int64  `json:"nonce"`
 	Time                       int64  `json:"time"`
 	Bitworkc                   string `json:"bitworkc"`
 	Bitworkr                   string `json:"bitworkr"`
@@ -54,7 +53,6 @@ type UTXOFtInfo struct {
 
 	// DistributedFt
 	MintTicker      string `json:"mint_ticker"`
-	Nonce                      int64  `json:"nonce"`
 	Time                       int64  `json:"time"`
 	MintBitworkVec  string `json:"mint_bitwork_vec"`
 	MintBitworkcInc string `json:"mint_bitworkc_inc"`

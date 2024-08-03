@@ -40,7 +40,6 @@ func (l *GetassetByLocationIDLogic) GetAssetByLocationID(req *types.ReqAssetByLo
 			ContainerName:              v.ContainerName,
 			Dmitem:                     v.Dmitem,
 			ParentContainerAtomicalsID: v.ParentContainerAtomicalsID,
-			Nonce:                      v.Nonce,
 			Time:                       v.Time,
 			Bitworkc:                   v.Bitworkc,
 			Bitworkr:                   v.Bitworkr,

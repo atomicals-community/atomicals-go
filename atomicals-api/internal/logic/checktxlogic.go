@@ -31,7 +31,7 @@ func (l *CheckTxLogic) CheckTx(req *types.ReqCheckTx) (resp *types.RespCheckTx, 
 		l.Errorf("[CheckTx] GetTxByTxID err:%v", err)
 		return
 	}
-	if 0 <= height && height <= l.svcCtx.SyncHeight {
+	if 0 <= height && height <= l.svcCtx.CurrentHeight {
 		resp.Status = "confirmed"
 		txRecord := &postsql.AtomicalsTx{}
 		txRecord, err = l.svcCtx.AtomicalsTx(req.Txid)
@@ -41,20 +41,20 @@ func (l *CheckTxLogic) CheckTx(req *types.ReqCheckTx) (resp *types.RespCheckTx, 
 		}
 		resp.Operation = txRecord.Operation
 		resp.Description = txRecord.Description
-	} else if l.svcCtx.SyncHeight < height && height < l.svcCtx.MaxBlockHeight {
+	} else if l.svcCtx.CurrentHeight < height && height < l.svcCtx.MaxBlockHeight {
 		resp.Status = "until confirmation depth"
-		pendingAssets, ok := l.svcCtx.PendingAtomicalsAssetMap[req.Txid]
+		data, ok := l.svcCtx.PendingAtomicalsAssetMap[req.Txid]
 		if !ok {
 			l.Errorf("[CheckTx] AtomicalsTx err:%v", errors.New("atomicals operation not found"))
 			return
 		}
-		resp.Description = pendingAssets.CheckAsset()
-		resp.Operation = pendingAssets.Operation
+		resp.Description = data.Description
+		resp.Operation = data.Op
 	} else if height < 0 {
 		resp.Status = "in mempool"
-		pendingAssets := l.svcCtx.SyncMempoolAtomicalsAsset(*tx, height)
-		resp.Description = pendingAssets.CheckAsset()
-		resp.Operation = pendingAssets.Operation
+		data := l.svcCtx.TraceTx(*tx, height)
+		resp.Description = data.Description
+		resp.Operation = data.Op
 	}
 	return
 }
