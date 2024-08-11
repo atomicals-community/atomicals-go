@@ -20,10 +20,8 @@ type DB interface {
 	NftUTXOsByUserPK(UserPK string) ([]*postsql.UTXONftInfo, error)
 	NftUTXOByAtomicalsID(atomicalsID string) (*postsql.UTXONftInfo, error)
 	NftUTXOsByLocationID(locationID string) ([]*postsql.UTXONftInfo, error)
-	ParentRealmHasExist(parentRealmAtomicalsID string) (string, error)
-	NftRealmByNameHasExist(realmName string) (bool, error)
+	NftRealmByName(realmName string) ([]*postsql.UTXONftInfo, error)
 	NftSubRealmByNameHasExist(parentRealmAtomicalsID, subRealm string) (bool, error)
-	ParentContainerHasExist(parentContainerAtomicalsID string) (*postsql.UTXONftInfo, error)
 	NftContainerByNameHasExist(containerName string) (bool, error)
 	ContainerItemByNameHasExist(container, item string) (bool, error)
 	LatestItemByContainerName(container string) (*postsql.UTXONftInfo, error)
@@ -38,6 +36,8 @@ type DB interface {
 	ModHistory(atomicalsID string, height int64) ([]*postsql.ModInfo, error)
 
 	UpdateDB(currentHeight, currentTxIndex int64, txID string, data *AtomicaslData) error
+
+	PostgresDB() *Postgres
 }
 
 func NewSqlDB(sqlDNS string) DB {

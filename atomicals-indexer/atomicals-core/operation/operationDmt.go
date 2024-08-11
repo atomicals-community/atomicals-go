@@ -67,7 +67,7 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 			}
 		}
 	} else { //updateDistributedFt.MintMode == "fixed"
-		if updateDistributedFt.MintedTimes > updateDistributedFt.MaxMints {
+		if updateDistributedFt.MintedTimes >= updateDistributedFt.MaxMints {
 			return nil, nil, errors.ErrInvalidMintedTimes
 		} else if updateDistributedFt.MintedTimes < updateDistributedFt.MaxMints {
 			bitworkc, bitworkr, err := utils.ParseMintBitwork(operation.CommitTxID, operation.Payload.Args.MintBitworkc, operation.Payload.Args.MintBitworkr)
@@ -90,10 +90,7 @@ func (m *Atomicals) mintDistributedFt(operation *witness.WitnessAtomicalsOperati
 	if err != nil {
 		return nil, nil, err
 	}
-	operation.CommitHeight, err = m.GetTxHeightByTxID(operation.CommitTxID)
-	if err != nil {
-		panic(err)
-	}
+	operation.CommitHeight = m.getTxHeight(operation.CommitTxID)
 	if operation.CommitHeight < updateDistributedFt.MintHeight {
 		return nil, nil, errors.ErrInvalidCommitHeight
 	}

@@ -37,10 +37,7 @@ func (m *Atomicals) mintDirectFt(operation *witness.WitnessAtomicalsOperation, v
 	if err != nil {
 		return nil, err
 	}
-	operation.CommitHeight, err = m.GetTxHeightByTxID(operation.CommitTxID)
-	if err != nil {
-		panic(err)
-	}
+	operation.CommitHeight = m.getTxHeight(operation.CommitTxID)
 	if operation.CommitHeight < utils.ATOMICALS_ACTIVATION_HEIGHT {
 		return nil, errors.ErrInvalidCommitHeight
 	}

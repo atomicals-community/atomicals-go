@@ -2,7 +2,6 @@ package atomicals
 
 import (
 	"encoding/hex"
-	"fmt"
 	"sort"
 
 	"github.com/atomicals-go/atomicals-indexer/atomicals-core/witness"
@@ -14,7 +13,6 @@ import (
 
 func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx btcjson.TxRawResult) (deleteFts []*postsql.UTXOFtInfo, newFts []*postsql.UTXOFtInfo, err error) {
 	if operation.IsSplitOperation() { // color_ft_atomicals_split
-		panic("")
 		for _, vin := range tx.Vin {
 			preLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
 			preFts, err := m.FtUTXOsByLocationID(preLocationID)
@@ -62,37 +60,20 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 		// a ft in Vin has a total amount: entity.Amount,
 		// color exactly the same amount of vout
 		// burn the rest ft
-		if utils.IsDmintActivated(operation.RevealLocationHeight) {
-			for _, vin := range tx.Vin {
-				preLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
-				preFts, err := m.FtUTXOsByLocationID(preLocationID)
-				if err != nil {
-					log.Log.Panicf("FtUTXOsByLocationID err:%v", err)
-				}
-				if len(preFts) == 0 {
-					continue
-				}
-				deleteFts = append(deleteFts, preFts...)
+		for _, vin := range tx.Vin {
+			preLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
+			preFts, err := m.FtUTXOsByLocationID(preLocationID)
+			if err != nil {
+				log.Log.Panicf("FtUTXOsByLocationID err:%v", err)
 			}
-			sort.Slice(deleteFts, func(i, j int) bool {
-				return deleteFts[i].AtomicalsID < deleteFts[j].AtomicalsID
-			})
-		} else {
-			for _, vin := range tx.Vin {
-				preLocationID := utils.AtomicalsID(vin.Txid, int64(vin.Vout))
-				preFts, err := m.FtUTXOsByLocationID(preLocationID)
-				if err != nil {
-					log.Log.Panicf("FtUTXOsByLocationID err:%v", err)
-				}
-				if len(preFts) == 0 {
-					continue
-				}
-				deleteFts = append(deleteFts, preFts...)
+			if len(preFts) == 0 {
+				continue
 			}
-			sort.Slice(deleteFts, func(i, j int) bool {
-				return deleteFts[i].AtomicalsID < deleteFts[j].AtomicalsID
-			})
+			deleteFts = append(deleteFts, preFts...)
 		}
+		sort.Slice(deleteFts, func(i, j int) bool {
+			return deleteFts[i].AtomicalsID < deleteFts[j].AtomicalsID
+		})
 		deleteFtMap := make(map[string][]*postsql.UTXOFtInfo, 0)
 		for _, ft := range deleteFts {
 			if _, ok := deleteFtMap[ft.AtomicalsID]; !ok {
@@ -101,9 +82,6 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 			} else {
 				deleteFtMap[ft.AtomicalsID] = append(deleteFtMap[ft.AtomicalsID], ft)
 			}
-		}
-		if len(deleteFtMap) > 1 {
-			panic("")
 		}
 		// calculate_outputs_to_color_for_ft_atomical_ids
 		for _, ftSlice := range deleteFtMap {
@@ -129,9 +107,10 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 						continue
 					}
 					locationID := utils.AtomicalsID(operation.RevealLocationTxID, int64(outputIndex))
-					if voutRemainingSpace[outputIndex] > ft.Amount { // burn rest ft
-						voutRemainingSpace[outputIndex] = voutRemainingSpace[outputIndex] - ft.Amount
-						newFtAmount += ft.Amount
+					ftAmount := ft.Amount
+					if voutRemainingSpace[outputIndex] > ftAmount { // burn rest ft
+						voutRemainingSpace[outputIndex] = voutRemainingSpace[outputIndex] - ftAmount
+						newFtAmount += ftAmount
 						if utils.IsCustomColoring(operation.RevealLocationHeight) && i == (len(ftSlice)-1) {
 							newFts = append(newFts, &postsql.UTXOFtInfo{
 								UserPk:          vout.ScriptPubKey.Address,
@@ -148,9 +127,9 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 							})
 						}
 						break
-					} else if voutRemainingSpace[outputIndex] == ft.Amount { // burn rest ft
-						voutRemainingSpace[outputIndex] = voutRemainingSpace[outputIndex] - ft.Amount
-						newFtAmount += ft.Amount
+					} else if voutRemainingSpace[outputIndex] == ftAmount { // burn rest ft
+						voutRemainingSpace[outputIndex] = voutRemainingSpace[outputIndex] - ftAmount
+						newFtAmount += ftAmount
 						outputIndex = outputIndex + 1
 						newFts = append(newFts, &postsql.UTXOFtInfo{
 							UserPk:          vout.ScriptPubKey.Address,
@@ -167,9 +146,8 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 						})
 						newFtAmount = 0
 						break
-					} else if voutRemainingSpace[outputIndex] < ft.Amount {
+					} else if voutRemainingSpace[outputIndex] < ftAmount {
 						voutRemainingSpace[outputIndex] = 0
-						outputIndex = outputIndex + 1
 						newFts = append(newFts, &postsql.UTXOFtInfo{
 							UserPk:          vout.ScriptPubKey.Address,
 							AtomicalsID:     ft.AtomicalsID,
@@ -183,18 +161,14 @@ func (m *Atomicals) transferFt(operation *witness.WitnessAtomicalsOperation, tx 
 							MintBitworkrInc: ft.MintBitworkrInc,
 							Amount:          utils.MulSatoshi(vout.Value),
 						})
-						ft.Amount -= utils.MulSatoshi(vout.Value)
-						newFtAmount = 0
+						if outputIndex != int64(len(tx.Vout))-1 {
+							ftAmount -= utils.MulSatoshi(vout.Value)
+							newFtAmount = 0
+						}
+						outputIndex = outputIndex + 1
 					}
 				}
 			}
-		}
-		if len(deleteFtMap) > 1 {
-			fmt.Printf(tx.Txid)
-			for _, v := range newFts {
-				fmt.Printf(v.MintTicker, v.Amount)
-			}
-			panic("")
 		}
 	}
 	return deleteFts, newFts, nil

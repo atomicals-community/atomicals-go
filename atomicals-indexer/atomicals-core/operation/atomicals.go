@@ -1,6 +1,8 @@
 package atomicals
 
 import (
+	"sync"
+
 	"github.com/atomicals-go/pkg/btcsync"
 	"github.com/atomicals-go/pkg/conf"
 	"github.com/atomicals-go/pkg/log"
@@ -11,8 +13,9 @@ import (
 type Atomicals struct {
 	*btcsync.BtcSync
 	repo.DB
-	location       *postsql.Location
-	maxBlockHeight int64
+	location        *postsql.Location
+	maxBlockHeight  int64
+	SyncTxHeightMap sync.Map // map[string]int64
 }
 
 func NewAtomicalsWithSQL(conf *conf.Config) *Atomicals {
@@ -29,10 +32,11 @@ func NewAtomicalsWithSQL(conf *conf.Config) *Atomicals {
 	if err != nil {
 		log.Log.Panicf("GetBlockCount err:%v", err)
 	}
-	return &Atomicals{
+	a := &Atomicals{
 		DB:             db,
 		BtcSync:        btcsync,
 		location:       location,
 		maxBlockHeight: maxBlockHeight,
 	}
+	return a
 }

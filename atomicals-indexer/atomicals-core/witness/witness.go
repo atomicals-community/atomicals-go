@@ -16,6 +16,7 @@ type WitnessAtomicalsOperation struct {
 	CommitTxID      string // vin's txID
 	CommitVoutIndex int64  // vin's index as vout in last tx
 	CommitHeight    int64
+	CommitTxIndex   int64
 
 	AtomicalsID          string
 	LocationID           string
@@ -48,6 +49,7 @@ func ParseWitness(tx btcjson.TxRawResult, height int64) *WitnessAtomicalsOperati
 				CommitTxID:      vin.Txid,
 				CommitVoutIndex: int64(vin.Vout),
 				CommitHeight:    -1,
+				CommitTxIndex:   -1,
 
 				AtomicalsID:          utils.AtomicalsID(vin.Txid, int64(vin.Vout)),
 				LocationID:           utils.AtomicalsID(tx.Txid, int64(vinIndex)),

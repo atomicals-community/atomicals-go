@@ -124,10 +124,6 @@ func parseOperationAndPayLoad(script string) (string, *PayLoad, error) {
 	if scriptEntryLen < 39 || scriptBytes[0] != 0x20 {
 		return "", nil, errors.ErrInvalidWitnessScriptLength
 	}
-	pkFlag := scriptBytes[0]
-	if pkFlag != 0x20 {
-		return "", nil, errors.ErrInvalidWitnessScriptPkFlag
-	}
 	for index := int64(35); index < scriptEntryLen-6; index++ {
 		opFlag := scriptBytes[index]
 		if opFlag != OP_IF {

@@ -12,9 +12,6 @@ func (m *Postgres) NftUTXOsByUserPK(UserPK string) ([]*postsql.UTXONftInfo, erro
 	if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {
 		return nil, dbTx.Error
 	}
-	// if dbTx.RowsAffected == 0 {
-	// 	return nil, nil
-	// }
 	return entity, nil
 }
 
@@ -39,46 +36,20 @@ func (m *Postgres) NftUTXOsByLocationID(locationID string) ([]*postsql.UTXONftIn
 	return entity, nil
 }
 
-func (m *Postgres) ParentRealmHasExist(parentRealmAtomicalsID string) (string, error) {
-	var entity *postsql.UTXONftInfo
-	dbTx := m.Model(postsql.UTXONftInfo{}).Where("atomicals_id = ?", parentRealmAtomicalsID).Find(&entity)
-	if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {
-		return "", dbTx.Error
-	}
-	if dbTx.RowsAffected == 0 {
-		return "", nil
-	}
-	return entity.RealmName, nil
-}
-
-func (m *Postgres) ParentContainerHasExist(parentContainerAtomicalsID string) (*postsql.UTXONftInfo, error) {
-	var entity *postsql.UTXONftInfo
-	dbTx := m.Model(postsql.UTXONftInfo{}).Where("atomicals_id = ?", parentContainerAtomicalsID).Find(&entity)
-	if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {
-		return nil, dbTx.Error
-	}
-	if dbTx.RowsAffected == 0 {
-		return nil, nil
-	}
-	return entity, nil
-}
-
-func (m *Postgres) NftRealmByNameHasExist(realmName string) (bool, error) {
+func (m *Postgres) NftRealmByName(realmName string) ([]*postsql.UTXONftInfo, error) {
 	if !m.testRealm(realmName) {
-		return false, nil
+		return nil, nil
 	}
 	var entities []*postsql.UTXONftInfo
 	dbTx := m.Model(postsql.UTXONftInfo{}).Where("realm_name = ?", realmName).First(&entities)
 	if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {
-		return false, dbTx.Error
+		return nil, dbTx.Error
 	}
-	if dbTx.RowsAffected == 0 {
-		return false, nil
-	}
+
 	if len(entities) == 0 {
-		return false, nil
+		return nil, nil
 	}
-	return true, nil
+	return entities, nil
 }
 
 func (m *Postgres) NftSubRealmByNameHasExist(parentRealmAtomicalsID, subRealm string) (bool, error) {
@@ -118,15 +89,6 @@ func (m *Postgres) ContainerItemByNameHasExist(containerName, itemID string) (bo
 		return false, nil
 	}
 	return true, nil
-}
-
-func (m *Postgres) NftUTXOsByID(offset, limit int) ([]*postsql.UTXONftInfo, error) {
-	var entity []*postsql.UTXONftInfo
-	dbTx := m.Model(postsql.UTXONftInfo{}).Order("id").Offset(offset).Limit(limit).Find(&entity)
-	if dbTx.Error != nil && !strings.Contains(dbTx.Error.Error(), "record not found") {
-		return nil, dbTx.Error
-	}
-	return entity, nil
 }
 
 func (m *Postgres) LatestItemByContainerName(containerName string) (*postsql.UTXONftInfo, error) {

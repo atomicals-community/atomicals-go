@@ -23,15 +23,12 @@ type AtomicaslData struct {
 	NewGlobalDistributedFt *postsql.GlobalDistributedFt
 	NewGlobalDirectFt      *postsql.GlobalDirectFt
 	NewUTXONftInfo         *postsql.UTXONftInfo
+	DeleteUTXONfts         []*postsql.UTXONftInfo
 }
 
 func (m *AtomicaslData) ParseOperation() {
 	if m == nil {
 		return
-	}
-	// mod
-	if m.Mod != nil {
-		m.Op = "mod"
 	}
 
 	// transfer ft
@@ -39,48 +36,61 @@ func (m *AtomicaslData) ParseOperation() {
 		for _, v := range m.DeleteFts {
 			m.Description += fmt.Sprintf("delete#ticker:%v,locationID:%v,userPk:%v,amount:%v\n", v.MintTicker, v.LocationID, v.UserPk, v.Amount)
 		}
-		m.Op = "transfer_ft"
+		m.Op += "|transfer"
 	}
 	if len(m.NewFts) > 0 {
 		for _, v := range m.NewFts {
 			m.Description += fmt.Sprintf("insert#ticker:%v,locationID:%v,userPk:%v,amount:%v\n", v.MintTicker, v.LocationID, v.UserPk, v.Amount)
 		}
-		m.Op = "transfer_ft"
+		m.Op += "|transfer"
 	}
 
 	// transfer nft
 	if len(m.UpdateNfts) > 0 {
-		m.Op = "transfer_nft"
+		m.Op += "|transfer"
+	}
+
+	// mod
+	if m.Mod != nil {
+		m.Op += "|mod"
 	}
 
 	// mint ft
 	if m.NewUTXOFtInfo != nil {
-		m.Op = "dmt"
+		m.Op += "|dmt"
 		m.Description += fmt.Sprintf("insert#ticker:%v,locationID:%v,userPk:%v,amount:%v\n", m.NewUTXOFtInfo.MintTicker, m.NewUTXOFtInfo.LocationID, m.NewUTXOFtInfo.UserPk, m.NewUTXOFtInfo.Amount)
 	}
 	if m.UpdateDistributedFt != nil {
-		m.Op = "dmt"
+		m.Op += "|dmt"
 	}
 	if m.NewGlobalDistributedFt != nil {
-		m.Op = "dft"
+		m.Op += "|dft"
 	}
 	if m.NewGlobalDirectFt != nil {
-		m.Op = "ft"
+		m.Op += "|ft"
 	}
 
 	// mint nft
 	if m.NewUTXONftInfo != nil {
-		m.Op = "nft"
+		if m.NewUTXONftInfo.RealmName != "" {
+			m.Op += "|mint-nft-realm"
+		} else if m.NewUTXONftInfo.SubRealmName != "" {
+			m.Op += "|mint-nft-subrealm"
+		} else if m.NewUTXONftInfo.ContainerName != "" {
+			m.Op += "|mint-nft-container"
+		} else if m.NewUTXONftInfo.Dmitem != "" {
+			m.Op += "|mint-nft"
+		}
 	}
 }
 
-func (m *Postgres) UpdateDB(
-	currentHeight, currentTxIndex int64, txID string,
-	data *AtomicaslData,
-) error {
-	data.ParseOperation()
+func (m *Postgres) UpdateDB(currentHeight, currentTxIndex int64, txID string, data *AtomicaslData) error {
+	// data.ParseOperation()
+	if data == nil {
+		return nil
+	}
 
-	if !((data != nil && data.Op != "") || (currentHeight%10 == 0 && currentTxIndex == 0)) {
+	if !((data.Op != "") || (currentHeight%10 == 0 && currentTxIndex == 0)) {
 		return nil
 	}
 
@@ -136,7 +146,7 @@ func (m *Postgres) UpdateDB(
 			}
 		}
 		if data.NewGlobalDistributedFt != nil {
-			m.addDistributedFt(data.NewGlobalDistributedFt.TickerName)
+			// m.addDistributedFt(data.NewGlobalDistributedFt.TickerName)
 			m.addFtLocationID(data.NewGlobalDistributedFt.LocationID)
 			dbErr := tx.Save(data.NewGlobalDistributedFt)
 			if dbErr.Error != nil {
@@ -160,6 +170,13 @@ func (m *Postgres) UpdateDB(
 			}
 			m.addNftLocationID(data.NewUTXONftInfo.LocationID)
 			dbErr := tx.Save(data.NewUTXONftInfo)
+			if dbErr.Error != nil {
+				return dbErr.Error
+			}
+		}
+
+		if len(data.DeleteUTXONfts) != 0 {
+			dbErr := tx.Delete(&data.DeleteUTXONfts)
 			if dbErr.Error != nil {
 				return dbErr.Error
 			}
@@ -210,4 +227,8 @@ func (m *Postgres) UpdateDB(
 		return nil
 	})
 	return err
+}
+
+func (m *Postgres) PostgresDB() *Postgres {
+	return m
 }

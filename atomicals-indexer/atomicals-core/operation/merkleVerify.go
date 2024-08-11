@@ -20,7 +20,7 @@ func (m *Atomicals) verifyRuleAndMerkle(operation *witness.WitnessAtomicalsOpera
 	}
 	parentContainer, err := m.NftUTXOByAtomicalsID(operation.Payload.Args.ParentContainer)
 	if err != nil {
-		log.Log.Panicf("ParentContainerHasExist err:%v", err)
+		log.Log.Panicf("NftUTXOByAtomicalsID err:%v", err)
 	}
 	latestItem, err := m.LatestItemByContainerName(parentContainer.ContainerName)
 	if err != nil {

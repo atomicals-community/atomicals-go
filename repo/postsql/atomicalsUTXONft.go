@@ -19,9 +19,11 @@ const (
 
 type UTXONftInfo struct {
 	gorm.Model
-	UserPk      string
-	AtomicalsID string `gorm:"index"` // txID _ VOUT_EXPECT_OUTPUT_INDEX when be minted
-	LocationID  string `gorm:"index"` // txID_voutIndex updated after being transfered
+	UserPk        string
+	AtomicalsID   string `gorm:"index"` // txID _ VOUT_EXPECT_OUTPUT_INDEX when be minted
+	CommitHeight  int64
+	CommitTxIndex int64
+	LocationID    string `gorm:"index"` // txID_voutIndex updated after being transfered
 
 	// realm
 	RealmName string `gorm:"index"`

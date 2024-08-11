@@ -10,7 +10,9 @@ const statisticTxTableName = "statistic_tx"
 type StatisticTx struct {
 	gorm.Model
 	BlockHeight int64 `gorm:"uniqueindex"`
-	Data        string
+	Ticker      string
+	UserPk      string
+	Amount      int
 	Description string
 }
 
