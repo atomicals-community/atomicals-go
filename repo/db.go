@@ -15,6 +15,7 @@ type AtomicaslData struct {
 	Op                     string
 	Description            string
 	Mod                    *postsql.ModInfo
+	Dat                    *postsql.DatInfo
 	DeleteFts              []*postsql.UTXOFtInfo
 	NewFts                 []*postsql.UTXOFtInfo
 	UpdateNfts             []*postsql.UTXONftInfo
@@ -26,7 +27,7 @@ type AtomicaslData struct {
 	DeleteUTXONfts         []*postsql.UTXONftInfo
 }
 
-func (m *AtomicaslData) ParseOperation() {
+func (m *AtomicaslData) ParseOperation(orgOp string) {
 	if m == nil {
 		return
 	}
@@ -36,50 +37,70 @@ func (m *AtomicaslData) ParseOperation() {
 		for _, v := range m.DeleteFts {
 			m.Description += fmt.Sprintf("delete#ticker:%v,locationID:%v,userPk:%v,amount:%v\n", v.MintTicker, v.LocationID, v.UserPk, v.Amount)
 		}
-		m.Op += "|transfer"
+		m.Op = "transfer"
+		if orgOp == "x" {
+			m.Op = "splat"
+		} else if orgOp == "y" {
+			m.Op = "split"
+		}
 	}
 	if len(m.NewFts) > 0 {
 		for _, v := range m.NewFts {
 			m.Description += fmt.Sprintf("insert#ticker:%v,locationID:%v,userPk:%v,amount:%v\n", v.MintTicker, v.LocationID, v.UserPk, v.Amount)
 		}
-		m.Op += "|transfer"
 	}
 
 	// transfer nft
 	if len(m.UpdateNfts) > 0 {
-		m.Op += "|transfer"
+		m.Op = "transfer"
+		if orgOp == "x" {
+			m.Op = "splat"
+		} else if orgOp == "y" {
+			m.Op = "split"
+		}
 	}
 
 	// mod
 	if m.Mod != nil {
-		m.Op += "|mod"
+		m.Op = "mod"
+	}
+
+	if m.Dat != nil {
+		m.Op = "dat"
 	}
 
 	// mint ft
 	if m.NewUTXOFtInfo != nil {
-		m.Op += "|dmt"
+		m.Op = "mint-dft"
 		m.Description += fmt.Sprintf("insert#ticker:%v,locationID:%v,userPk:%v,amount:%v\n", m.NewUTXOFtInfo.MintTicker, m.NewUTXOFtInfo.LocationID, m.NewUTXOFtInfo.UserPk, m.NewUTXOFtInfo.Amount)
+	} else {
+		if orgOp == "dmt" {
+			m.Op = "mint-dft-failed"
+		}
 	}
 	if m.UpdateDistributedFt != nil {
-		m.Op += "|dmt"
+		m.Op = "dmt"
 	}
 	if m.NewGlobalDistributedFt != nil {
-		m.Op += "|dft"
+		m.Op = "dft"
 	}
 	if m.NewGlobalDirectFt != nil {
-		m.Op += "|ft"
+		m.Op = "ft"
 	}
 
 	// mint nft
 	if m.NewUTXONftInfo != nil {
 		if m.NewUTXONftInfo.RealmName != "" {
-			m.Op += "|mint-nft-realm"
-		} else if m.NewUTXONftInfo.SubRealmName != "" {
-			m.Op += "|mint-nft-subrealm"
-		} else if m.NewUTXONftInfo.ContainerName != "" {
-			m.Op += "|mint-nft-container"
-		} else if m.NewUTXONftInfo.Dmitem != "" {
-			m.Op += "|mint-nft"
+			m.Op = "mint-nft-realm"
+		}
+		if m.NewUTXONftInfo.SubRealmName != "" {
+			m.Op = "mint-nft-subrealm"
+		}
+		if m.NewUTXONftInfo.ContainerName != "" {
+			m.Op = "mint-nft-container"
+		}
+		if m.NewUTXONftInfo.Dmitem != "" {
+			m.Op = "mint-nft"
 		}
 	}
 }
@@ -98,6 +119,13 @@ func (m *Postgres) UpdateDB(currentHeight, currentTxIndex int64, txID string, da
 		// mod
 		if data.Mod != nil {
 			dbErr := tx.Save(data.Mod)
+			if dbErr.Error != nil {
+				return dbErr.Error
+			}
+		}
+
+		if data.Dat != nil {
+			dbErr := tx.Save(data.Dat)
 			if dbErr.Error != nil {
 				return dbErr.Error
 			}

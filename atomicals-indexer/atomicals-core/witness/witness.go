@@ -18,11 +18,12 @@ type WitnessAtomicalsOperation struct {
 	CommitHeight    int64
 	CommitTxIndex   int64
 
-	AtomicalsID          string
-	LocationID           string
 	RevealLocationTxID   string
 	RevealInputIndex     int64
 	RevealLocationHeight int64
+
+	AtomicalsID string
+	LocationID  string
 }
 
 // # Parses and detects valid Atomicals protocol operations in a witness script
@@ -33,13 +34,20 @@ func ParseWitness(tx btcjson.TxRawResult, height int64) *WitnessAtomicalsOperati
 			continue
 		}
 		for _, script := range vin.Witness {
-			op, payload, err := parseOperationAndPayLoad(script)
+			op, payload, err := parseOperationAndPayLoad(script, height)
 			if err != nil {
 				continue
 			}
 			var payloadStr string
-			if op == "mod" {
-				payloadStr = pythonparse.ParseAtomicalsOperation(script)
+			if op != "" {
+				var opFromPython string
+				opFromPython, payloadStr, err = pythonparse.ParseAtomicalsOperation(script, height)
+				if err != nil {
+					continue
+				}
+				if opFromPython == "" {
+					continue
+				}
 			}
 			return &WitnessAtomicalsOperation{
 				Op:              op,

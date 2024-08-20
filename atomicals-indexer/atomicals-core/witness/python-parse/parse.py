@@ -1,19 +1,48 @@
 # script.py
 
 from cbor2 import loads
-from util import parse_protocols_operations_from_witness_for_input
+from util import parse_protocols_operations_from_witness_for_input,is_sanitized_dict_whitelist_only,is_density_activated
 import sys
 
-def parse(witenss_script):
-    # print("python parse witenss_script:", witenss_script)
-    op_name, payload = parse_protocols_operations_from_witness_for_input([bytes.fromhex(witenss_script)])
-    decoded_object = loads(payload)
-    print("python parse op_name:", op_name)
-    print("python parse decoded_object:", decoded_object)
+def parse(witness_script, height):
+    op_name, payload = parse_protocols_operations_from_witness_for_input([bytes.fromhex(witness_script)])
+    if not op_name:
+        return
+    decoded_object = {}
+    if payload:
+        # Ensure that the payload is cbor encoded dictionary or empty
+        try:
+            decoded_object = loads(payload)
+            if not isinstance(decoded_object, dict):
+                # print(
+                #     f"parse_protocols_operations_from_witness_array found {op_name} but decoded CBOR payload is not a dict. Skipping tx input..."
+                # )
+                return
+        except Exception as e:
+            # print(
+            #     f"parse_protocols_operations_from_witness_array found {op_name} but CBOR payload parsing failed. Skipping tx input...{e}"
+            # )
+            return
+        # Also enforce that if there are meta, args, or ctx fields that they must be dicts
+        # This is done to ensure that these fields are always easily parseable and do not contain unexpected data which could cause parsing problems later
+        # Ensure that they are not allowed to contain bytes like objects
+        if (
+            not is_sanitized_dict_whitelist_only(decoded_object.get("meta", {}))
+            or not is_sanitized_dict_whitelist_only(decoded_object.get("args", {}), is_density_activated(height))
+            or not is_sanitized_dict_whitelist_only(decoded_object.get("ctx", {}))
+            or not is_sanitized_dict_whitelist_only(decoded_object.get("init", {}), True)
+        ):
+            # print(
+            #     f"parse_protocols_operations_from_witness_array found {op_name} but decoded CBOR payload has an args, meta, ctx, or init that has not permitted data type {decoded_object}. Skipping tx input..."
+            # )
+            return
+        print(op_name)
+        print(decoded_object)
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
+    if len(sys.argv) != 3:
         print("Usage: python script.py <witness_script>")
         sys.exit(1)
-    witenss_script = sys.argv[1]
-    parse(witenss_script)
+    witness_script = sys.argv[1]
+    height = int(sys.argv[2])  # Convert height to integer
+    parse(witness_script,height)

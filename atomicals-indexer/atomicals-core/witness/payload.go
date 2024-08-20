@@ -115,7 +115,7 @@ type Subrealms struct {
 	Rules []*RuleInfo `cbor:"rules"`
 }
 
-func parseOperationAndPayLoad(script string) (string, *PayLoad, error) {
+func parseOperationAndPayLoad(script string, height int64) (string, *PayLoad, error) {
 	scriptBytes, err := hex.DecodeString(script)
 	if err != nil {
 		return "", nil, err

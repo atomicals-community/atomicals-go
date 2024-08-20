@@ -1,7 +1,6 @@
 package atomicals
 
 import (
-	"strings"
 	"time"
 
 	"github.com/atomicals-go/atomicals-indexer/atomicals-core/witness"
@@ -60,12 +59,8 @@ func (m *Atomicals) Run() {
 
 func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) *repo.AtomicaslData {
 	operation := witness.ParseWitness(tx, height)
+
 	data := &repo.AtomicaslData{}
-	if operation.Op == "x" {
-		data.Op = "splat|"
-	} else if operation.Op == "y" {
-		data.Op = "split|"
-	}
 
 	// step 1: insert mod
 	if operation.Op == "mod" {
@@ -81,11 +76,6 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) *repo.Atomicas
 	userPk := tx.Vout[utils.VOUT_EXPECT_OUTPUT_INDEX].ScriptPubKey.Address
 	if operation.Op == "dmt" {
 		data.NewUTXOFtInfo, data.UpdateDistributedFt, _ = m.mintDistributedFt(operation, tx.Vout, userPk)
-		if data.NewUTXOFtInfo == nil {
-			data.Op = "mint-dft-failed|"
-		} else {
-			data.Op = "mint-dft|"
-		}
 	} else {
 		switch operation.Op {
 		case "dft":
@@ -95,33 +85,19 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) *repo.Atomicas
 		case "nft":
 			data.NewUTXONftInfo, data.DeleteUTXONfts, _ = m.mintNft(operation, userPk)
 		case "evt":
-			panic("")
+			panic(operation.Payload)
 		case "dat":
-			panic("")
+			data.Dat = m.operationDat(operation, tx)
 		case "sl":
-			panic("")
+			panic(operation.Payload)
 		default:
 		}
 	}
 
 	// TODO: step 4 check payment
-	data.Op += operation.Op
-	data.ParseOperation()
-	if data.Op != "" && operation.Op != "dmt" {
-		wizzop, err := fetchTxFromWizz(operation.RevealLocationTxID)
-		if err != nil {
-			log.Log.Infof("RevealLocationTxID:%v", operation.RevealLocationTxID)
-			panic(err)
-		}
-		if wizzop != "" {
-			log.Log.Infof("txid  %v %v, operation.Op: %v,wizz op: %v, data op: %v", operation.RevealLocationHeight, operation.RevealLocationTxID, operation.Op, wizzop, data.Op)
-			if !strings.Contains(data.Op, wizzop) {
-				panic("")
-			}
-			if tx.Txid == "054cc18a8162887917a1e6e5c60389bb4b6647167e6936d231466d7b2710f413" {
-				panic("")
-			}
-		}
-	}
+	data.ParseOperation(operation.Op)
+
+	// check data with reference indexer
+	ReferenceIndexer(data, operation)
 	return data
 }

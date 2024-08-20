@@ -1,5 +1,6 @@
 from enumeration import Enumeration
 from struct import Struct
+import sys
 
 struct_le_i = Struct('<i')
 struct_le_q = Struct('<q')
@@ -249,3 +250,28 @@ DFT_MINT_HEIGHT_MIN = 0
 # This value would never change, it's added in case someone accidentally tries to use a unixtime
 DFT_MINT_HEIGHT_MAX = 10000000 # 10 million blocks
   
+def is_sanitized_dict_whitelist_only(d: dict, allow_bytes=False):
+    if not isinstance(d, dict):
+        return False
+    for k, v in d.items():
+        if isinstance(v, dict):
+            return is_sanitized_dict_whitelist_only(v, allow_bytes)
+        if not allow_bytes and isinstance(v, bytes):
+            print( f"parse {k} {v} ..." )
+            return False
+        if (
+            not isinstance(v, int)
+            and not isinstance(v, float)
+            and not isinstance(v, list)
+            and not isinstance(v, str)
+            and not isinstance(v, bytes)
+        ):
+            # Prohibit anything except int, float, lists, strings and bytes
+            return False
+    return True
+
+def is_density_activated(height: int):
+    ATOMICALS_ACTIVATION_HEIGHT_DENSITY = 828128
+    if height >= ATOMICALS_ACTIVATION_HEIGHT_DENSITY:
+        return True
+    return False
