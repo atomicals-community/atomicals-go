@@ -41,13 +41,14 @@ func ReferenceIndexer(data *repo.AtomicaslData, operation *witness.WitnessAtomic
 		}
 	case "nft":
 		if hasAtomicalsAsset && data.NewUTXONftInfo == nil {
-			log.Log.Infof("%v", operation.PayloadStr)
+			if !(operation.Payload.Args.RequestContainer != "" || operation.Payload.Args.RequestDmitem != "") {
+				return
+			}
 			log.Log.Infof("%v %v %v", operation.RevealLocationHeight, operation.AtomicalsID, operation.RevealLocationTxID)
 			panic("hasAtomicalsAsset")
 		}
 		if !hasAtomicalsAsset && data.NewUTXONftInfo != nil {
 			log.Log.Infof("%v %v %v", operation.RevealLocationHeight, operation.AtomicalsID, operation.RevealLocationTxID)
-			log.Log.Infof("%v ", operation.PayloadStr)
 			panic("hasAtomicalsAsset")
 		}
 	case "evt":
@@ -62,7 +63,11 @@ func ReferenceIndexer(data *repo.AtomicaslData, operation *witness.WitnessAtomic
 
 func fetchAtomicalsAssetFromReferenceIndexer(atomicalsID string) (bool, error) {
 	encodedTxID := url.QueryEscape(fmt.Sprintf(`"%s"`, atomicalsID))
-	url := fmt.Sprintf("https://atomindexer.satsx.io/proxy/blockchain.atomicals.get?params=[%s]", encodedTxID)
+	// endpoint := "https://ep.atomicals.xyz/proxy"
+	// endpoint := "https://ep.atomicalswallet.com/proxy"
+	endpoint := "https://ep.wizz.cash/proxy"
+	// endpoint := "https://atomindexer.satsx.io/proxy"
+	url := fmt.Sprintf(endpoint+"/blockchain.atomicals.get?params=[%s]", encodedTxID)
 	resp, err := http.Get(url)
 	if err != nil {
 		return false, err
@@ -73,7 +78,7 @@ func fetchAtomicalsAssetFromReferenceIndexer(atomicalsID string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	fmt.Println(string(body))
+	// fmt.Println(string(body))
 	var response RespAtomicalsAssetFromReferenceIndexer
 	err = json.Unmarshal(body, &response)
 	if err != nil {

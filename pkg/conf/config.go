@@ -7,10 +7,11 @@ import (
 )
 
 type Config struct {
-	BtcRpcURL      string `json:"btc_rpc_url"`
-	BtcRpcUser     string `json:"btc_rpc_user"`
-	BtcRpcPassword string `json:"btc_rpc_password"`
-	SqlDNS         string `json:"sql_dns"`
+	BtcRpcURL            string `json:"btc_rpc_url"`
+	BtcRpcUser           string `json:"btc_rpc_user"`
+	BtcRpcPassword       string `json:"btc_rpc_password"`
+	SqlDNS               string `json:"sql_dns"`
+	AtomicalsStartHeight int64  `json:"atomicals_start_height"`
 }
 
 func ReadJSONFromJSFile(filePath string) (*Config, error) {

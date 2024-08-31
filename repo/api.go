@@ -35,7 +35,7 @@ type DB interface {
 	// mod
 	ModHistory(atomicalsID string, height int64) ([]*postsql.ModInfo, error)
 
-	UpdateDB(currentHeight, currentTxIndex int64, txID string, data *AtomicaslData) error
+	UpdateDB(location *postsql.Location, data *AtomicaslData) error
 
 	PostgresDB() *Postgres
 }

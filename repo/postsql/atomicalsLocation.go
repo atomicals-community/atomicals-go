@@ -1,16 +1,16 @@
 package postsql
 
 import (
-	"github.com/atomicals-go/utils"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
 
 const LocationTableName = "location"
+const LocationKey = "atomicals"
 
 type Location struct {
 	gorm.Model
-	Name        string
+	Key         string `gorm:"uniqueindex"`
 	BlockHeight int64
 	TxIndex     int64
 	Txid        string
@@ -27,8 +27,6 @@ func (*Location) Init(db *gorm.DB) {
 	assert.Nil(nil, err)
 	err = dmodel.CreateTable(&Location{})
 	assert.Nil(nil, err)
-	dbTx := db.Save(&Location{Name: "atomicals", BlockHeight: utils.ATOMICALS_ACTIVATION_HEIGHT, TxIndex: -1})
-	assert.Nil(nil, dbTx.Error)
 }
 
 func (*Location) AutoMigrate(db *gorm.DB) {

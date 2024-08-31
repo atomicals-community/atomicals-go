@@ -1,0 +1,7 @@
+{
+    "btc_rpc_url" : "0.0.0.0:8332",
+    "btc_rpc_user": "btc" ,
+    "btc_rpc_password": "btc2012",
+    "sql_dns": "host=127.0.0.1 user=admin password=admin123 dbname=atomicals port=5432 sslmode=disable",
+    "atomicals_start_height": 812481
+}

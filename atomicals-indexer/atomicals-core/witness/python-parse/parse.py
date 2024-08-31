@@ -14,14 +14,10 @@ def parse(witness_script, height):
         try:
             decoded_object = loads(payload)
             if not isinstance(decoded_object, dict):
-                # print(
-                #     f"parse_protocols_operations_from_witness_array found {op_name} but decoded CBOR payload is not a dict. Skipping tx input..."
-                # )
+                print("false")
                 return
         except Exception as e:
-            # print(
-            #     f"parse_protocols_operations_from_witness_array found {op_name} but CBOR payload parsing failed. Skipping tx input...{e}"
-            # )
+            print("false")
             return
         # Also enforce that if there are meta, args, or ctx fields that they must be dicts
         # This is done to ensure that these fields are always easily parseable and do not contain unexpected data which could cause parsing problems later
@@ -32,12 +28,10 @@ def parse(witness_script, height):
             or not is_sanitized_dict_whitelist_only(decoded_object.get("ctx", {}))
             or not is_sanitized_dict_whitelist_only(decoded_object.get("init", {}), True)
         ):
-            # print(
-            #     f"parse_protocols_operations_from_witness_array found {op_name} but decoded CBOR payload has an args, meta, ctx, or init that has not permitted data type {decoded_object}. Skipping tx input..."
-            # )
+            print("false")
             return
-        print(op_name)
-        print(decoded_object)
+    else:  
+        print("false")
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:

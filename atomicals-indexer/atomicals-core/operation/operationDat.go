@@ -11,6 +11,6 @@ func (m *Atomicals) operationDat(operation *witness.WitnessAtomicalsOperation, t
 		Height:      operation.RevealLocationHeight,
 		AtomicalsID: operation.AtomicalsID,
 		LocationID:  operation.LocationID,
-		Dat:         operation.PayloadStr,
+		// Dat:         operation.PayloadStr,
 	}
 }

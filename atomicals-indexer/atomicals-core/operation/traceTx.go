@@ -43,17 +43,18 @@ func (m *Atomicals) Run() {
 		}
 		startTime := time.Now()
 		m.location.TxIndex = int64(txIndex)
+		m.location.Txid = tx.Txid
 		data := m.TraceTx(tx, block.Height)
 		startTime1 = startTime1 + time.Since(startTime)
 
 		startTime = time.Now()
-		err = m.UpdateDB(block.Height, m.location.TxIndex, tx.Txid, data)
+		err = m.UpdateDB(m.location, data)
 		if err != nil {
 			log.Log.Panicf("UpdateDB err:%v", err)
 		}
 		startTime2 = startTime2 + time.Since(startTime)
+		// log.Log.Infof("maxBlockHeight:%v, currentHeight:%v, %v lenTx:%v time:%v %v %v", m.maxBlockHeight, m.location.BlockHeight, len(block.Tx), txIndex, time.Since(startTime), startTime1, startTime2)
 	}
-
 	log.Log.Infof("maxBlockHeight:%v, currentHeight:%v,lenTx:%v time:%v %v %v", m.maxBlockHeight, m.location.BlockHeight, len(block.Tx), time.Since(startTime), startTime1, startTime2)
 }
 
@@ -83,7 +84,9 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) *repo.Atomicas
 		case "ft":
 			data.NewGlobalDirectFt, _ = m.mintDirectFt(operation, tx.Vout, userPk)
 		case "nft":
-			data.NewUTXONftInfo, data.DeleteUTXONfts, _ = m.mintNft(operation, userPk)
+			if operation.Payload.Args.RequestContainer != "" || operation.Payload.Args.RequestDmitem != "" {
+				data.NewUTXONftInfo, data.DeleteUTXONfts, _ = m.mintNft(operation, userPk)
+			}
 		case "evt":
 			panic(operation.Payload)
 		case "dat":
@@ -95,9 +98,7 @@ func (m *Atomicals) TraceTx(tx btcjson.TxRawResult, height int64) *repo.Atomicas
 	}
 
 	// TODO: step 4 check payment
-	data.ParseOperation(operation.Op)
 
-	// check data with reference indexer
-	ReferenceIndexer(data, operation)
+	data.ParseOperation(operation.Op)
 	return data
 }

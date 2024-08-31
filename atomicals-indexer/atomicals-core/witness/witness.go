@@ -8,10 +8,9 @@ import (
 )
 
 type WitnessAtomicalsOperation struct {
-	Script     string
-	Op         string
-	Payload    *PayLoad
-	PayloadStr string
+	Script  string
+	Op      string
+	Payload *PayLoad
 
 	CommitTxID      string // vin's txID
 	CommitVoutIndex int64  // vin's index as vout in last tx
@@ -38,21 +37,18 @@ func ParseWitness(tx btcjson.TxRawResult, height int64) *WitnessAtomicalsOperati
 			if err != nil {
 				continue
 			}
-			var payloadStr string
 			if op != "" {
-				var opFromPython string
-				opFromPython, payloadStr, err = pythonparse.ParseAtomicalsOperation(script, height)
+				isValid, err := pythonparse.ParseAtomicalsOperation(script, height)
 				if err != nil {
 					continue
 				}
-				if opFromPython == "" {
+				if !isValid {
 					continue
 				}
 			}
 			return &WitnessAtomicalsOperation{
 				Op:              op,
 				Payload:         payload,
-				PayloadStr:      payloadStr,
 				Script:          script,
 				CommitTxID:      vin.Txid,
 				CommitVoutIndex: int64(vin.Vout),

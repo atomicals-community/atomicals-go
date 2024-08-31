@@ -35,6 +35,6 @@ func (m *Atomicals) operationMod(operation *witness.WitnessAtomicalsOperation, t
 		AtomicalsID: preNfts[0].AtomicalsID,
 		LocationID:  preNfts[0].LocationID,
 		Mod:         string(r),
-		ModStr:      operation.PayloadStr,
+		// ModStr:      operation.PayloadStr,
 	}
 }

@@ -105,13 +105,12 @@ func (m *AtomicaslData) ParseOperation(orgOp string) {
 	}
 }
 
-func (m *Postgres) UpdateDB(currentHeight, currentTxIndex int64, txID string, data *AtomicaslData) error {
-	// data.ParseOperation()
+func (m *Postgres) UpdateDB(location *postsql.Location, data *AtomicaslData) error {
 	if data == nil {
 		return nil
 	}
 
-	if !((data.Op != "") || (currentHeight%10 == 0 && currentTxIndex == 0)) {
+	if !((data.Op != "") || (location.BlockHeight%10 == 0 && location.TxIndex == 0)) {
 		return nil
 	}
 
@@ -228,9 +227,9 @@ func (m *Postgres) UpdateDB(currentHeight, currentTxIndex int64, txID string, da
 		// insert btc tx record
 		if data.Op != "" {
 			dbErr := tx.Save(&postsql.AtomicalsTx{
-				BlockHeight: currentHeight,
-				TxIndex:     currentTxIndex,
-				TxID:        txID,
+				BlockHeight: location.BlockHeight,
+				TxIndex:     location.TxIndex,
+				TxID:        location.Txid,
 				Operation:   data.Op,
 				Description: data.Description,
 			})
@@ -240,7 +239,7 @@ func (m *Postgres) UpdateDB(currentHeight, currentTxIndex int64, txID string, da
 		}
 
 		// update location
-		dbErr := tx.Model(postsql.Location{}).Where("name = ?", "atomicals").Updates(map[string]interface{}{"block_height": currentHeight, "tx_index": currentTxIndex})
+		dbErr := tx.Model(postsql.Location{}).Where("key = ?", postsql.LocationKey).Save(location)
 		if dbErr.Error != nil {
 			return dbErr.Error
 		}

@@ -124,7 +124,7 @@ def parse_operation_from_script(script, n):
         if atom_op_decoded:
             return atom_op_decoded, parse_atomicals_data_definition_operation(script, n + one_letter_op_len)
     
-    print(f'Invalid Atomicals Operation Code. Skipping... "{script[n : n + 4].hex()}"')
+    # print(f'Invalid Atomicals Operation Code. Skipping... "{script[n : n + 4].hex()}"')
     return None, None
 
 
@@ -257,7 +257,7 @@ def is_sanitized_dict_whitelist_only(d: dict, allow_bytes=False):
         if isinstance(v, dict):
             return is_sanitized_dict_whitelist_only(v, allow_bytes)
         if not allow_bytes and isinstance(v, bytes):
-            print( f"parse {k} {v} ..." )
+            # print( f"parse {k} {v} ..." )
             return False
         if (
             not isinstance(v, int)

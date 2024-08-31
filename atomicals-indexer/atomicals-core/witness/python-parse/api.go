@@ -7,34 +7,32 @@ import (
 )
 
 // parse_operation_from_script
-func ParseAtomicalsOperation(script string, height int64) (string, string, error) {
+func ParseAtomicalsOperation(script string, height int64) (bool, error) {
 	cmd := exec.Command("python3", "atomicals-core/witness/python-parse/parse.py", script, fmt.Sprintf("%d", height))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Println("Error executing command:", err)
+		return false, err
 	}
-	fmt.Println(string(output))
-	op_name, payloadStr, err := parseOperation(string(output))
+	isValid, err := parseOperation(string(output))
 	if err != nil {
-		return "", "", err
+		return false, err
 	}
-	if strings.Contains(string(output), "parents") {
-		panic("find it!")
+	if isValid == "" {
+		return true, nil
 	}
-
-	return op_name, payloadStr, nil
+	return false, nil
 }
 
-func parseOperation(input string) (string, string, error) {
+func parseOperation(input string) (string, error) {
 	// Split the input string by spaces
 	parts := strings.Split(input, "\n")
 
 	// Check if we have enough parts and the correct format
-	if len(parts) == 3 {
+	if len(parts) == 1 {
 		// Return the last part, which should be "nft"
-		return parts[0], parts[1], nil
+		return parts[0], nil
 	}
 
 	// If the format doesn't match, return an error
-	return "", "", fmt.Errorf("invalid input format")
+	return "", fmt.Errorf("invalid input format")
 }

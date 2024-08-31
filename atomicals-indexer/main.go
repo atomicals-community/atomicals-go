@@ -18,7 +18,7 @@ func main() {
 		os.Exit(1)
 	}
 	defer ln.Close()
-	conf, err := conf.ReadJSONFromJSFile("./conf/config.json")
+	conf, err := conf.ReadJSONFromJSFile("../conf/config.json")
 	if err != nil {
 		panic(err)
 	}

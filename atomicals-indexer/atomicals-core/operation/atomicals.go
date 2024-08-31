@@ -8,6 +8,7 @@ import (
 	"github.com/atomicals-go/pkg/log"
 	"github.com/atomicals-go/repo"
 	"github.com/atomicals-go/repo/postsql"
+	"gorm.io/gorm"
 )
 
 type Atomicals struct {
@@ -22,7 +23,15 @@ func NewAtomicalsWithSQL(conf *conf.Config) *Atomicals {
 	db := repo.NewSqlDB(conf.SqlDNS)
 	location, err := db.Location()
 	if err != nil {
-		log.Log.Panicf("Location err:%v", err)
+		if err == gorm.ErrRecordNotFound {
+			location = &postsql.Location{
+				Key:         postsql.LocationKey,
+				BlockHeight: conf.AtomicalsStartHeight,
+				TxIndex:     -1,
+			}
+		} else {
+			log.Log.Panicf("Location err:%v", err)
+		}
 	}
 	btcsync, err := btcsync.NewBtcSync(conf.BtcRpcURL, conf.BtcRpcUser, conf.BtcRpcPassword)
 	if err != nil {
