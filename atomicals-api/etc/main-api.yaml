@@ -1,4 +1,0 @@
-Name: main-api
-Host: 0.0.0.0
-Port: 8888
-SqlDNS: "host=127.0.0.1 user=admin password=admin123 dbname=atomicals port=5432 sslmode=disable"

@@ -9,7 +9,6 @@
 
 - 在未来一段时间内[github:yimingWOW](https://github.com/yimingWOW)仍然会维护该项目（及时同步atomicals-electrumx的更新）
 - 如果您想加入，可以通过twitter联系我：[x:@isyiming](https://twitter.com/isyiming)
-- 或者为我捐款: bc1p7uaqs0qq40mxqyljd93raxullh0ece2xvns5s5y9700v4ec0qjmsdt2q2n 接受任何类型的资产
 
 #### 嗨，atomicals-go终于完成了，我简单说一下这个indexer的优点
 
@@ -104,7 +103,7 @@ cd repo/postsql/init/
 go run ./
 
 // start indexer
-cd atomicals-indexer/
+cd 
 go run ./  
 // or run it with nohup: nohup go run ./ > log.txt 2>&1 &
 ``` 
